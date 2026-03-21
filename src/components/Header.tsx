@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { useState, useRef, useEffect } from 'react';
 import {
-  LayoutTemplate, Columns2, Eye,
+  LayoutTemplate, LucideIcon, Columns2, Eye,
   Moon, Sun, PanelLeft, Plus, FolderOpen,
   Download, Search, Check, Loader2, ChevronDown,
   Maximize2, HelpCircle, Command,

@@ -3,6 +3,7 @@
 import {
   Bold, Italic, Strikethrough, Code, Code2, Quote, Link, Image as ImageIcon,
   Heading1, Heading2, Heading3, List, ListOrdered, Minus, Table2, Focus,
+  LucideIcon,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -16,7 +17,7 @@ interface Props {
   focusMode: boolean;
 }
 
-const GROUPS: { action: ToolbarAction; icon: React.FC<{ size?: number; strokeWidth?: number }>; title: string; shortcut?: string }[][] = [
+const GROUPS: { action: ToolbarAction; icon: LucideIcon; title: string; shortcut?: string }[][] = [
   [
     { action: 'h1', icon: Heading1, title: 'H1' },
     { action: 'h2', icon: Heading2, title: 'H2' },
