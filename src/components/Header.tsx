@@ -1,5 +1,5 @@
 'use client';
-
+import { LucideIcon} from 'lucide-react';
 import Image from 'next/image';
 import { useState, useRef, useEffect } from 'react';
 import {
@@ -37,7 +37,7 @@ interface HeaderProps {
   onOpenSearch: () => void;
 }
 
-const VIEW_MODES: { id: ViewMode; icon: React.FC<{ size?: number; strokeWidth?: number }>; label: string }[] = [
+const VIEW_MODES: { id: ViewMode; icon: LucideIcon; label: string }[] = [
   { id: 'editor',  icon: LayoutTemplate, label: 'Editor only' },
   { id: 'split',   icon: Columns2,       label: 'Split view' },
   { id: 'preview', icon: Eye,            label: 'Preview only' },
