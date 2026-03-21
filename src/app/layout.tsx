@@ -20,7 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body className="h-screen overflow-hidden">{children}</body>
+      <body>{children}</body>
     </html>
   );
 }

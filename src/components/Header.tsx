@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -17,6 +18,7 @@ import {
   Check,
   Loader2,
   ChevronDown,
+  ChevronRight,
   Maximize2,
   Minimize2,
   HelpCircle,
@@ -137,14 +139,27 @@ export default function Header(props: HeaderProps) {
         <PanelLeft size={16} strokeWidth={1.8} />
       </button>
 
-      {/* Logo + wordmark */}
-      <div className="flex items-center gap-2 select-none mr-1">
-        <Image src="/logo.svg" alt="Carcino" width={20} height={24} priority />
-        <span
-          className="hidden sm:block font-semibold text-sm"
-          style={{ color: 'var(--text)', letterSpacing: '-0.015em' }}
+      {/* Logo + breadcrumb */}
+      <div className="flex items-center gap-1.5 select-none mr-1">
+        <Link
+          href="/"
+          style={{ display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}
+          title="Back to Dashboard"
         >
-          Carcino Scribe
+          <Image src="/logo.svg" alt="Carcino" width={18} height={22} priority />
+          <span
+            className="hidden sm:block"
+            style={{ color: 'var(--text-4)', letterSpacing: '-0.015em', fontSize: 13, fontWeight: 600 }}
+          >
+            Scribe
+          </span>
+        </Link>
+        <ChevronRight size={11} strokeWidth={2} style={{ color: 'var(--border-strong)', flexShrink: 0 }} />
+        <span
+          className="hidden sm:block"
+          style={{ color: 'var(--text)', fontSize: 13, fontWeight: 600, letterSpacing: '-0.015em' }}
+        >
+          Editor
         </span>
       </div>
 

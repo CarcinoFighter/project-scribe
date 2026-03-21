@@ -25,15 +25,15 @@
   --surface-2:      rgba(255, 255, 255, 0.97);
 
   /* Borders — neutral grey */
-  --border:         rgba(0, 0, 0, 0.07);
-  --border-med:     rgba(0, 0, 0, 0.11);
-  --border-strong:  rgba(0, 0, 0, 0.18);
+  --border:         rgba(0, 0, 0, 0.09);
+  --border-med:     rgba(0, 0, 0, 0.14);
+  --border-strong:  rgba(0, 0, 0, 0.22);
 
   /* Text — pure near-blacks and greys */
-  --text:           #0d0d0d;
-  --text-2:         #3a3a3a;
-  --text-3:         #444444;
-  --text-4:         #888888;
+  --text:           #0a0a0a;
+  --text-2:         #2a2a2a;
+  --text-3:         #3a3a3a;
+  --text-4:         #636363;
 
   /* Sidebar — distinctly darker surface than header/toolbar */
   --surface-sidebar: rgba(238, 238, 238, 0.94);
@@ -67,15 +67,15 @@
   --surface-2:      rgba(28, 28, 28, 0.97);
 
   /* Borders — neutral white-based */
-  --border:         rgba(255, 255, 255, 0.07);
-  --border-med:     rgba(255, 255, 255, 0.11);
-  --border-strong:  rgba(255, 255, 255, 0.18);
+  --border:         rgba(255, 255, 255, 0.10);
+  --border-med:     rgba(255, 255, 255, 0.16);
+  --border-strong:  rgba(255, 255, 255, 0.26);
 
   /* Text — pure near-whites and greys */
-  --text:           #f2f2f2;
-  --text-2:         #b8b8b8;
-  --text-3:         #a0a0a0;
-  --text-4:         #505050;
+  --text:           #f0f0f0;
+  --text-2:         #d0d0d0;
+  --text-3:         #b8b8b8;
+  --text-4:         #787878;
   --text-5: #1e1e1e;
 
   /* Sidebar — much darker than header/toolbar in dark mode */
@@ -547,3 +547,22 @@ kbd {
   box-shadow: 0 1px 0 var(--border-strong);
   white-space: nowrap;
 }
+/* ============================================================
+   DASHBOARD UTILITIES
+   ============================================================ */
+
+/* Ensure outline-item hover doesn't fight with active inline style */
+.sidebar-col .outline-item:hover:not([style*="background"]) {
+  background: rgba(0, 0, 0, 0.06);
+}
+.dark .sidebar-col .outline-item:hover:not([style*="background"]) {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* tb-btn inside an active accent background should invert on hover */
+.tb-btn[style*="var(--accent)"]:hover {
+  filter: brightness(1.08);
+}
+
+/* Dashboard main content area never clips dropdowns */
+main { overflow-x: visible; }
