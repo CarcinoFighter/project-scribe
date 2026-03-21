@@ -2,7 +2,6 @@
 
 import Image from 'next/image';
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { createPortal } from 'react-dom';
 import {
   LayoutTemplate,
   PanelLeft,
@@ -68,20 +67,16 @@ export default function Header(props: HeaderProps) {
   const [nameValue,    setNameValue]    = useState(fileName);
   const [exportOpen,   setExportOpen]   = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [exportPos,    setExportPos]    = useState<{ top: number; right: number } | null>(null);
 
   const nameRef   = useRef<HTMLInputElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
-  const exportBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => { setNameValue(fileName); }, [fileName]);
 
   /* Close export dropdown on outside click */
   useEffect(() => {
     const h = (e: MouseEvent) => {
-      if (exportBtnRef.current?.contains(e.target as Node)) return;
-      if (exportRef.current?.contains(e.target as Node)) return;
-      setExportOpen(false);
+      if (!exportRef.current?.contains(e.target as Node)) setExportOpen(false);
     };
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
@@ -121,12 +116,11 @@ export default function Header(props: HeaderProps) {
   });
 
   return (
-    <>
-      <header
-        id="app-header"
-        className="app-header glass glass-rim flex items-center gap-2 px-3 flex-shrink-0 z-40"
-        style={{ height: 52, borderRadius: 0, borderBottom: '1px solid var(--border-med)' }}
-      >
+    <header
+      id="app-header"
+      className="app-header glass glass-rim flex items-center gap-2 px-3 flex-shrink-0 z-40"
+      style={{ height: 52, borderRadius: 0, borderBottom: '1px solid var(--border-med)' }}
+    >
       {/* Sidebar toggle */}
       <button
         className="tb-btn"
@@ -252,23 +246,36 @@ export default function Header(props: HeaderProps) {
         </button>
 
         {/* Export dropdown */}
-        <div id="tour-export" className="relative">
+        <div id="tour-export" className="relative" ref={exportRef}>
           <button
-            ref={exportBtnRef}
             className="tb-btn"
-            onClick={() => {
-              const btn = exportBtnRef.current;
-              if (btn) {
-                const rect = btn.getBoundingClientRect();
-                setExportPos({ top: rect.bottom + 8, right: window.innerWidth - rect.right });
-              }
-              setExportOpen(o => !o);
-            }}
+            onClick={() => setExportOpen(o => !o)}
             title="Export"
           >
             <Download   size={15} strokeWidth={1.8} />
             <ChevronDown size={10} strokeWidth={2.5} />
           </button>
+
+          {exportOpen && (
+            <div
+              className="glass-overlay absolute right-0 top-full mt-2 fade-in overflow-hidden"
+              style={{ minWidth: 168, borderRadius: 14, zIndex: 999 }}
+            >
+              {[
+                { label: 'Save as .md',   action: () => { onExportMd();   setExportOpen(false); } },
+                { label: 'Save as .html', action: () => { onExportHtml(); setExportOpen(false); } },
+              ].map((item, i) => (
+                <button
+                  key={i}
+                  onClick={item.action}
+                  className="w-full text-left px-4 py-3 tb-btn"
+                  style={{ borderRadius: 0, justifyContent: 'flex-start', width: '100%' }}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="toolbar-sep" />
@@ -320,36 +327,5 @@ export default function Header(props: HeaderProps) {
         </button>
       </div>
     </header>
-
-    {/* Export dropdown portal */}
-    {exportOpen && exportPos && createPortal(
-      <div
-        ref={exportRef}
-        className="glass-overlay fixed fade-in overflow-hidden"
-        style={{
-          top: exportPos.top,
-          right: exportPos.right,
-          minWidth: 168,
-          borderRadius: 14,
-          zIndex: 9950,
-        }}
-      >
-        {[
-          { label: 'Save as .md',   action: () => { onExportMd();   setExportOpen(false); } },
-          { label: 'Save as .html', action: () => { onExportHtml(); setExportOpen(false); } },
-        ].map((item, i) => (
-          <button
-            key={i}
-            onClick={item.action}
-            className="w-full text-left px-4 py-3 tb-btn"
-            style={{ borderRadius: 0, justifyContent: 'flex-start', width: '100%' }}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>,
-      document.body
-    )}
-  </>
-);
+  );
 }
