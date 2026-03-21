@@ -129,10 +129,10 @@ export default function GuidedTour({ onClose }: TourProps) {
         style={{
           borderRadius: 20,
           width: 380,
-          bottom: 40,
+          top: '50%',
           left: '50%',
-          transform: 'translateX(-50%)',
-          padding: '28px 28px 22px',
+          transform: 'translate(-50%, -50%)',
+          padding: '28px 28px 28px',
         }}
       >
         {/* Step emoji + counter */}
