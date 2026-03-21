@@ -3,7 +3,7 @@
 import {
   Bold, Italic, Strikethrough, Code, Code2, Quote,
   Link, Image, Heading1, Heading2, Heading3,
-  List, ListOrdered, Minus, Table2, Search,
+  List, ListOrdered, Minus, Table2, LucideIcon, Search,
 } from 'lucide-react';
 
 type ToolbarAction =
@@ -18,7 +18,7 @@ interface ToolbarProps {
 
 interface ButtonDef {
   action: ToolbarAction;
-  icon: React.FC<{ size?: number; strokeWidth?: number }>;
+  icon: LucideIcon;
   title: string;
   shortcut?: string;
 }

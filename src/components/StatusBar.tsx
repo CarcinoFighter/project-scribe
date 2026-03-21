@@ -1,6 +1,6 @@
 'use client';
 
-import { Clock, Type, Hash, Check, Loader2, AlignLeft } from 'lucide-react';
+import { Clock, Type, Hash, Check, Loader2, LucideIcon, AlignLeft } from 'lucide-react';
 import type { DocumentStats, ViewMode } from '@/types';
 
 interface StatusBarProps {
@@ -16,7 +16,7 @@ function StatItem({
   label,
   value,
 }: {
-  icon: React.FC<{ size?: number; strokeWidth?: number }>;
+  icon: LucideIcon;
   label: string;
   value: string | number;
 }) {
