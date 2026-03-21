@@ -14,8 +14,11 @@ import {
   ArrowRight, User, Settings, LogOut,
   Activity, ChevronDown, PenTool,
   Home, LayoutGrid, Edit3, Award,
-  Check, X, ArrowUpDown, Target,
+  Check, X, ArrowUpDown, Target, Loader2,
+  Briefcase, Users,
 } from 'lucide-react';
+import { useUser } from '@/lib/useUser';
+import AccountMenu from '@/components/AccountMenu';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -282,46 +285,6 @@ function NotifPanel({ notifs, onMarkAllRead, onClose }: {
       <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)' }}>
         <button className="tb-btn" onClick={onClose} style={{ fontSize: 12, color: 'var(--accent)', gap: 4, padding: '4px 0' }}>
           Close <ChevronRight size={11} />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Account menu
-// ─────────────────────────────────────────────────────────────────────────────
-
-function AccountMenu({ onClose, onToast }: { onClose: () => void; onToast: (m: string) => void }) {
-  const router = useRouter();
-  const items = [
-    { icon: User,       label: 'Profile',      active: false, action: () => { onClose(); onToast('Profile settings coming soon'); } },
-    { icon: Settings,   label: 'Settings',     active: false, action: () => { onClose(); onToast('Account settings coming soon'); } },
-    { icon: LayoutGrid, label: 'Dashboard',    active: true,  action: onClose },
-    { icon: Edit3,      label: 'Open Editor',  active: false, action: () => { onClose(); router.push('/editor'); } },
-  ];
-
-  return (
-    <div className="glass-overlay" style={{ position: 'absolute', right: 0, top: 'calc(100% + 8px)', borderRadius: 'var(--r-lg)', minWidth: 210, overflow: 'hidden', zIndex: 200 }}>
-      <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 34, height: 34, borderRadius: '50%', flexShrink: 0, background: 'linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 12, fontWeight: 700 }}>CF</div>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Carcino Foundation</div>
-            <div style={{ fontSize: 11, color: 'var(--text-4)' }}>hello@carcino.org</div>
-          </div>
-        </div>
-      </div>
-      {items.map(item => (
-        <button key={item.label} className="tb-btn" style={{ width: '100%', justifyContent: 'flex-start', padding: '9px 16px', borderRadius: 0, gap: 10, color: item.active ? 'var(--accent)' : 'var(--text-3)', background: item.active ? 'var(--accent-subtle)' : 'transparent' }} onClick={item.action}>
-          <item.icon size={14} strokeWidth={1.8} />
-          <span style={{ fontSize: 13 }}>{item.label}</span>
-        </button>
-      ))}
-      <div style={{ borderTop: '1px solid var(--border)' }}>
-        <button className="tb-btn" style={{ width: '100%', justifyContent: 'flex-start', padding: '9px 16px', borderRadius: 0, gap: 10, color: '#ef4444' }} onClick={() => { onClose(); onToast('Signed out'); }}>
-          <LogOut size={14} strokeWidth={1.8} />
-          <span style={{ fontSize: 13 }}>Sign out</span>
         </button>
       </div>
     </div>
@@ -722,9 +685,10 @@ function ActivityChart({ docs, weekWords }: { docs: Doc[]; weekWords: number }) 
 
 export default function Dashboard() {
   const router = useRouter();
+  const { user, loading: userLoading } = useUser();
 
-  // Document state — seed portfolio; active doc injected from localStorage
-  const [docs,    setDocs]    = useState<Doc[]>(() => makeSeedDocs());
+  // Document state — live data from Supabase + active doc from localStorage
+  const [docs,    setDocs]    = useState<Doc[]>([]);
   const [lsDoc,   setLsDoc]   = useState<Doc | null>(null);  // live editor session
 
   // UI state
@@ -775,6 +739,22 @@ export default function Dashboard() {
         });
       }
     } catch { /* localStorage blocked (private browsing etc.) */ }
+  }, []);
+
+  // ── Fetch documents from Supabase ───────────────────────────────────────
+  useEffect(() => {
+    async function fetchDocs() {
+      try {
+        const res = await fetch('/api/documents');
+        if (res.ok) {
+          const data = await res.json();
+          setDocs(data.documents);
+        }
+      } catch (error) {
+        console.error('Failed to fetch docs:', error);
+      }
+    }
+    fetchDocs();
   }, []);
 
   // Apply theme to document
@@ -949,11 +929,19 @@ export default function Dashboard() {
           {/* Account chip */}
           <div ref={accountRef} style={{ position: 'relative' }}>
             <button className="tb-btn" onClick={() => { setShowAccountMenu(o => !o); setShowNotifPanel(false); }} style={{ gap: 7, padding: '4px 8px 4px 5px', borderRadius: 8, background: showAccountMenu ? 'var(--accent-subtle2)' : undefined, color: showAccountMenu ? 'var(--accent)' : undefined }}>
-              <div style={{ width: 24, height: 24, borderRadius: '50%', flexShrink: 0, background: 'linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.02em' }}>CF</div>
-              <span className="hidden md:block" style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text)' }}>Carcino</span>
+              {user?.avatar_url ? (
+                <div style={{ width: 24, height: 24, borderRadius: '50%', overflow: 'hidden' }}>
+                  <Image src={user.avatar_url} alt="Profile" width={24} height={24} />
+                </div>
+              ) : (
+                <div style={{ width: 24, height: 24, borderRadius: '50%', flexShrink: 0, background: 'linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.02em' }}>
+                  {user?.name?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'S'}
+                </div>
+              )}
+              <span className="hidden md:block" style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text)' }}>{user?.name || 'Loading...'}</span>
               <ChevronDown size={11} strokeWidth={2.5} style={{ color: 'var(--text-4)' }} />
             </button>
-            {showAccountMenu && <AccountMenu onClose={() => setShowAccountMenu(false)} onToast={showToastMsg} />}
+            {showAccountMenu && <AccountMenu user={user} onClose={() => setShowAccountMenu(false)} onToast={showToastMsg} />}
           </div>
         </div>
       </header>
@@ -967,14 +955,15 @@ export default function Dashboard() {
           <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0 8px 6px' }}>Workspace</div>
 
           {([
-            { id: 'home',     label: 'Overview',   icon: Home,     count: null },
-            { id: 'articles', label: 'Articles',   icon: FileText, count: articles.length },
-            { id: 'blogs',    label: 'Blog Posts', icon: BookOpen, count: blogs.length },
+            { id: 'home',     label: 'Overview',   icon: Home,     count: null,     href: null },
+            { id: 'articles', label: 'Articles',   icon: FileText, count: articles.length, href: null },
+            { id: 'blogs',    label: 'Blog Posts', icon: BookOpen, count: blogs.length, href: null },
+            { id: 'work',     label: 'Assignments',icon: Briefcase,count: null,     href: '/work' },
+            { id: 'team',     label: 'Team',       icon: Users,    count: null,     href: '/team' },
           ] as const).map((item, i) => {
             const active = activeNav === item.id;
-            return (
-              <button key={item.id} onClick={() => setActiveNav(item.id)} className="outline-item anim-stagger"
-                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 10px', borderRadius: 'var(--r-sm)', border: 'none', background: active ? 'var(--accent-subtle2)' : 'transparent', color: active ? 'var(--accent)' : 'var(--text-3)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: active ? 600 : 400, transition: 'background 0.12s, color 0.12s', textAlign: 'left', width: '100%', '--i': i } as React.CSSProperties}>
+            const content = (
+              <>
                 <item.icon size={13} strokeWidth={active ? 2.2 : 1.8} style={{ flexShrink: 0 }} />
                 <span style={{ flex: 1 }}>{item.label}</span>
                 {item.count !== null && (
@@ -982,6 +971,22 @@ export default function Dashboard() {
                     {item.count}
                   </span>
                 )}
+              </>
+            );
+
+            if (item.href) {
+              return (
+                <Link key={item.id} href={item.href} className="outline-item anim-stagger"
+                  style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 10px', borderRadius: 'var(--r-sm)', border: 'none', background: 'transparent', color: 'var(--text-3)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, textDecoration: 'none', '--i': i } as React.CSSProperties}>
+                  {content}
+                </Link>
+              );
+            }
+
+            return (
+              <button key={item.id} onClick={() => setActiveNav(item.id)} className="outline-item anim-stagger"
+                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 10px', borderRadius: 'var(--r-sm)', border: 'none', background: active ? 'var(--accent-subtle2)' : 'transparent', color: active ? 'var(--accent)' : 'var(--text-3)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: active ? 600 : 400, transition: 'background 0.12s, color 0.12s', textAlign: 'left', width: '100%', '--i': i } as React.CSSProperties}>
+                {content}
               </button>
             );
           })}

@@ -11,6 +11,7 @@ import StatusBar from '@/components/StatusBar';
 import GuidedTour from '@/components/GuidedTour';
 import CommandPalette from '@/components/CommandPalette';
 import ConfirmModal from '@/components/ConfirmModal';
+import MetadataPanel from '@/components/MetadataPanel';
 
 const EditorPane = dynamic(() => import('@/components/EditorPane'), {
   ssr: false,
@@ -126,6 +127,12 @@ export default function Page() {
   const [splitPct,    setSplitPct]    = useState(50);
   const [dragging,    setDragging]    = useState(false);
 
+  // Metadata state
+  const [docId, setDocId] = useState<string | null>(null);
+  const [slug, setSlug] = useState('');
+  const [status, setStatus] = useState<'draft' | 'published'>('draft');
+  const [contentType, setContentType] = useState<'blogs' | 'survivor_stories' | 'cancer_docs'>('blogs');
+
   // Confirm modal state
   const [confirm, setConfirm] = useState<{
     title: string; message: string;
@@ -158,6 +165,17 @@ export default function Page() {
       if (n) setFileName(n);
       if (d !== null) setIsDark(d === 'true');
       if (g) setWordGoal(parseInt(g, 10) || 0);
+
+      const savedId = localStorage.getItem('cs-doc-id');
+      const savedType = localStorage.getItem('cs-doc-type') as any;
+      const savedSlug = localStorage.getItem('cs-doc-slug');
+      const savedStatus = localStorage.getItem('cs-doc-status') as any;
+
+      if (savedId) setDocId(savedId);
+      if (savedType) setContentType(savedType);
+      if (savedSlug) setSlug(savedSlug);
+      if (savedStatus) setStatus(savedStatus);
+
       if (!toured) setShowTour(true);
     } catch {}
   }, []);
@@ -165,15 +183,45 @@ export default function Page() {
   // ---- Auto-save (debounced) ----
   useEffect(() => {
     setIsSaved(false);
-    const t = setTimeout(() => {
+    const t = setTimeout(async () => {
       try {
         localStorage.setItem('cs-content', content);
         localStorage.setItem('cs-name', fileName);
+        localStorage.setItem('cs-doc-id', docId || '');
+        localStorage.setItem('cs-doc-type', contentType);
+        localStorage.setItem('cs-doc-slug', slug);
+        localStorage.setItem('cs-doc-status', status);
+
+        // Sync to Supabase if we have a slug and title
+        if (fileName && slug && fileName !== 'Untitled Document') {
+          const res = await fetch('/api/editor/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: docId,
+              title: fileName,
+              slug,
+              content,
+              contentType,
+              status,
+              tags: [], // Could be expanded later
+            }),
+          });
+          
+          if (res.ok) {
+            const data = await res.json();
+            if (data.doc?.id && !docId) {
+              setDocId(data.doc.id);
+              localStorage.setItem('cs-doc-id', data.doc.id);
+            }
+          }
+        }
+
         setIsSaved(true);
       } catch {}
-    }, 800);
+    }, 1200); // Slightly longer debounce for cloud sync
     return () => clearTimeout(t);
-  }, [content, fileName]);
+  }, [content, fileName, docId, slug, status, contentType]);
 
   // ---- Dynamic tab title ----
   const stats = computeStats(content);
@@ -199,6 +247,26 @@ export default function Page() {
       window.removeEventListener('focus', onFocus);
     };
   }, [fileName]);
+
+  const generateSlug = useCallback((title: string) => {
+    return title
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }, []);
+
+  const handleAutoSlug = useCallback(() => {
+    setSlug(generateSlug(fileName));
+  }, [fileName, generateSlug]);
+
+  // Sync slug with fileName ONCE if slug is empty
+  useEffect(() => {
+    if (!slug && fileName && fileName !== 'Untitled Document') {
+      setSlug(generateSlug(fileName));
+    }
+  }, [fileName, slug, generateSlug]);
 
   // Word-goal celebration title
   useEffect(() => {

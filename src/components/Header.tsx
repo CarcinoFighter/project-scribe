@@ -27,6 +27,8 @@ import {
 } from 'lucide-react';
 import clsx from 'clsx';
 import type { ViewMode } from '@/types';
+import { useUser } from '@/lib/useUser';
+import AccountMenu from '@/components/AccountMenu';
 
 interface HeaderProps {
   fileName: string;
@@ -71,10 +73,13 @@ export default function Header(props: HeaderProps) {
   const [exportOpen,   setExportOpen]   = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [exportPos,    setExportPos]    = useState<{ top: number; right: number } | null>(null);
+  const [showAccountMenu, setShowAccountMenu] = useState(false);
+  const { user } = useUser();
 
   const nameRef   = useRef<HTMLInputElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
   const exportBtnRef = useRef<HTMLButtonElement>(null);
+  const accountRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setNameValue(fileName); }, [fileName]);
 
@@ -83,7 +88,9 @@ export default function Header(props: HeaderProps) {
     const h = (e: MouseEvent) => {
       if (exportBtnRef.current?.contains(e.target as Node)) return;
       if (exportRef.current?.contains(e.target as Node)) return;
+      if (accountRef.current?.contains(e.target as Node)) return;
       setExportOpen(false);
+      setShowAccountMenu(false);
     };
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
@@ -334,6 +341,34 @@ export default function Header(props: HeaderProps) {
         <button className="tb-btn" onClick={onOpenTour} title="Guided tour">
           <HelpCircle size={15} strokeWidth={1.8} />
         </button>
+
+        <div className="toolbar-sep" />
+
+        {/* User Account */}
+        <div className="relative" ref={accountRef}>
+          <button 
+            className="tb-btn" 
+            onClick={() => setShowAccountMenu(!showAccountMenu)}
+            style={{ padding: '2px 4px', borderRadius: '50%' }}
+          >
+            {user?.avatar_url ? (
+              <div style={{ width: 26, height: 26, borderRadius: '50%', overflow: 'hidden' }}>
+                <Image src={user.avatar_url} alt="Profile" width={26} height={26} />
+              </div>
+            ) : (
+              <div style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, background: 'linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 10, fontWeight: 700 }}>
+                {user?.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || 'S'}
+              </div>
+            )}
+          </button>
+          {showAccountMenu && (
+            <AccountMenu 
+              user={user} 
+              onClose={() => setShowAccountMenu(false)} 
+              onToast={(m) => console.log(m)} 
+            />
+          )}
+        </div>
       </div>
     </header>
 
