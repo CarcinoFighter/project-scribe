@@ -104,11 +104,36 @@ export default function GuidedTour({ onClose }: TourProps) {
 
   const content = (
     <>
-      {/* Dim backdrop */}
-      <div
+      {/* SVG overlay with animated transparent cutout around target */}
+      <svg
         className="fixed inset-0 z-[9990]"
-        style={{ background: 'rgba(10,6,20,0.55)', backdropFilter: 'blur(2px)' }}
-      />
+        style={{ pointerEvents: 'none', width: '100%', height: '100%' }}
+      >
+        <defs>
+          <mask id="tour-mask">
+            {/* White = opaque, Black = transparent */}
+            <rect width="100%" height="100%" fill="white" />
+            {rect && (
+              <rect
+                x={rect.left - PAD}
+                y={rect.top - PAD}
+                width={rect.width + PAD * 2}
+                height={rect.height + PAD * 2}
+                fill="black"
+                style={{
+                  transition: 'x 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), y 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), height 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                }}
+              />
+            )}
+          </mask>
+        </defs>
+        <rect
+          width="100%"
+          height="100%"
+          fill="rgba(10,6,20,0.60)"
+          mask="url(#tour-mask)"
+        />
+      </svg>
 
       {/* Spotlight ring around target element */}
       {rect && (
@@ -119,6 +144,7 @@ export default function GuidedTour({ onClose }: TourProps) {
             left:   rect.left   - PAD,
             width:  rect.width  + PAD * 2,
             height: rect.height + PAD * 2,
+            transition: 'top 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), left 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), height 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
           }}
         />
       )}
