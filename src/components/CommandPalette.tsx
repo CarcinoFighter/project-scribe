@@ -6,14 +6,14 @@ import {
   Bold, Italic, Strikethrough, Code, Code2, Quote, Link, Table,
   Heading1, Heading2, Heading3, List, ListOrdered, Minus,
   Eye, Columns, LayoutTemplate, Moon, Sun, Download, FolderOpen,
-  Maximize2, ScanLine, Type, Search, FileText, Plus,
+  Maximize2, ScanLine, Type, Search, LucideIcon, FileText, Plus,
 } from 'lucide-react';
 
 interface Cmd {
   id: string;
   label: string;
   hint?: string;
-  icon: React.FC<{ size?: number; strokeWidth?: number }>;
+  icon: LucideIcon;
   shortcut?: string;
   group: string;
 }
