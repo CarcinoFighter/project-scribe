@@ -36,7 +36,7 @@
   --text-4:         #888888;
 
   /* Sidebar — distinctly darker surface than header/toolbar */
-  --surface-sidebar: rgba(210, 210, 210, 0.90);
+  --surface-sidebar: rgba(238, 238, 238, 0.94);
 
   /* Blur */
   --blur:           blur(18px) saturate(160%) brightness(1.03);
@@ -79,7 +79,7 @@
   --text-5: #1e1e1e;
 
   /* Sidebar — much darker than header/toolbar in dark mode */
-  --surface-sidebar: rgba(4, 4, 4, 0.97);
+  --surface-sidebar: rgba(20, 20, 20, 0.96);
 
 
   /* Shadows */
