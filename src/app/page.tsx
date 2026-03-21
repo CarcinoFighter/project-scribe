@@ -10,6 +10,7 @@ import PreviewPane from '@/components/PreviewPane';
 import StatusBar from '@/components/StatusBar';
 import GuidedTour from '@/components/GuidedTour';
 import CommandPalette from '@/components/CommandPalette';
+import ConfirmModal from '@/components/ConfirmModal';
 
 const EditorPane = dynamic(() => import('@/components/EditorPane'), {
   ssr: false,
@@ -20,131 +21,29 @@ const EditorPane = dynamic(() => import('@/components/EditorPane'), {
   ),
 });
 
-// ----------------------------------------------------------------
+// ---------------------------------------------------------------
 // Templates
-// ----------------------------------------------------------------
-const TEMPLATES: Record<string, string> = {
-  'tpl-blog': `# Blog Post Title
+// ---------------------------------------------------------------
+function makeTemplates() {
+  const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const dayFull = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  return {
+    'tpl-blog': `# Blog Post Title\n\n*Published on ${today} by Author Name*\n\n## Introduction\n\nWrite a compelling opening paragraph that hooks your reader.\n\n## Section One\n\nYour first main point, backed with evidence or examples.\n\n## Section Two\n\nYour second main point. Keep paragraphs short.\n\n## Key Takeaways\n\n- Point one\n- Point two\n- Point three\n\n## Conclusion\n\nA memorable closing thought and a call to action.\n\n---\n\n*Tags: tag1, tag2, tag3*\n`,
+    'tpl-article': `# Article Title\n\n**Abstract:** A brief summary of findings.\n\n---\n\n## Introduction\n\nBackground and context.\n\n## Background\n\n### Related Work\n\n### Definitions\n\n## Methodology\n\n## Results\n\n| Metric | Value | Notes |\n|--------|-------|-------|\n|        |       |       |\n\n## Discussion\n\n## Conclusion\n\n## References\n\n1. Author, A. (${new Date().getFullYear()}). *Title*. Publisher.\n`,
+    'tpl-notes': `# Meeting Notes\n\n**Date:** ${dayFull}\n**Attendees:**\n**Location / Link:**\n\n---\n\n## Agenda\n\n- [ ] Item one\n- [ ] Item two\n- [ ] Item three\n\n## Discussion\n\n### Topic 1\n\n### Topic 2\n\n## Action Items\n\n| Task | Owner | Due Date |\n|------|-------|----------|\n|      |       |          |\n\n## Next Meeting\n\n**Date:**\n**Topics:**\n`,
+  } as Record<string, string>;
+}
 
-*Published on ${new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' })} by Author Name*
-
-## Introduction
-
-Write a compelling opening paragraph that hooks your reader and explains what this post is about.
-
-## Section One
-
-Your first main point. Support it with evidence, examples, or anecdotes.
-
-## Section Two
-
-Your second main point. Keep paragraphs short and readable.
-
-## Key Takeaways
-
-- Point one
-- Point two
-- Point three
-
-## Conclusion
-
-Wrap up with a memorable closing thought and a call to action.
-
----
-
-*Tags: tag1, tag2, tag3*
-`,
-  'tpl-article': `# Article Title
-
-**Abstract:** A brief summary of what this article covers and its key findings.
-
----
-
-## Introduction
-
-Provide background and context. State the purpose and scope of the article.
-
-## Background
-
-### Related Work
-
-Describe the existing landscape.
-
-### Definitions
-
-Define key terms used throughout.
-
-## Methodology
-
-Explain the approach or research method used.
-
-## Results
-
-Present findings clearly. Use tables and lists where appropriate.
-
-| Metric | Value | Notes |
-|--------|-------|-------|
-|        |       |       |
-
-## Discussion
-
-Interpret results. Address limitations.
-
-## Conclusion
-
-Summarize contributions and suggest future directions.
-
-## References
-
-1. Author, A. (2024). *Title*. Publisher.
-`,
-  'tpl-notes': `# Meeting Notes
-
-**Date:** ${new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
-**Attendees:** 
-**Location / Call link:** 
-
----
-
-## Agenda
-
-- [ ] Item one
-- [ ] Item two
-- [ ] Item three
-
-## Discussion
-
-### Topic 1
-
-Notes...
-
-### Topic 2
-
-Notes...
-
-## Action Items
-
-| Task | Owner | Due Date |
-|------|-------|----------|
-|      |       |          |
-
-## Next Meeting
-
-**Date:** 
-**Topics:** 
-`,
-};
-
-// ----------------------------------------------------------------
+// ---------------------------------------------------------------
 // Default content
-// ----------------------------------------------------------------
+// ---------------------------------------------------------------
 const DEFAULT = `# Welcome to Carcino Scribe
 
-A beautiful, distraction-free markdown editor built by The Carcino Foundation for writers, bloggers, and researchers.
+A beautiful, distraction-free markdown editor built by The Carcino Foundation.
 
-## What you can do here
+## Features at a glance
 
-Use the **toolbar** above to format text, or type Markdown directly. The right pane shows a live preview that updates as you write.
+Use the **toolbar** above to format text, or type Markdown directly. The right pane shows a live preview.
 
 ### Keyboard shortcuts
 
@@ -159,39 +58,56 @@ Use the **toolbar** above to format text, or type Markdown directly. The right p
 | New document | \`Ctrl+N\` |
 | Save | \`Ctrl+S\` |
 
-### Writing features
+### What's included
 
-- **Document outline** sidebar tracks your headings in real time
-- **Word goal** with a progress ring in the status bar (click the word count)
-- **Reading progress** bar at the top of the preview
+- **Document outline** sidebar tracks headings in real time
+- **Word goal** with a progress ring (click the word count in the status bar)
+- **Reading progress** bar in the preview pane
 - **Focus mode** dims all lines except the current one
-- **Zen mode** hides all chrome for total focus (hover to reveal)
-- **Templates** for blog posts, articles, and meeting notes (Ctrl+K)
-- **Export** as .md or .html
+- **Zen mode** hides all chrome — hover to reveal
+- **Templates** for blog posts, articles, and meeting notes via \`Ctrl+K\`
+- **Draggable split** — drag the divider to resize editor and preview
+- **Export** as .md or styled .html
 
 ---
 
-> "A writer only begins a book. A reader finishes it." - Samuel Johnson
+> "A writer only begins a book. A reader finishes it." — Samuel Johnson
 
 Happy writing!
 `;
 
-// ----------------------------------------------------------------
-// Helpers
-// ----------------------------------------------------------------
+// ---------------------------------------------------------------
+// Stats
+// ---------------------------------------------------------------
 function computeStats(content: string): DocumentStats {
   const text = content.trim();
-  const words     = text ? text.split(/\s+/).length : 0;
-  const chars     = content.length;
-  const lines     = content.split('\n').length;
-  const sentences = text ? (text.match(/[.!?]+/g) ?? []).length : 0;
+  const words       = text ? text.split(/\s+/).length : 0;
+  const chars       = content.length;
+  const lines       = content.split('\n').length;
+  const sentences   = text ? (text.match(/[.!?]+/g) ?? []).length : 0;
   const readingTime = Math.max(1, Math.round(words / 200));
   return { words, chars, lines, sentences, readingTime };
 }
 
-// ----------------------------------------------------------------
+// ---------------------------------------------------------------
+// Tab-title messages
+// ---------------------------------------------------------------
+const AWAY_TITLES = [
+  'Come back! Your draft misses you.',
+  'Still here, waiting for you...',
+  'Your story is waiting. Come back!',
+  'Ideas cooling down... hop back in!',
+];
+const GOAL_TITLES = [
+  'Goal reached! Keep going!',
+  'Word goal hit! Amazing work.',
+  'You did it! Goal complete.',
+];
+function pick<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)]; }
+
+// ---------------------------------------------------------------
 // Page
-// ----------------------------------------------------------------
+// ---------------------------------------------------------------
 export default function Page() {
   const [content,     setContent]     = useState(DEFAULT);
   const [fileName,    setFileName]    = useState('Untitled Document');
@@ -210,30 +126,43 @@ export default function Page() {
   const [splitPct,    setSplitPct]    = useState(50);
   const [dragging,    setDragging]    = useState(false);
 
+  // Confirm modal state
+  const [confirm, setConfirm] = useState<{
+    title: string; message: string;
+    confirmLabel?: string; danger?: boolean;
+    onConfirm: () => void;
+  } | null>(null);
+
+  // Word-goal celebration (briefly)
+  const [goalCelebrated, setGoalCelebrated] = useState(false);
+  const prevGoalHit = useRef(false);
+
   const editorRef  = useRef<EditorAPI | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const splitRef   = useRef<HTMLDivElement>(null);
 
-  // Theme
-  useEffect(() => { document.documentElement.classList.toggle('dark', isDark); }, [isDark]);
+  // ---- Theme sync ----
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDark);
+  }, [isDark]);
 
-  // Load persisted state
+  // ---- Load persisted state ----
   useEffect(() => {
     try {
-      const c = localStorage.getItem('cs-content');
-      const n = localStorage.getItem('cs-name');
-      const d = localStorage.getItem('cs-dark');
-      const g = localStorage.getItem('cs-goal');
-      const toured = localStorage.getItem('cs-toured');
+      const c       = localStorage.getItem('cs-content');
+      const n       = localStorage.getItem('cs-name');
+      const d       = localStorage.getItem('cs-dark');
+      const g       = localStorage.getItem('cs-goal');
+      const toured  = localStorage.getItem('cs-toured');
       if (c) setContent(c);
       if (n) setFileName(n);
       if (d !== null) setIsDark(d === 'true');
       if (g) setWordGoal(parseInt(g, 10) || 0);
-      if (!toured) { setShowTour(true); }
+      if (!toured) setShowTour(true);
     } catch {}
   }, []);
 
-  // Auto-save
+  // ---- Auto-save (debounced) ----
   useEffect(() => {
     setIsSaved(false);
     const t = setTimeout(() => {
@@ -246,129 +175,312 @@ export default function Page() {
     return () => clearTimeout(t);
   }, [content, fileName]);
 
-  // Global shortcuts
+  // ---- Dynamic tab title ----
+  const stats = computeStats(content);
+
+  useEffect(() => {
+    const unsaved = !isSaved;
+    const base    = `${fileName} — Carcino Scribe`;
+    document.title = unsaved ? `\u25CF ${base}` : base;
+  }, [fileName, isSaved]);
+
+  // Away / return title
+  useEffect(() => {
+    const onBlur = () => {
+      document.title = pick(AWAY_TITLES) + ' — Carcino Scribe';
+    };
+    const onFocus = () => {
+      document.title = `${fileName} — Carcino Scribe`;
+    };
+    window.addEventListener('blur',  onBlur);
+    window.addEventListener('focus', onFocus);
+    return () => {
+      window.removeEventListener('blur',  onBlur);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [fileName]);
+
+  // Word-goal celebration title
+  useEffect(() => {
+    if (wordGoal <= 0) { prevGoalHit.current = false; return; }
+    const hit = stats.words >= wordGoal;
+    if (hit && !prevGoalHit.current) {
+      prevGoalHit.current = true;
+      setGoalCelebrated(true);
+      document.title = pick(GOAL_TITLES) + ' — Carcino Scribe';
+      const t = setTimeout(() => {
+        document.title = `${fileName} — Carcino Scribe`;
+        setGoalCelebrated(false);
+      }, 3500);
+      return () => clearTimeout(t);
+    }
+    if (!hit) prevGoalHit.current = false;
+  }, [stats.words, wordGoal, fileName]);
+
+  // ---- Global keyboard shortcuts ----
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
-      const mod  = e.ctrlKey || e.metaKey;
-      const shift = e.shiftKey;
-      if (mod && e.key === 's') { e.preventDefault(); setIsSaved(true); }
-      if (mod && e.key === 'n') { e.preventDefault(); if (confirm('New document?')) { setContent('# New Document\n\n'); setFileName('Untitled Document'); } }
-      if (mod && e.key === 'h') { e.preventDefault(); editorRef.current?.openSearch(); }
-      if (mod && e.key === 'k') { e.preventDefault(); setShowCmd(c => !c); }
-      if (mod && shift && e.key === 'Z') { e.preventDefault(); setZenMode(z => !z); }
-      if (mod && shift && e.key === 'F') { e.preventDefault(); setFocusMode(f => !f); }
-      if (e.key === 'Escape') { setShowCmd(false); setZenMode(false); }
+      const mod   = e.ctrlKey || e.metaKey;
+      // Use e.code for shift combos to avoid layout/shift issues
+      if (mod && e.key === 's') {
+        e.preventDefault();
+        localStorage.setItem('cs-content', content);
+        localStorage.setItem('cs-name', fileName);
+        setIsSaved(true);
+      }
+      if (mod && !e.shiftKey && e.code === 'KeyN') {
+        e.preventDefault();
+        triggerNew();
+      }
+      if (mod && !e.shiftKey && e.code === 'KeyH') {
+        e.preventDefault();
+        editorRef.current?.openSearch();
+      }
+      if (mod && !e.shiftKey && e.code === 'KeyK') {
+        e.preventDefault();
+        setShowCmd(c => !c);
+      }
+      if (mod && e.shiftKey && e.code === 'KeyZ') {
+        e.preventDefault();
+        setZenMode(z => !z);
+      }
+      if (mod && e.shiftKey && e.code === 'KeyF') {
+        e.preventDefault();
+        setFocusMode(f => !f);
+      }
+      if (e.key === 'Escape') {
+        setShowCmd(false);
+        if (zenMode) setZenMode(false);
+      }
     };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [content, fileName, zenMode]);
 
-  // Draggable split
+  // ---- Draggable split ----
   const onSplitMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     setDragging(true);
     const container = splitRef.current;
     if (!container) return;
-
     const move = (mv: MouseEvent) => {
       const rect = container.getBoundingClientRect();
       const pct  = ((mv.clientX - rect.left) / rect.width) * 100;
       setSplitPct(Math.min(Math.max(pct, 20), 80));
     };
-    const up = () => { setDragging(false); window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); };
+    const up = () => {
+      setDragging(false);
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseup',   up);
+    };
     window.addEventListener('mousemove', move);
-    window.addEventListener('mouseup', up);
+    window.addEventListener('mouseup',   up);
   }, []);
 
-  // Command dispatcher
+  // ---- Confirm helper ----
+  const askConfirm = useCallback((
+    title: string, message: string,
+    onConfirm: () => void,
+    opts?: { confirmLabel?: string; danger?: boolean }
+  ) => {
+    setConfirm({ title, message, onConfirm, ...opts });
+  }, []);
+
+  // ---- New document ----
+  const triggerNew = useCallback(() => {
+    askConfirm(
+      'New document',
+      'Starting a new document will clear your current work. Make sure you have exported anything you want to keep.',
+      () => {
+        setContent('# New Document\n\n');
+        setFileName('Untitled Document');
+        setConfirm(null);
+      },
+      { confirmLabel: 'New document', danger: true },
+    );
+  }, [askConfirm]);
+
+  // ---- Open file ----
+  const openFile = useCallback(() => {
+    const inp = document.createElement('input');
+    inp.type   = 'file';
+    inp.accept = '.md,.markdown,.txt';
+    inp.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      const r = new FileReader();
+      r.onload = ev => {
+        const text = ev.target?.result as string;
+        // If document already has meaningful content, ask first
+        if (content.trim().length > 80) {
+          askConfirm(
+            'Replace current document?',
+            `Opening "${file.name}" will replace your current document. Export it first if needed.`,
+            () => {
+              setContent(text);
+              setFileName(file.name.replace(/\.(md|markdown|txt)$/, ''));
+              setConfirm(null);
+            },
+            { confirmLabel: 'Open file' },
+          );
+        } else {
+          setContent(text);
+          setFileName(file.name.replace(/\.(md|markdown|txt)$/, ''));
+        }
+      };
+      r.readAsText(file);
+    };
+    inp.click();
+  }, [content, askConfirm]);
+
+  // ---- Export ----
+  const exportMd = useCallback(() => {
+    const blob = new Blob([content], { type: 'text/markdown' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `${fileName.replace(/\s+/g, '-')}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [content, fileName]);
+
+  const exportHtml = useCallback(() => {
+    // Grab rendered HTML from the preview pane
+    const body = previewRef.current?.innerHTML ?? '';
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${fileName}</title>
+<style>
+  body{font-family:'Google Sans Flex','DM Sans',sans-serif;max-width:760px;margin:48px auto;padding:0 24px;line-height:1.85;color:#18102a}
+  h1,h2,h3,h4{font-weight:700;letter-spacing:-0.02em}
+  h1{font-size:2rem;border-bottom:2px solid #e4dff2;padding-bottom:.3em}
+  h2{font-size:1.5rem;border-bottom:1px solid #e4dff2;padding-bottom:.2em}
+  a{color:#9875c1;text-underline-offset:2px}
+  code{background:#f0ecf8;border-radius:4px;padding:2px 6px;font-family:'JetBrains Mono',monospace;font-size:.87em}
+  pre{background:#f5f0fb;border-radius:10px;padding:18px 22px;overflow-x:auto;border:1px solid #e4dff2}
+  pre code{background:none;padding:0}
+  blockquote{border-left:3px solid #9875c1;margin:0;padding:4px 0 4px 20px;color:#4a3568;font-style:italic}
+  table{width:100%;border-collapse:collapse;border-radius:8px;overflow:hidden;border:1px solid #e4dff2}
+  th{background:#f0ecf8;font-weight:600;text-align:left;padding:10px 14px;border-bottom:1px solid #d4c9e8}
+  td{padding:9px 14px;border-bottom:1px solid #e4dff2}
+  tr:last-child td{border-bottom:none}
+  img{max-width:100%;border-radius:8px}
+  hr{border:none;border-top:1px solid #e4dff2;margin:2em 0}
+</style>
+</head>
+<body>${body}</body>
+</html>`;
+    const blob = new Blob([html], { type: 'text/html' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `${fileName.replace(/\s+/g, '-')}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [content, fileName]);
+
+  // ---- Command dispatcher ----
   const handleCommand = useCallback((id: string) => {
     const api = editorRef.current;
     switch (id) {
-      case 'bold':          api?.wrapSelection('**','**','bold text'); break;
-      case 'italic':        api?.wrapSelection('*','*','italic text'); break;
-      case 'strikethrough': api?.wrapSelection('~~','~~','strikethrough'); break;
-      case 'code':          api?.wrapSelection('`','`','code'); break;
-      case 'codeblock':     api?.insertAtCursor('\n```\ncode\n```\n'); break;
+      // Formatting
+      case 'bold':          api?.wrapSelection('**', '**', 'bold text'); break;
+      case 'italic':        api?.wrapSelection('*',  '*',  'italic text'); break;
+      case 'strikethrough': api?.wrapSelection('~~', '~~', 'strikethrough'); break;
+      case 'code':          api?.wrapSelection('`',  '`',  'code'); break;
+      case 'codeblock':     api?.insertAtCursor('\n```\ncode block\n```\n'); break;
       case 'quote':         api?.prefixLines('>'); break;
-      case 'link':          api?.wrapSelection('[','](url)','link text'); break;
-      case 'table':         api?.insertAtCursor('\n| Header 1 | Header 2 | Header 3 |\n|----------|----------|----------|\n| Cell     | Cell     | Cell     |\n'); break;
-      case 'hr':            api?.insertAtCursor('\n\n---\n\n'); break;
+      case 'link':          api?.wrapSelection('[', '](url)', 'link text'); break;
+      case 'image':         api?.insertAtCursor('![alt text](image-url)'); break;
       case 'h1':            api?.prefixLines('#'); break;
       case 'h2':            api?.prefixLines('##'); break;
       case 'h3':            api?.prefixLines('###'); break;
       case 'ul':            api?.prefixLines('-'); break;
       case 'ol':            api?.prefixLines('', true); break;
-      case 'image':         api?.insertAtCursor('![alt text](image-url)'); break;
-      case 'view-editor':   setViewMode('editor'); break;
-      case 'view-split':    setViewMode('split'); break;
+      case 'hr':            api?.insertAtCursor('\n\n---\n\n'); break;
+      case 'table':
+        api?.insertAtCursor('\n| Header 1 | Header 2 | Header 3 |\n|----------|----------|----------|\n| Cell     | Cell     | Cell     |\n');
+        break;
+      // View
+      case 'view-editor':   setViewMode('editor');  break;
+      case 'view-split':    setViewMode('split');   break;
       case 'view-preview':  setViewMode('preview'); break;
-      case 'zen':           setZenMode(z => !z); break;
-      case 'focus':         setFocusMode(f => !f); break;
-      case 'theme':         setIsDark(d => { const nd = !d; localStorage.setItem('cs-dark', String(nd)); return nd; }); break;
-      case 'search':        api?.openSearch(); break;
-      case 'new':           if (confirm('New document?')) { setContent('# New Document\n\n'); setFileName('Untitled Document'); } break;
-      case 'open':          openFile(); break;
-      case 'export-md':     exportMd(); break;
-      case 'export-html':   exportHtml(); break;
-      case 'wordgoal':      /* status bar handles this via its own modal */ break;
-      case 'tour':          setShowTour(true); break;
+      case 'zen':           setZenMode(z => !z);    break;
+      case 'focus':         setFocusMode(f => !f);  break;
+      case 'theme':
+        setIsDark(d => {
+          const nd = !d;
+          localStorage.setItem('cs-dark', String(nd));
+          return nd;
+        });
+        break;
+      // File
+      case 'search':       api?.openSearch(); break;
+      case 'new':          triggerNew(); break;
+      case 'open':         openFile(); break;
+      case 'export-md':    exportMd(); break;
+      case 'export-html':  exportHtml(); break;
+      // Templates
       case 'tpl-blog':
       case 'tpl-article':
-      case 'tpl-notes':
-        setContent(TEMPLATES[id]);
-        setFileName(id === 'tpl-blog' ? 'Blog Post' : id === 'tpl-article' ? 'Research Article' : 'Meeting Notes');
+      case 'tpl-notes': {
+        const tpls = makeTemplates();
+        const names: Record<string, string> = {
+          'tpl-blog':    'Blog Post',
+          'tpl-article': 'Research Article',
+          'tpl-notes':   'Meeting Notes',
+        };
+        const load = () => {
+          setContent(tpls[id]);
+          setFileName(names[id]);
+          setConfirm(null);
+        };
+        if (content.trim().length > 80) {
+          askConfirm(
+            `Load ${names[id]} template?`,
+            'This will replace your current document.',
+            load,
+            { confirmLabel: 'Load template' },
+          );
+        } else {
+          load();
+        }
         break;
+      }
+      // Misc
+      case 'wordgoal': break; // status bar opens its own modal
+      case 'tour':     setShowTour(true); break;
     }
-  }, []);
+  }, [triggerNew, openFile, exportMd, exportHtml, content, askConfirm]);
 
-  const openFile = () => {
-    const inp = document.createElement('input');
-    inp.type = 'file'; inp.accept = '.md,.markdown,.txt';
-    inp.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-      const r = new FileReader();
-      r.onload = ev => { setContent(ev.target?.result as string); setFileName(file.name.replace(/\.(md|markdown|txt)$/, '')); };
-      r.readAsText(file);
-    };
-    inp.click();
-  };
-
-  const exportMd = () => {
-    const b = new Blob([content], { type: 'text/markdown' });
-    const u = URL.createObjectURL(b);
-    const a = document.createElement('a'); a.href = u; a.download = `${fileName.replace(/\s+/g,'-')}.md`; a.click(); URL.revokeObjectURL(u);
-  };
-
-  const exportHtml = () => {
-    const body = previewRef.current?.innerHTML ?? '';
-    const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${fileName}</title><style>body{font-family:'Google Sans Flex','DM Sans',sans-serif;max-width:760px;margin:40px auto;padding:0 24px;line-height:1.85;color:#18102a}h1,h2,h3{font-weight:700}a{color:#9875c1}code{background:#f0ecf8;border-radius:4px;padding:2px 6px}pre{background:#f5f0fb;border-radius:8px;padding:16px;overflow-x:auto}blockquote{border-left:3px solid #9875c1;margin:0;padding:4px 0 4px 20px;color:#4a3568;font-style:italic}table{width:100%;border-collapse:collapse}th,td{padding:8px 12px;border:1px solid rgba(152,117,193,0.2)}thead{background:rgba(152,117,193,0.08)}</style></head><body>${body}</body></html>`;
-    const b = new Blob([html], { type: 'text/html' });
-    const u = URL.createObjectURL(b);
-    const a = document.createElement('a'); a.href = u; a.download = `${fileName.replace(/\s+/g,'-')}.html`; a.click(); URL.revokeObjectURL(u);
-  };
-
+  // ---- Heading navigation ----
   const handleHeadingClick = useCallback((lineNumber: number) => {
     if (viewMode !== 'preview') editorRef.current?.scrollToLine(lineNumber);
     if (viewMode !== 'editor' && previewRef.current) {
-      const hs = previewRef.current.querySelectorAll('h1,h2,h3,h4,h5,h6');
+      const hs    = previewRef.current.querySelectorAll('h1,h2,h3,h4,h5,h6');
       const lines = content.split('\n');
       let idx = 0;
-      for (let i = 0; i < lineNumber - 1; i++) { if (/^#{1,6}\s/.test(lines[i])) idx++; }
+      for (let i = 0; i < lineNumber - 1; i++) {
+        if (/^#{1,6}\s/.test(lines[i])) idx++;
+      }
       hs[idx]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [viewMode, content]);
 
+  // ---- Layout flags ----
   const showEditor  = viewMode === 'editor'  || viewMode === 'split';
   const showPreview = viewMode === 'preview' || viewMode === 'split';
-  const stats       = computeStats(content);
 
   return (
     <div
       className={`h-screen flex flex-col overflow-hidden app-bg ${isDark ? 'dark' : ''} ${zenMode ? 'zen-mode' : ''}`}
       style={{ cursor: dragging ? 'col-resize' : 'default' }}
     >
-      {/* Header */}
+      {/* ── Header ── */}
       <Header
         fileName={fileName}
         setFileName={setFileName}
@@ -380,7 +492,8 @@ export default function Page() {
         setSidebarOpen={setSidebarOpen}
         isSaved={isSaved}
         zenMode={zenMode}
-        onNew={() => { if (confirm('New document?')) { setContent('# New Document\n\n'); setFileName('Untitled Document'); } }}
+        focusMode={focusMode}
+        onNew={triggerNew}
         onOpenFile={openFile}
         onExportMd={exportMd}
         onExportHtml={exportHtml}
@@ -388,11 +501,11 @@ export default function Page() {
         onOpenTour={() => setShowTour(true)}
         onOpenCmd={() => setShowCmd(true)}
         onToggleZen={() => setZenMode(z => !z)}
+        onToggleFocus={() => setFocusMode(f => !f)}
       />
 
-      {/* Body */}
+      {/* ── Body ── */}
       <div ref={splitRef} className="flex flex-1 overflow-hidden">
-        {/* Outline */}
         <OutlineSidebar
           content={content}
           isOpen={sidebarOpen}
@@ -400,9 +513,7 @@ export default function Page() {
           onHeadingClick={handleHeadingClick}
         />
 
-        {/* Main work area */}
         <div className="flex flex-col flex-1 overflow-hidden">
-          {/* Toolbar */}
           {showEditor && (
             <Toolbar
               focusMode={focusMode}
@@ -413,18 +524,15 @@ export default function Page() {
             />
           )}
 
-          {/* Panes */}
           <div className="flex flex-1 overflow-hidden">
-            {/* Editor pane */}
+            {/* Editor */}
             {showEditor && (
-              <div
-                style={{
-                  width: showPreview ? `${splitPct}%` : '100%',
-                  minWidth: showPreview ? '20%' : undefined,
-                  display: 'flex', flexDirection: 'column', overflow: 'hidden',
-                  transition: dragging ? 'none' : 'width 0.2s',
-                }}
-              >
+              <div style={{
+                width:     showPreview ? `${splitPct}%` : '100%',
+                minWidth:  showPreview ? '20%' : undefined,
+                display:   'flex', flexDirection: 'column', overflow: 'hidden',
+                transition: dragging ? 'none' : 'width 0.18s',
+              }}>
                 <EditorPane
                   content={content}
                   onChange={setContent}
@@ -436,7 +544,7 @@ export default function Page() {
               </div>
             )}
 
-            {/* Draggable split handle */}
+            {/* Drag handle */}
             {showEditor && showPreview && (
               <div
                 className={`split-handle ${dragging ? 'dragging' : ''}`}
@@ -445,14 +553,9 @@ export default function Page() {
               />
             )}
 
-            {/* Preview pane */}
+            {/* Preview */}
             {showPreview && (
-              <div
-                style={{
-                  flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column',
-                  borderLeft: showEditor ? 'none' : undefined,
-                }}
-              >
+              <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                 <PreviewPane content={content} containerRef={previewRef} />
               </div>
             )}
@@ -460,7 +563,7 @@ export default function Page() {
         </div>
       </div>
 
-      {/* Status bar */}
+      {/* ── Status bar ── */}
       <StatusBar
         stats={stats}
         cursorLine={cursorLine}
@@ -468,25 +571,31 @@ export default function Page() {
         isSaved={isSaved}
         viewMode={viewMode}
         wordGoal={wordGoal}
+        goalCelebrated={goalCelebrated}
         onSetWordGoal={g => { setWordGoal(g); localStorage.setItem('cs-goal', String(g)); }}
       />
 
-      {/* Guided tour */}
+      {/* ── Overlays ── */}
       {showTour && (
-        <GuidedTour
-          onClose={() => {
-            setShowTour(false);
-            localStorage.setItem('cs-toured', '1');
-          }}
-        />
+        <GuidedTour onClose={() => { setShowTour(false); localStorage.setItem('cs-toured', '1'); }} />
       )}
 
-      {/* Command palette */}
       {showCmd && (
         <CommandPalette
           isDark={isDark}
           onClose={() => setShowCmd(false)}
           onCommand={handleCommand}
+        />
+      )}
+
+      {confirm && (
+        <ConfirmModal
+          title={confirm.title}
+          message={confirm.message}
+          confirmLabel={confirm.confirmLabel}
+          danger={confirm.danger}
+          onConfirm={confirm.onConfirm}
+          onCancel={() => setConfirm(null)}
         />
       )}
     </div>

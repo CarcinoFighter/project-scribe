@@ -2,8 +2,7 @@
 
 import {
   Bold, Italic, Strikethrough, Code, Code2, Quote, Link, Image as ImageIcon,
-  Heading1, Heading2, Heading3, List, ListOrdered, Minus, Table2, Focus,
-  LucideIcon,
+  Heading1, Heading2, Heading3, List, ListOrdered, Minus, Table, ScanLine,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -17,7 +16,7 @@ interface Props {
   focusMode: boolean;
 }
 
-const GROUPS: { action: ToolbarAction; icon: LucideIcon; title: string; shortcut?: string }[][] = [
+const GROUPS: { action: ToolbarAction; icon: React.FC<{ size?: number; strokeWidth?: number }>; title: string; shortcut?: string }[][] = [
   [
     { action: 'h1', icon: Heading1, title: 'H1' },
     { action: 'h2', icon: Heading2, title: 'H2' },
@@ -39,10 +38,10 @@ const GROUPS: { action: ToolbarAction; icon: LucideIcon; title: string; shortcut
     { action: 'ul',    icon: List,        title: 'Bullet list' },
     { action: 'ol',    icon: ListOrdered, title: 'Numbered list' },
     { action: 'hr',    icon: Minus,       title: 'Horizontal rule' },
-    { action: 'table', icon: Table2,      title: 'Insert table' },
+    { action: 'table', icon: Table,    title: 'Insert table' },
   ],
   [
-    { action: 'focus', icon: Focus, title: 'Focus mode (Ctrl+Shift+F)' },
+    { action: 'focus', icon: ScanLine, title: 'Focus mode (Ctrl+Shift+F)' },
   ],
 ];
 

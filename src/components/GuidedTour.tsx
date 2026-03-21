@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { X, ArrowRight, ArrowLeft, Sparkles } from 'lucide-react';
 
 interface Step {
@@ -101,7 +102,7 @@ export default function GuidedTour({ onClose }: TourProps) {
 
   const PAD = 6;
 
-  return (
+  const content = (
     <>
       {/* Dim backdrop */}
       <div
@@ -254,4 +255,6 @@ export default function GuidedTour({ onClose }: TourProps) {
       </div>
     </>
   );
+
+  return createPortal(content, document.body);
 }

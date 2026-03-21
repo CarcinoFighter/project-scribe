@@ -1,12 +1,26 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import {
-  LayoutTemplate, LucideIcon, Columns2, Eye,
-  Moon, Sun, PanelLeft, Plus, FolderOpen,
-  Download, Search, Check, Loader2, ChevronDown,
-  Maximize2, HelpCircle, Command,
+  LayoutTemplate,
+  PanelLeft,
+  Columns,
+  Eye,
+  Moon,
+  Sun,
+  Plus,
+  FolderOpen,
+  Download,
+  Search,
+  Check,
+  Loader2,
+  ChevronDown,
+  Maximize2,
+  Minimize2,
+  HelpCircle,
+  Command,
+  ScanLine,
 } from 'lucide-react';
 import clsx from 'clsx';
 import type { ViewMode } from '@/types';
@@ -22,6 +36,7 @@ interface HeaderProps {
   setSidebarOpen: (o: boolean) => void;
   isSaved: boolean;
   zenMode: boolean;
+  focusMode: boolean;
   onNew: () => void;
   onOpenFile: () => void;
   onExportMd: () => void;
@@ -30,31 +45,35 @@ interface HeaderProps {
   onOpenTour: () => void;
   onOpenCmd: () => void;
   onToggleZen: () => void;
+  onToggleFocus: () => void;
 }
 
 const VIEW_MODES = [
-  { id: 'editor'  as ViewMode, icon: LayoutTemplate, label: 'Editor' },
-  { id: 'split'   as ViewMode, icon: Columns2,        label: 'Split'  },
-  { id: 'preview' as ViewMode, icon: Eye,             label: 'Preview' },
+  { id: 'editor'  as ViewMode, icon: LayoutTemplate, label: 'Editor'  },
+  { id: 'split'   as ViewMode, icon: Columns,        label: 'Split'   },
+  { id: 'preview' as ViewMode, icon: Eye,            label: 'Preview' },
 ];
 
 export default function Header(props: HeaderProps) {
   const {
     fileName, setFileName, isDark, setIsDark,
     viewMode, setViewMode, sidebarOpen, setSidebarOpen,
-    isSaved, zenMode,
+    isSaved, zenMode, focusMode,
     onNew, onOpenFile, onExportMd, onExportHtml,
-    onOpenSearch, onOpenTour, onOpenCmd, onToggleZen,
+    onOpenSearch, onOpenTour, onOpenCmd, onToggleZen, onToggleFocus,
   } = props;
 
-  const [editingName, setEditingName] = useState(false);
-  const [nameValue,   setNameValue]   = useState(fileName);
-  const [exportOpen,  setExportOpen]  = useState(false);
+  const [editingName,  setEditingName]  = useState(false);
+  const [nameValue,    setNameValue]    = useState(fileName);
+  const [exportOpen,   setExportOpen]   = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
   const nameRef   = useRef<HTMLInputElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setNameValue(fileName); }, [fileName]);
 
+  /* Close export dropdown on outside click */
   useEffect(() => {
     const h = (e: MouseEvent) => {
       if (!exportRef.current?.contains(e.target as Node)) setExportOpen(false);
@@ -63,10 +82,38 @@ export default function Header(props: HeaderProps) {
     return () => document.removeEventListener('mousedown', h);
   }, []);
 
+  /* Sync fullscreen state from the browser */
+  useEffect(() => {
+    const sync = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', sync);
+    document.addEventListener('webkitfullscreenchange', sync);
+    return () => {
+      document.removeEventListener('fullscreenchange', sync);
+      document.removeEventListener('webkitfullscreenchange', sync);
+    };
+  }, []);
+
+  const toggleFullscreen = useCallback(async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch {
+      /* Fullscreen blocked by browser policy — silently ignore */
+    }
+  }, []);
+
   const commitName = () => {
     setEditingName(false);
     setFileName(nameValue.trim() || 'Untitled Document');
   };
+
+  const btnStyle = (active = false): React.CSSProperties => ({
+    background: active ? 'var(--accent-subtle2)' : 'transparent',
+    color:      active ? 'var(--accent)' : undefined,
+  });
 
   return (
     <header
@@ -76,10 +123,10 @@ export default function Header(props: HeaderProps) {
     >
       {/* Sidebar toggle */}
       <button
-        id="tour-sidebar-toggle"
         className="tb-btn"
         onClick={() => setSidebarOpen(!sidebarOpen)}
         title="Toggle outline sidebar"
+        style={btnStyle(!sidebarOpen)}
       >
         <PanelLeft size={16} strokeWidth={1.8} />
       </button>
@@ -87,14 +134,17 @@ export default function Header(props: HeaderProps) {
       {/* Logo + wordmark */}
       <div className="flex items-center gap-2 select-none mr-1">
         <Image src="/logo.svg" alt="Carcino" width={20} height={24} priority />
-        <span className="hidden sm:block font-semibold text-sm" style={{ color: 'var(--text)', letterSpacing: '-0.015em' }}>
+        <span
+          className="hidden sm:block font-semibold text-sm"
+          style={{ color: 'var(--text)', letterSpacing: '-0.015em' }}
+        >
           Carcino Scribe
         </span>
       </div>
 
       <div className="toolbar-sep" />
 
-      {/* File name editor */}
+      {/* File name */}
       <div className="flex items-center gap-1.5 flex-1 min-w-0 max-w-[280px]">
         {editingName ? (
           <input
@@ -117,28 +167,24 @@ export default function Header(props: HeaderProps) {
         ) : (
           <button
             onClick={() => { setEditingName(true); setTimeout(() => nameRef.current?.select(), 10); }}
+            title="Click to rename"
             style={{
               fontFamily: 'inherit', fontSize: 13.5, fontWeight: 500,
               background: 'none', border: 'none', cursor: 'pointer',
               color: 'var(--text)', maxWidth: '100%', overflow: 'hidden',
               textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}
-            title="Click to rename"
           >
             {fileName}
           </button>
         )}
-        <span
-          style={{
-            flexShrink: 0, fontSize: 11,
-            color: isSaved ? 'var(--accent)' : 'var(--text-4)',
-            display: 'flex', alignItems: 'center', gap: 3,
-          }}
-        >
+        <span style={{
+          flexShrink: 0, fontSize: 11, display: 'flex', alignItems: 'center', gap: 3,
+          color: isSaved ? 'var(--accent)' : 'var(--text-4)',
+        }}>
           {isSaved
-            ? <Check size={11} strokeWidth={2.5} />
-            : <Loader2 size={11} strokeWidth={2.5} className="animate-spin" />
-          }
+            ? <Check   size={11} strokeWidth={2.5} />
+            : <Loader2 size={11} strokeWidth={2.5} className="animate-spin" />}
         </span>
       </div>
 
@@ -157,11 +203,11 @@ export default function Header(props: HeaderProps) {
             title={label}
             className="flex items-center gap-1.5 px-2.5 py-1.5 transition-all"
             style={{
-              borderRadius: 10, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-              fontSize: 12, fontWeight: 500,
+              borderRadius: 10, border: 'none', cursor: 'pointer',
+              fontFamily: 'inherit', fontSize: 12, fontWeight: 500,
               background: viewMode === id ? 'var(--accent)' : 'transparent',
-              color: viewMode === id ? '#fff' : 'var(--text-3)',
-              boxShadow: viewMode === id ? '0 1px 6px var(--accent-glow)' : 'none',
+              color:      viewMode === id ? '#fff' : 'var(--text-3)',
+              boxShadow:  viewMode === id ? '0 1px 6px var(--accent-glow)' : 'none',
             }}
           >
             <Icon size={14} strokeWidth={1.8} />
@@ -174,12 +220,12 @@ export default function Header(props: HeaderProps) {
 
       {/* Actions */}
       <div className="flex items-center gap-0.5">
-        {/* Command palette */}
+
+        {/* Command palette badge */}
         <button
-          className="tb-btn flex items-center gap-1.5 tb-btn-pill"
+          className="tb-btn tb-btn-pill"
           onClick={onOpenCmd}
           title="Command palette (Ctrl+K)"
-          style={{ color: 'var(--text-3)' }}
         >
           <Command size={13} strokeWidth={2} />
           <span className="hidden lg:inline" style={{ fontSize: 11.5 }}>Ctrl K</span>
@@ -190,66 +236,93 @@ export default function Header(props: HeaderProps) {
         <button className="tb-btn" onClick={onOpenSearch} title="Find & Replace (Ctrl+H)">
           <Search size={15} strokeWidth={1.8} />
         </button>
+
         <button className="tb-btn" onClick={onNew} title="New document (Ctrl+N)">
           <Plus size={15} strokeWidth={2} />
         </button>
+
         <button className="tb-btn" onClick={onOpenFile} title="Open file">
           <FolderOpen size={15} strokeWidth={1.8} />
         </button>
 
         {/* Export dropdown */}
         <div id="tour-export" className="relative" ref={exportRef}>
-          <button className="tb-btn" onClick={() => setExportOpen(!exportOpen)} title="Export">
-            <Download size={15} strokeWidth={1.8} />
+          <button
+            className="tb-btn"
+            onClick={() => setExportOpen(o => !o)}
+            title="Export"
+          >
+            <Download   size={15} strokeWidth={1.8} />
             <ChevronDown size={10} strokeWidth={2.5} />
           </button>
+
           {exportOpen && (
             <div
               className="glass-overlay absolute right-0 top-full mt-2 fade-in overflow-hidden"
               style={{ minWidth: 168, borderRadius: 14, zIndex: 50 }}
             >
-              <button
-                className="w-full text-left px-4 py-3 transition-colors"
-                onClick={() => { onExportMd();   setExportOpen(false); }}
-                style={{ fontFamily: 'inherit', fontSize: 13.5, color: 'var(--text)', background: 'none', border: 'none', cursor: 'pointer' }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-subtle)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-              >
-                Save as .md
-              </button>
-              <div style={{ height: 1, background: 'var(--border)', margin: '0 14px' }} />
-              <button
-                className="w-full text-left px-4 py-3 transition-colors"
-                onClick={() => { onExportHtml(); setExportOpen(false); }}
-                style={{ fontFamily: 'inherit', fontSize: 13.5, color: 'var(--text)', background: 'none', border: 'none', cursor: 'pointer' }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-subtle)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-              >
-                Save as .html
-              </button>
+              {[
+                { label: 'Save as .md',   action: () => { onExportMd();   setExportOpen(false); } },
+                { label: 'Save as .html', action: () => { onExportHtml(); setExportOpen(false); } },
+              ].map((item, i) => (
+                <button
+                  key={i}
+                  onClick={item.action}
+                  className="w-full text-left px-4 py-3 tb-btn"
+                  style={{ borderRadius: 0, justifyContent: 'flex-start', width: '100%' }}
+                >
+                  {item.label}
+                </button>
+              ))}
             </div>
           )}
         </div>
 
         <div className="toolbar-sep" />
 
+        {/* Focus mode */}
+        <button
+          className={clsx('tb-btn', focusMode && 'active')}
+          onClick={onToggleFocus}
+          title="Focus mode — dims all lines except current (Ctrl+Shift+F)"
+          style={btnStyle(focusMode)}
+        >
+          <ScanLine size={15} strokeWidth={1.8} />
+        </button>
+
+        {/* Zen mode */}
         <button
           className={clsx('tb-btn', zenMode && 'active')}
           onClick={onToggleZen}
-          title="Zen mode (Ctrl+Shift+Z)"
+          title="Zen mode — hides all chrome (Ctrl+Shift+Z)"
+          style={btnStyle(zenMode)}
         >
-          <Maximize2 size={14} strokeWidth={1.8} />
+          <Eye size={15} strokeWidth={1.8} />
         </button>
 
+        {/* Fullscreen — real browser fullscreen */}
+        <button
+          className={clsx('tb-btn', isFullscreen && 'active')}
+          onClick={toggleFullscreen}
+          title={isFullscreen ? 'Exit fullscreen (F11)' : 'Enter fullscreen'}
+          style={btnStyle(isFullscreen)}
+        >
+          {isFullscreen
+            ? <Minimize2 size={15} strokeWidth={1.8} />
+            : <Maximize2 size={15} strokeWidth={1.8} />}
+        </button>
+
+        {/* Theme */}
         <button
           className="tb-btn"
-          onClick={() => { setIsDark(!isDark); localStorage.setItem('carcino-dark', String(!isDark)); }}
-          title={isDark ? 'Light mode' : 'Dark mode'}
+          onClick={() => { setIsDark(!isDark); localStorage.setItem('cs-dark', String(!isDark)); }}
+          title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
         >
           {isDark ? <Sun size={15} strokeWidth={1.8} /> : <Moon size={15} strokeWidth={1.8} />}
         </button>
 
-        <button className="tb-btn" onClick={onOpenTour} title="Help & guided tour">
+        {/* Help / Tour */}
+        <button className="tb-btn" onClick={onOpenTour} title="Guided tour">
           <HelpCircle size={15} strokeWidth={1.8} />
         </button>
       </div>

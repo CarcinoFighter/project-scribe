@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Check, Loader2, Target } from 'lucide-react';
 import type { DocumentStats, ViewMode } from '@/types';
 
@@ -11,6 +12,7 @@ interface Props {
   isSaved: boolean;
   viewMode: ViewMode;
   wordGoal: number;
+  goalCelebrated?: boolean;
   onSetWordGoal: (g: number) => void;
 }
 
@@ -42,7 +44,7 @@ function GoalRing({ words, goal }: { words: number; goal: number }) {
   );
 }
 
-export default function StatusBar({ stats, cursorLine, cursorCol, isSaved, viewMode, wordGoal, onSetWordGoal }: Props) {
+export default function StatusBar({ stats, cursorLine, cursorCol, isSaved, viewMode, wordGoal, goalCelebrated = false, onSetWordGoal }: Props) {
   const [editingGoal, setEditingGoal] = useState(false);
   const [goalInput,   setGoalInput]   = useState('');
 
@@ -57,88 +59,92 @@ export default function StatusBar({ stats, cursorLine, cursorCol, isSaved, viewM
     setEditingGoal(false);
   };
 
-  return (
-    <footer
-      id="tour-statusbar"
-      className="status-bar glass glass-rim flex items-center gap-3 px-4 flex-shrink-0"
-      style={{ height: 30, borderTop: '1px solid var(--border-med)', borderRadius: 0, overflowX: 'auto' }}
+  const goalModal = editingGoal ? createPortal(
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center"
+      style={{ background: 'rgba(10,6,20,0.45)', backdropFilter: 'blur(4px)' }}
+      onClick={() => setEditingGoal(false)}
     >
-      {/* Word goal ring + count (clickable) */}
-      <button
-        onClick={openGoal}
-        className="flex items-center gap-1.5"
-        title="Click to set word goal"
-        style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0, flexShrink: 0 }}
+      <div
+        className="glass-overlay scale-in"
+        style={{ borderRadius: 18, padding: '28px 32px', width: 300 }}
+        onClick={e => e.stopPropagation()}
       >
-        {wordGoal > 0 ? (
-          <GoalRing words={stats.words} goal={wordGoal} />
-        ) : (
-          <Target size={12} strokeWidth={2} style={{ color: 'var(--text-4)' }} />
-        )}
-        <span style={{ fontSize: 12, color: 'var(--text-3)', fontVariantNumeric: 'tabular-nums' }}>
-          {stats.words.toLocaleString()}
-          {wordGoal > 0 && (
-            <span style={{ color: 'var(--text-4)' }}>/{wordGoal.toLocaleString()}</span>
-          )}
-          <span className="hidden sm:inline" style={{ color: 'var(--text-4)', marginLeft: 2 }}>w</span>
-        </span>
-      </button>
-
-      {/* Goal input modal */}
-      {editingGoal && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center"
-          style={{ background: 'rgba(10,6,20,0.45)', backdropFilter: 'blur(4px)' }}
-          onClick={() => setEditingGoal(false)}
-        >
-          <div
-            className="glass-overlay scale-in"
-            style={{ borderRadius: 18, padding: '28px 32px', width: 300 }}
-            onClick={e => e.stopPropagation()}
-          >
-            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 6, letterSpacing: '-0.02em' }}>
-              Set word goal
-            </div>
-            <div style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 16 }}>
-              Track your progress with a ring in the status bar.
-            </div>
-            <input
-              autoFocus
-              type="number"
-              value={goalInput}
-              onChange={e => setGoalInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') commitGoal(); if (e.key === 'Escape') setEditingGoal(false); }}
-              placeholder="e.g. 500"
-              style={{
-                width: '100%', padding: '10px 14px', borderRadius: 10,
-                background: 'var(--surface-1)', border: '1.5px solid var(--border-strong)',
-                fontFamily: 'inherit', fontSize: 15, color: 'var(--text)', outline: 'none',
-                marginBottom: 14,
-              }}
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={commitGoal}
-                style={{
-                  flex: 1, padding: '9px', borderRadius: 10, border: 'none', cursor: 'pointer',
-                  background: 'var(--accent)', color: '#fff', fontFamily: 'inherit', fontWeight: 600, fontSize: 13.5,
-                }}
-              >
-                Set goal
-              </button>
-              <button
-                onClick={() => { onSetWordGoal(0); setEditingGoal(false); }}
-                style={{
-                  padding: '9px 16px', borderRadius: 10, border: '1px solid var(--border-strong)',
-                  cursor: 'pointer', background: 'none', fontFamily: 'inherit', fontSize: 13.5, color: 'var(--text-3)',
-                }}
-              >
-                Clear
-              </button>
-            </div>
-          </div>
+        <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 6, letterSpacing: '-0.02em' }}>
+          Set word goal
         </div>
-      )}
+        <div style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 16 }}>
+          Track your progress with a ring in the status bar.
+        </div>
+        <input
+          autoFocus
+          type="number"
+          value={goalInput}
+          onChange={e => setGoalInput(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') commitGoal(); if (e.key === 'Escape') setEditingGoal(false); }}
+          placeholder="e.g. 500"
+          style={{
+            width: '100%', padding: '10px 14px', borderRadius: 10,
+            background: 'var(--surface-1)', border: '1.5px solid var(--border-strong)',
+            fontFamily: 'inherit', fontSize: 15, color: 'var(--text)', outline: 'none',
+            marginBottom: 14,
+          }}
+        />
+        <div className="flex gap-2">
+          <button
+            onClick={commitGoal}
+            style={{
+              flex: 1, padding: '9px', borderRadius: 10, border: 'none', cursor: 'pointer',
+              background: 'var(--accent)', color: '#fff', fontFamily: 'inherit', fontWeight: 600, fontSize: 13.5,
+            }}
+          >
+            Set goal
+          </button>
+          <button
+            onClick={() => { onSetWordGoal(0); setEditingGoal(false); }}
+            style={{
+              padding: '9px 16px', borderRadius: 10, border: '1px solid var(--border-strong)',
+              cursor: 'pointer', background: 'none', fontFamily: 'inherit', fontSize: 13.5, color: 'var(--text-3)',
+            }}
+          >
+            Clear
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  ) : null;
+
+  return (
+    <>
+      {goalModal}
+      <footer
+        id="tour-statusbar"
+        className="status-bar glass glass-rim flex items-center gap-3 px-4 flex-shrink-0"
+        style={{ height: 30, borderTop: '1px solid var(--border-med)', borderRadius: 0, overflowX: 'auto' }}
+      >
+        {/* Word goal ring + count (clickable) */}
+        <button
+          onClick={openGoal}
+          className="flex items-center gap-1.5"
+          title="Click to set word goal"
+          style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0, flexShrink: 0 }}
+        >
+          {wordGoal > 0 ? (
+            <span style={{ filter: goalCelebrated ? 'drop-shadow(0 0 6px #4ade80)' : 'none', transition: 'filter 0.4s' }}>
+              <GoalRing words={stats.words} goal={wordGoal} />
+            </span>
+          ) : (
+            <Target size={12} strokeWidth={2} style={{ color: 'var(--text-4)' }} />
+          )}
+          <span style={{ fontSize: 12, color: 'var(--text-3)', fontVariantNumeric: 'tabular-nums' }}>
+            {stats.words.toLocaleString()}
+            {wordGoal > 0 && (
+              <span style={{ color: 'var(--text-4)' }}>/{wordGoal.toLocaleString()}</span>
+            )}
+            <span className="hidden sm:inline" style={{ color: 'var(--text-4)', marginLeft: 2 }}>w</span>
+          </span>
+        </button>
 
       {/* Separator */}
       <div className="toolbar-sep" />
@@ -189,5 +195,6 @@ export default function StatusBar({ stats, cursorLine, cursorCol, isSaved, viewM
         MD
       </span>
     </footer>
+    </>
   );
 }
