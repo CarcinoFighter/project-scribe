@@ -1,36 +1,122 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Carcino Scribe
+
+A beautiful, minimal Markdown editor by **The Carcino Foundation**.
+
+Built with **Next.js 14**, **TypeScript**, **CodeMirror 6**, and **Tailwind CSS**. Designed for article and blog writers with a liquid glass aesthetic, Carcino brand colours, and Google Sans Flex typography.
+
+---
+
+## Features
+
+- **Live split-view** — Editor + Preview side-by-side, or focus on either alone
+- **Document Outline** — Auto-parsed sidebar of all headings with active tracking and scroll-to
+- **Rich formatting toolbar** — Bold, italic, headings, lists, tables, code blocks, links, images, HR
+- **Find & Replace** — Native CodeMirror search panel (Ctrl+H)
+- **Syntax highlighting** — Code fences with language-specific colour tokens in both light and dark mode
+- **Auto-save** — Debounced localStorage persistence (800 ms), with save indicator
+- **Light & Dark mode** — Persistent preference via localStorage
+- **Export** — Download as `.md` or `.html`
+- **Open local files** — Open `.md`, `.markdown`, or `.txt` from your filesystem
+- **Rename documents** — Inline click-to-edit title
+- **Document stats** — Word count, character count, estimated reading time, line count
+- **Cursor position** — Live Ln / Col in the status bar
+- **Keyboard shortcuts** — `Ctrl+B`, `Ctrl+I`, `Ctrl+S`, `Ctrl+N`, `Ctrl+H`
+- **GFM support** — Tables, task lists, strikethrough, autolinks
+
+---
+
+## Tech Stack
+
+| Layer | Library |
+|---|---|
+| Framework | Next.js 14 (App Router) |
+| Language | TypeScript |
+| Styling | Tailwind CSS + custom CSS variables |
+| Editor | CodeMirror 6 via `@uiw/react-codemirror` |
+| Markdown parsing | `react-markdown` + `remark-gfm` |
+| Syntax highlighting | `rehype-highlight` + `highlight.js` |
+| Icons | `lucide-react` |
+| Deployment | Vercel |
+
+---
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+# 1. Install dependencies
+npm install
+
+# 2. Run the development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Deploy to Vercel
 
-## Learn More
+### Option A — Vercel CLI
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm install -g vercel
+vercel
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Option B — GitHub + Vercel Dashboard
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Push this repo to GitHub
+2. Go to [vercel.com/new](https://vercel.com/new)
+3. Import the repository
+4. Framework is auto-detected as **Next.js**
+5. Click **Deploy** — no environment variables required
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Project Structure
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+carcino-scribe/
+├── public/
+│   └── logo.svg               # Carcino Foundation logo
+├── src/
+│   ├── app/
+│   │   ├── globals.css         # Design tokens, glass utility, prose styles
+│   │   ├── layout.tsx          # Root layout + font imports
+│   │   └── page.tsx            # Main editor page (all state lives here)
+│   ├── components/
+│   │   ├── Header.tsx          # Top bar: logo, title, view switcher, actions
+│   │   ├── Toolbar.tsx         # Formatting toolbar
+│   │   ├── EditorPane.tsx      # CodeMirror 6 editor with custom Carcino theme
+│   │   ├── PreviewPane.tsx     # react-markdown live preview
+│   │   ├── OutlineSidebar.tsx  # Heading outline with active tracking
+│   │   └── StatusBar.tsx       # Doc stats + cursor + save indicator
+│   └── types/
+│       └── index.ts            # Shared TypeScript interfaces
+├── tailwind.config.ts
+├── tsconfig.json
+├── next.config.ts
+└── vercel.json
+```
+
+---
+
+## Customisation
+
+All brand colours are defined as CSS custom properties in `globals.css`. To update the accent colour, change the `--accent*` variables in `:root`.
+
+```css
+:root {
+  --accent:        #9875c1;   /* Primary brand purple */
+  --accent-light:  #b399d4;
+  --accent-dark:   #7b5aa0;
+  --accent-glow:   rgba(152, 117, 193, 0.35);
+  --accent-subtle: rgba(152, 117, 193, 0.1);
+}
+```
+
+---
+
+## Licence
+
+© The Carcino Foundation. All rights reserved.
