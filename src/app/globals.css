@@ -32,8 +32,11 @@
   /* Text — pure near-blacks and greys */
   --text:           #0d0d0d;
   --text-2:         #3a3a3a;
-  --text-3:         #767676;
-  --text-4:         #aaaaaa;
+  --text-3:         #444444;
+  --text-4:         #888888;
+
+  /* Sidebar — distinctly darker surface than header/toolbar */
+  --surface-sidebar: rgba(210, 210, 210, 0.90);
 
   /* Blur */
   --blur:           blur(18px) saturate(160%) brightness(1.03);
@@ -71,8 +74,13 @@
   /* Text — pure near-whites and greys */
   --text:           #f2f2f2;
   --text-2:         #b8b8b8;
-  --text-3:         #6e6e6e;
-  --text-4:         #404040;
+  --text-3:         #a0a0a0;
+  --text-4:         #505050;
+  --text-5: #1e1e1e;
+
+  /* Sidebar — much darker than header/toolbar in dark mode */
+  --surface-sidebar: rgba(4, 4, 4, 0.97);
+
 
   /* Shadows */
   --sh-xs: 0 1px 3px rgba(0,0,0,0.35);
@@ -155,6 +163,26 @@ body {
     var(--sh-sm);
 }
 
+/* Sidebar — distinct darker surface in both modes */
+.sidebar-col {
+  background: var(--surface-sidebar) !important;
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+}
+.dark .sidebar-col {
+  background: var(--surface-sidebar) !important;
+  backdrop-filter: blur(24px) brightness(0.85);
+  -webkit-backdrop-filter: blur(24px) brightness(0.85);
+}
+
+/* Sidebar outline items inherit the darker bg context */
+.sidebar-col .outline-item:hover {
+  background: rgba(0, 0, 0, 0.07);
+}
+.dark .sidebar-col .outline-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
 /* ============================================================
    SCROLLBAR
    ============================================================ */
@@ -191,12 +219,13 @@ body {
   font-family: inherit;
   line-height: 1;
 }
-.tb-btn:hover  { background: var(--border); color: var(--text); }
+.tb-btn:hover  { background: rgba(0,0,0,0.08); color: var(--text); }
 .tb-btn:active { transform: scale(0.93); }
 .tb-btn.active {
   background: var(--accent-subtle2);
   color: var(--accent);
 }
+.dark .tb-btn:hover { background: rgba(255,255,255,0.12); color: var(--text); }
 
 .tb-btn-pill {
   padding: 4px 10px;
