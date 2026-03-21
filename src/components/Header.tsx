@@ -126,7 +126,7 @@ export default function Header(props: HeaderProps) {
     <>
       <header
         id="app-header"
-        className="app-header glass glass-rim flex items-center gap-2 px-3 flex-shrink-0 z-40"
+        className="app-header glass glass-rim flex items-center gap-2 px-3 flex-shrink-0 z-40 anim-slide-down"
         style={{ height: 52, borderRadius: 0, borderBottom: '1px solid var(--border-med)' }}
       >
       {/* Sidebar toggle */}
@@ -202,10 +202,11 @@ export default function Header(props: HeaderProps) {
         <span style={{
           flexShrink: 0, fontSize: 11, display: 'flex', alignItems: 'center', gap: 3,
           color: isSaved ? 'var(--accent)' : 'var(--text-4)',
+          transition: 'color 0.2s',
         }}>
           {isSaved
-            ? <Check   size={11} strokeWidth={2.5} />
-            : <Loader2 size={11} strokeWidth={2.5} className="animate-spin" />}
+            ? <span className="anim-check-pop" key="saved"><Check   size={11} strokeWidth={2.5} /></span>
+            : <span className="anim-shimmer"  key="saving"><Loader2 size={11} strokeWidth={2.5} className="animate-spin" /></span>}
         </span>
       </div>
 
@@ -340,8 +341,9 @@ export default function Header(props: HeaderProps) {
     {exportOpen && exportPos && createPortal(
       <div
         ref={exportRef}
-        className="glass-overlay fixed fade-in overflow-hidden"
+        className="glass-overlay fade-in overflow-hidden"
         style={{
+          position: 'fixed',
           top: exportPos.top,
           right: exportPos.right,
           minWidth: 168,

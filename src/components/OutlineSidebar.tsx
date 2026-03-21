@@ -56,19 +56,21 @@ export default function OutlineSidebar({ content, isOpen, activeLineNumber, onHe
         borderRight:   isOpen ? '1px solid var(--border-med)' : 'none',
         borderRadius:  0,
         zIndex:        20,
+        transition:    'width 0.22s cubic-bezier(0.4,0,0.2,1), min-width 0.22s cubic-bezier(0.4,0,0.2,1), opacity 0.18s ease',
       }}
     >
       {/* Header */}
       <div
-        className="flex items-center gap-2 px-3 flex-shrink-0"
-        style={{ height: 40, borderBottom: '1px solid var(--border)' }}
+        className="flex items-center gap-2 px-3 flex-shrink-0 anim-slide-down"
+        style={{ height: 40, borderBottom: '1px solid var(--border)', animationDelay: '0.12s' }}
       >
         <BookOpen size={13} strokeWidth={2} style={{ color: 'var(--accent)', flexShrink: 0 }} />
         <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--text-4)' }}>
           Outline
         </span>
         <span
-          className="ml-auto rounded-full px-1.5 py-0.5"
+          key={headings.length}
+          className="ml-auto rounded-full px-1.5 py-0.5 anim-pop"
           style={{ fontSize: 11, background: 'var(--accent-subtle2)', color: 'var(--accent)', fontVariantNumeric: 'tabular-nums' }}
         >
           {headings.length}
@@ -78,7 +80,7 @@ export default function OutlineSidebar({ content, isOpen, activeLineNumber, onHe
       {/* List */}
       <div className="flex-1 overflow-y-auto py-2 px-2">
         {headings.length === 0 ? (
-          <div style={{ textAlign: 'center', marginTop: 32, color: 'var(--text-4)', fontSize: 12, lineHeight: 1.7, padding: '0 12px' }}>
+          <div className="anim-fade-up" style={{ textAlign: 'center', marginTop: 32, color: 'var(--text-4)', fontSize: 12, lineHeight: 1.7, padding: '0 12px' }}>
             No headings yet.
             <br />
             Start with <code style={{ fontSize: 11 }}># Title</code>
@@ -86,23 +88,34 @@ export default function OutlineSidebar({ content, isOpen, activeLineNumber, onHe
         ) : headings.map((h, i) => (
           <button
             key={`${h.lineNumber}-${h.id}`}
-            className={clsx('outline-item', i === active && 'active')}
-            style={{ paddingLeft: 8 + IND[h.level], fontSize: FS[h.level], fontWeight: FW[h.level] }}
+            className={clsx('outline-item anim-stagger', i === active && 'active')}
+            style={{
+              paddingLeft: 8 + IND[h.level],
+              fontSize: FS[h.level],
+              fontWeight: FW[h.level],
+              '--i': Math.min(i, 12),
+            } as React.CSSProperties}
             onClick={() => onHeadingClick(h.lineNumber)}
             title={h.text}
           >
-            {/* Active indicator bar */}
+            {/* Active indicator bar — grows with animation */}
             {i === active && (
-              <span style={{
-                position: 'absolute', left: 0, top: '20%', bottom: '20%',
-                width: 2, borderRadius: 1, background: 'var(--accent)',
-              }} />
+              <span
+                className="anim-bar-grow"
+                style={{
+                  position: 'absolute', left: 0, top: '20%', bottom: '20%',
+                  width: 2, borderRadius: 1, background: 'var(--accent)',
+                  transformOrigin: 'top center',
+                }}
+              />
             )}
             {h.level >= 3 && (
               <span style={{
-                display: 'inline-block', width: h.level === 3 ? 4 : 3, height: h.level === 3 ? 4 : 3,
+                display: 'inline-block',
+                width: h.level === 3 ? 4 : 3, height: h.level === 3 ? 4 : 3,
                 borderRadius: '50%', flexShrink: 0, verticalAlign: 'middle', marginRight: 4,
                 background: i === active ? 'var(--accent)' : 'var(--text-4)',
+                transition: 'background 0.15s',
               }} />
             )}
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.text}</span>
@@ -112,12 +125,14 @@ export default function OutlineSidebar({ content, isOpen, activeLineNumber, onHe
 
       {/* Footer stats */}
       <div
+        className="anim-slide-up"
         style={{
           borderTop: '1px solid var(--border)',
           padding: '6px 12px',
           fontSize: 11,
           color: 'var(--text-4)',
           fontVariantNumeric: 'tabular-nums',
+          animationDelay: '0.2s',
         }}
       >
         {headings.filter(h => h.level === 1).length}H1 &nbsp;

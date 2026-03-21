@@ -120,8 +120,8 @@ export default function StatusBar({ stats, cursorLine, cursorCol, isSaved, viewM
       {goalModal}
       <footer
         id="tour-statusbar"
-        className="status-bar glass glass-rim flex items-center gap-3 px-4 flex-shrink-0"
-        style={{ height: 30, borderTop: '1px solid var(--border-med)', borderRadius: 0, overflowX: 'auto' }}
+        className="status-bar glass glass-rim flex items-center gap-3 px-4 flex-shrink-0 anim-slide-up"
+        style={{ height: 30, borderTop: '1px solid var(--border-med)', borderRadius: 0, overflowX: 'auto', animationDelay: '0.1s' }}
       >
         {/* Word goal ring + count (clickable) */}
         <button
@@ -177,10 +177,10 @@ export default function StatusBar({ stats, cursorLine, cursorCol, isSaved, viewM
       <div className="toolbar-sep" />
 
       {/* Save state */}
-      <span className="flex items-center gap-1" style={{ fontSize: 12, color: isSaved ? 'var(--accent)' : 'var(--text-4)' }}>
+      <span className="flex items-center gap-1" style={{ fontSize: 12, color: isSaved ? 'var(--accent)' : 'var(--text-4)', transition: 'color 0.2s' }}>
         {isSaved
-          ? <><Check size={11} strokeWidth={2.5} /><span className="hidden sm:inline">Saved</span></>
-          : <><Loader2 size={11} strokeWidth={2.5} className="animate-spin" /><span className="hidden sm:inline">Saving...</span></>
+          ? <><span className="anim-check-pop" key="saved"><Check size={11} strokeWidth={2.5} /></span><span className="hidden sm:inline">Saved</span></>
+          : <><span className="anim-shimmer"  key="saving"><Loader2 size={11} strokeWidth={2.5} className="animate-spin" /></span><span className="hidden sm:inline">Saving...</span></>
         }
       </span>
 

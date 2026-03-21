@@ -228,6 +228,14 @@ export default function Page() {
         localStorage.setItem('cs-name', fileName);
         setIsSaved(true);
       }
+      if (mod && !e.shiftKey && e.code === 'KeyB') {
+        e.preventDefault();
+        editorRef.current?.wrapSelection('**', '**', 'bold text');
+      }
+      if (mod && !e.shiftKey && e.code === 'KeyI') {
+        e.preventDefault();
+        editorRef.current?.wrapSelection('*',  '*',  'italic text');
+      }
       if (mod && !e.shiftKey && e.code === 'KeyN') {
         e.preventDefault();
         triggerNew();
