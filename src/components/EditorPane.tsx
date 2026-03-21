@@ -13,195 +13,146 @@ import { createTheme } from '@uiw/codemirror-themes';
 import { tags as t } from '@lezer/highlight';
 import type { EditorAPI } from '@/types';
 
-/* ------ Custom themes ------------------------------------------------------------------------------------------------------------------------------------------------ */
 const makeTheme = (dark: boolean) =>
   createTheme({
     theme: dark ? 'dark' : 'light',
     settings: {
-      background: 'transparent',
-      foreground: dark ? '#d4c9e8' : '#18102a',
-      caret: '#9875c1',
-      selection: 'rgba(152,117,193,0.25)',
-      selectionMatch: 'rgba(152,117,193,0.12)',
-      lineHighlight: 'rgba(152,117,193,0.04)',
-      gutterBackground: 'transparent',
-      gutterForeground: dark ? 'rgba(152,117,193,0.35)' : 'rgba(100,80,140,0.40)',
-      gutterBorder: 'transparent',
+      background:          'transparent',
+      foreground:          dark ? '#e8dff5' : '#1a1028',
+      caret:               '#9875c1',
+      selection:           'rgba(152,117,193,0.22)',
+      selectionMatch:      'rgba(152,117,193,0.12)',
+      lineHighlight:       dark ? 'rgba(152,117,193,0.06)' : 'rgba(152,117,193,0.05)',
+      gutterBackground:    'transparent',
+      gutterForeground:    dark ? 'rgba(152,117,193,0.30)' : 'rgba(120,90,170,0.35)',
       gutterActiveForeground: '#9875c1',
-      fontFamily: "'Google Sans Flex','Google Sans','DM Sans',sans-serif",
+      gutterBorder:        'transparent',
+      fontFamily:          "'Google Sans Flex','Google Sans','DM Sans',sans-serif",
     },
     styles: [
-      // Headings
       { tag: [t.heading1, t.heading2, t.heading3, t.heading4, t.heading5, t.heading6],
-        color: dark ? '#b899d9' : '#5a3d8a', fontWeight: '700' },
-      // Emphasis
-      { tag: t.emphasis, fontStyle: 'italic', color: dark ? '#c8b8e4' : '#3d2a5c' },
-      { tag: t.strong, fontWeight: '700', color: dark ? '#e2d6f0' : '#18102a' },
-      { tag: t.strikethrough, textDecoration: 'line-through', color: dark ? '#7a6a9a' : '#9a8ab8' },
-      // Links & URLs
-      { tag: t.link, color: dark ? '#b399d4' : '#7b5aa0' },
-      { tag: t.url, color: dark ? '#9875c1' : '#6a4a9a', textDecoration: 'underline' },
-      // Quotes & code
-      { tag: t.quote, color: dark ? '#8a7aaa' : '#6a5a88', fontStyle: 'italic' },
-      { tag: t.monospace, color: dark ? '#c4a8e8' : '#6a4a9a',
-        background: dark ? 'rgba(152,117,193,0.12)' : 'rgba(152,117,193,0.08)' },
-      // Code syntax tokens
-      { tag: t.keyword, color: dark ? '#b399d4' : '#7b5aa0', fontWeight: '600' },
-      { tag: t.string, color: dark ? '#e8a87c' : '#c4522a' },
-      { tag: t.comment, color: dark ? '#6a5a88' : '#9a8ab8', fontStyle: 'italic' },
-      { tag: t.number, color: dark ? '#c4a8e8' : '#5a3d8a' },
+        color: dark ? '#c8a8f0' : '#5a3a98', fontWeight: '700' },
+      { tag: t.emphasis,    fontStyle: 'italic',  color: dark ? '#d4c0f0' : '#3d2860' },
+      { tag: t.strong,      fontWeight: '700',    color: dark ? '#ece5ff' : '#1a1028' },
+      { tag: t.strikethrough, textDecoration: 'line-through', color: dark ? '#7a6898' : '#9a8ab8' },
+      { tag: t.link,        color: dark ? '#b899e0' : '#7040b0' },
+      { tag: t.url,         color: dark ? '#9875c1' : '#6040a8', textDecoration: 'underline' },
+      { tag: t.quote,       color: dark ? '#9880b8' : '#6858a0', fontStyle: 'italic' },
+      { tag: t.monospace,
+        color: dark ? '#c4a8e8' : '#6a40a0',
+        background: dark ? 'rgba(152,117,193,0.12)' : 'rgba(152,117,193,0.09)',
+        borderRadius: '3px', padding: '0 3px' },
+      { tag: t.keyword,     color: dark ? '#c4a0e8' : '#7040b0', fontWeight: '600' },
+      { tag: t.string,      color: dark ? '#e8a870' : '#b84820' },
+      { tag: t.comment,     color: dark ? '#6a5880' : '#9a8ab8', fontStyle: 'italic' },
+      { tag: t.number,      color: dark ? '#c4a8f0' : '#5a3d9a' },
       { tag: [t.function(t.variableName), t.definition(t.variableName)],
-        color: dark ? '#79b8ff' : '#4a7ab5' },
-      { tag: t.typeName, color: dark ? '#b399d4' : '#7b5aa0' },
-      { tag: t.bool, color: dark ? '#9875c1' : '#7b5aa0' },
-      { tag: t.operator, color: dark ? '#8a7aaa' : '#6a5a88' },
-      { tag: t.punctuation, color: dark ? '#8a7aaa' : '#6a5a88' },
-      { tag: t.processingInstruction, color: dark ? '#6a5a88' : '#9a8ab8' },
-      { tag: t.bracket, color: dark ? '#8a7aaa' : '#6a5a88' },
+        color: dark ? '#80beff' : '#3a6ab0' },
+      { tag: t.typeName,    color: dark ? '#c4a0e8' : '#7040b0' },
+      { tag: t.bool,        color: dark ? '#9875c1' : '#7040b0' },
+      { tag: t.operator,    color: dark ? '#8a7098' : '#7868a8' },
+      { tag: t.punctuation, color: dark ? '#8a7098' : '#7868a8' },
     ],
   });
 
-/* ------ Editor CSS extension ------------------------------------------------------------------------------------------------------------------------ */
-const editorBaseTheme = EditorView.theme({
-  '&': { height: '100%' },
-  '.cm-scroller': { overflow: 'auto', padding: '0' },
-  '.cm-content': {
-    padding: '24px 0 80px',
-    maxWidth: '720px',
-    margin: '0 auto',
-    caretColor: '#9875c1',
-  },
-  '.cm-line': { padding: '0 32px', letterSpacing: '0.005em' },
-  '.cm-cursor': { borderLeftWidth: '2px', borderLeftColor: '#9875c1' },
-  '.cm-gutters': { borderRight: 'none', paddingRight: '6px', minWidth: '42px' },
+const baseTheme = EditorView.theme({
+  '&':                 { height: '100%' },
+  '.cm-scroller':      { overflow: 'auto' },
+  '.cm-content':       { padding: '32px 0 80px', maxWidth: '740px', margin: '0 auto', caretColor: '#9875c1' },
+  '.cm-line':          { padding: '0 40px', letterSpacing: '0.006em' },
+  '.cm-cursor':        { borderLeftWidth: '2px', borderLeftColor: '#9875c1' },
+  '.cm-gutters':       { borderRight: 'none', paddingRight: '8px', minWidth: '46px' },
   '.cm-activeLineGutter': { background: 'transparent' },
-  '.cm-foldPlaceholder': {
-    background: 'rgba(152,117,193,0.15)',
-    border: '1px solid rgba(152,117,193,0.3)',
-    borderRadius: '4px',
-    color: '#9875c1',
-  },
-  '.cm-tooltip': {
-    background: 'rgba(22,14,42,0.9)',
-    border: '1px solid rgba(152,117,193,0.2)',
-    borderRadius: '8px',
-    color: '#e6ddf5',
-    backdropFilter: 'blur(12px)',
-  },
-  '.cm-completionLabel': { fontFamily: "'JetBrains Mono','Fira Code',monospace", fontSize: '13px' },
 });
 
-/* ------ Component --------------------------------------------------------------------------------------------------------------------------------------------------------- */
-interface EditorPaneProps {
+interface Props {
   content: string;
-  onChange: (value: string) => void;
+  onChange: (v: string) => void;
   isDark: boolean;
+  focusMode: boolean;
   onCursorChange: (line: number, col: number) => void;
   onReady: (api: EditorAPI) => void;
 }
 
-export default function EditorPane({
-  content, onChange, isDark, onCursorChange, onReady,
-}: EditorPaneProps) {
-  const cmRef = useRef<ReactCodeMirrorRef>(null);
-  const onReadyCalled = useRef(false);
+export default function EditorPane({ content, onChange, isDark, focusMode, onCursorChange, onReady }: Props) {
+  const cmRef       = useRef<ReactCodeMirrorRef>(null);
+  const readyCalled = useRef(false);
 
-  /* Expose API once the view is available */
   const exposeApi = useCallback(() => {
     const view = cmRef.current?.view;
-    if (!view || onReadyCalled.current) return;
-    onReadyCalled.current = true;
+    if (!view || readyCalled.current) return;
+    readyCalled.current = true;
 
     const api: EditorAPI = {
       wrapSelection(before, after, placeholder = 'text') {
         const { from, to } = view.state.selection.main;
-        const selected = view.state.sliceDoc(from, to);
-        const insert = `${before}${selected || placeholder}${after}`;
+        const sel = view.state.sliceDoc(from, to);
+        const ins = `${before}${sel || placeholder}${after}`;
         view.dispatch({
-          changes: { from, to, insert },
-          selection: selected
-            ? { anchor: from + before.length, head: from + before.length + selected.length }
+          changes:   { from, to, insert: ins },
+          selection: sel
+            ? { anchor: from + before.length, head: from + before.length + sel.length }
             : { anchor: from + before.length, head: from + before.length + placeholder.length },
         });
         view.focus();
       },
-
       insertAtCursor(text) {
         const { from, to } = view.state.selection.main;
-        view.dispatch({
-          changes: { from, to, insert: text },
-          selection: { anchor: from + text.length },
-        });
+        view.dispatch({ changes: { from, to, insert: text }, selection: { anchor: from + text.length } });
         view.focus();
       },
-
       prefixLines(prefix, numbered = false) {
         const { from, to } = view.state.selection.main;
         const doc = view.state.doc;
-        const startLine = doc.lineAt(from);
-        const endLine = doc.lineAt(to);
-        const changes: { from: number; to: number; insert: string }[] = [];
-        let counter = 1;
-        for (let i = startLine.number; i <= endLine.number; i++) {
+        const start = doc.lineAt(from);
+        const end   = doc.lineAt(to);
+        const changes = [];
+        let n = 1;
+        for (let i = start.number; i <= end.number; i++) {
           const line = doc.line(i);
-          const p = numbered ? `${counter++}. ` : `${prefix} `;
+          const p    = numbered ? `${n++}. ` : `${prefix} `;
           changes.push({ from: line.from, to: line.from, insert: p });
         }
         view.dispatch({ changes });
         view.focus();
       },
-
-      openSearch() {
-        openSearchPanel(view);
-        view.focus();
-      },
-
+      openSearch() { openSearchPanel(view); view.focus(); },
       scrollToLine(lineNumber) {
         if (lineNumber < 1 || lineNumber > view.state.doc.lines) return;
         const line = view.state.doc.line(lineNumber);
         view.dispatch({
           selection: { anchor: line.from },
-          effects: EditorView.scrollIntoView(line.from, { y: 'start', yMargin: 80 }),
+          effects: EditorView.scrollIntoView(line.from, { y: 'start', yMargin: 90 }),
         });
         view.focus();
       },
-
       focus() { view.focus(); },
+      getValue() { return view.state.doc.toString(); },
     };
 
     onReady(api);
   }, [onReady]);
 
-  /* Track cursor updates */
-  const onUpdate = useCallback(
-    (update: ViewUpdate) => {
-      // Try to expose API on first update
-      exposeApi();
+  const onUpdate = useCallback((update: ViewUpdate) => {
+    exposeApi();
+    if (update.selectionSet) {
+      const { from } = update.state.selection.main;
+      const line = update.state.doc.lineAt(from);
+      onCursorChange(line.number, from - line.from + 1);
+    }
+  }, [exposeApi, onCursorChange]);
 
-      if (update.selectionSet) {
-        const { from } = update.state.selection.main;
-        const line = update.state.doc.lineAt(from);
-        const col = from - line.from + 1;
-        onCursorChange(line.number, col);
-      }
-    },
-    [onCursorChange, exposeApi],
-  );
-
-  /* Re-expose API if view re-mounts */
-  useEffect(() => {
-    onReadyCalled.current = false;
-  }, []);
+  useEffect(() => { readyCalled.current = false; }, []);
 
   const extensions = [
     markdown({ base: markdownLanguage, codeLanguages: languages }),
     EditorView.lineWrapping,
-    editorBaseTheme,
+    baseTheme,
     keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap, indentWithTab]),
   ];
 
   return (
-    <div className="flex-1 overflow-hidden h-full">
+    <div className={`flex-1 overflow-hidden h-full ${focusMode ? 'focus-mode' : ''}`}>
       <ReactCodeMirror
         ref={cmRef}
         value={content}
@@ -211,17 +162,17 @@ export default function EditorPane({
         extensions={extensions}
         style={{ height: '100%' }}
         basicSetup={{
-          lineNumbers: true,
-          highlightActiveLine: true,
+          lineNumbers:           true,
+          highlightActiveLine:   true,
           highlightActiveLineGutter: true,
-          foldGutter: false,
-          dropCursor: true,
+          foldGutter:            false,
+          dropCursor:            true,
           allowMultipleSelections: true,
-          indentOnInput: true,
-          bracketMatching: true,
-          autocompletion: false,
-          syntaxHighlighting: true,
-          searchKeymap: false, // we add it manually
+          indentOnInput:         true,
+          bracketMatching:       true,
+          autocompletion:        false,
+          syntaxHighlighting:    true,
+          searchKeymap:          false,
         }}
       />
     </div>

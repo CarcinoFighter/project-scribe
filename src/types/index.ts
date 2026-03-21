@@ -14,6 +14,7 @@ export interface EditorAPI {
   openSearch: () => void;
   scrollToLine: (lineNumber: number) => void;
   focus: () => void;
+  getValue: () => string;
 }
 
 export interface DocumentStats {
@@ -21,4 +22,13 @@ export interface DocumentStats {
   chars: number;
   readingTime: number;
   lines: number;
+  sentences: number;
+}
+
+export interface TourStep {
+  id: string;
+  title: string;
+  description: string;
+  target: string;
+  position: 'bottom' | 'top' | 'left' | 'right';
 }

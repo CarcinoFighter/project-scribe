@@ -1,164 +1,128 @@
 'use client';
 
 import { useMemo } from 'react';
-import { FileText } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 import clsx from 'clsx';
 import type { Heading } from '@/types';
 
-interface OutlineSidebarProps {
+function parse(content: string): Heading[] {
+  const lines = content.split('\n');
+  const out: Heading[] = [];
+  let inCode = false;
+  lines.forEach((line, i) => {
+    if (line.startsWith('```')) { inCode = !inCode; return; }
+    if (inCode) return;
+    const m = line.match(/^(#{1,6})\s+(.+)/);
+    if (m) out.push({
+      level: m[1].length as 1|2|3|4|5|6,
+      text:  m[2].trim().replace(/[*_~`]/g, ''),
+      lineNumber: i + 1,
+      id:    m[2].toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-'),
+    });
+  });
+  return out;
+}
+
+function activeIdx(headings: Heading[], line: number) {
+  let a = 0;
+  for (let i = 0; i < headings.length; i++) {
+    if (headings[i].lineNumber <= line) a = i; else break;
+  }
+  return a;
+}
+
+const IND: Record<number, number> = { 1:0, 2:0, 3:12, 4:20, 5:26, 6:32 };
+const FS:  Record<number, number> = { 1:13, 2:12.5, 3:12, 4:11.5, 5:11, 6:11 };
+const FW:  Record<number, string> = { 1:'650', 2:'600', 3:'500', 4:'450', 5:'400', 6:'400' };
+
+export default function OutlineSidebar({ content, isOpen, activeLineNumber, onHeadingClick }: {
   content: string;
   isOpen: boolean;
   activeLineNumber: number;
-  onHeadingClick: (lineNumber: number) => void;
-}
-
-function parseHeadings(content: string): Heading[] {
-  const lines = content.split('\n');
-  const headings: Heading[] = [];
-  let inCodeBlock = false;
-
-  lines.forEach((line, index) => {
-    // Ignore headings inside fenced code blocks
-    if (line.startsWith('```')) { inCodeBlock = !inCodeBlock; return; }
-    if (inCodeBlock) return;
-
-    const match = line.match(/^(#{1,6})\s+(.+)/);
-    if (match) {
-      const text = match[2].trim().replace(/\*\*/g, '').replace(/\*/g, '');
-      headings.push({
-        level: match[1].length as 1 | 2 | 3 | 4 | 5 | 6,
-        text,
-        lineNumber: index + 1,
-        id: text.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-'),
-      });
-    }
-  });
-
-  return headings;
-}
-
-function getActiveHeading(headings: Heading[], activeLine: number): number {
-  let active = 0;
-  for (let i = 0; i < headings.length; i++) {
-    if (headings[i].lineNumber <= activeLine) active = i;
-    else break;
-  }
-  return active;
-}
-
-const INDENT = { 1: 0, 2: 0, 3: 12, 4: 20, 5: 28, 6: 36 };
-const FONT_SIZE = { 1: 13, 2: 12.5, 3: 12, 4: 11.5, 5: 11, 6: 11 };
-const FONT_WEIGHT = { 1: '600', 2: '600', 3: '500', 4: '400', 5: '400', 6: '400' };
-
-export default function OutlineSidebar({
-  content, isOpen, activeLineNumber, onHeadingClick,
-}: OutlineSidebarProps) {
-  const headings = useMemo(() => parseHeadings(content), [content]);
-  const activeIndex = useMemo(
-    () => getActiveHeading(headings, activeLineNumber),
-    [headings, activeLineNumber],
-  );
+  onHeadingClick: (n: number) => void;
+}) {
+  const headings = useMemo(() => parse(content), [content]);
+  const active   = useMemo(() => activeIdx(headings, activeLineNumber), [headings, activeLineNumber]);
 
   return (
     <aside
-      className="glass flex flex-col flex-shrink-0 overflow-hidden sidebar-enter"
+      id="tour-sidebar"
+      className="sidebar-col glass flex flex-col flex-shrink-0 overflow-hidden"
       style={{
-        width: isOpen ? 220 : 0,
-        borderRight: isOpen ? '1px solid var(--border)' : 'none',
-        opacity: isOpen ? 1 : 0,
+        width:         isOpen ? 228 : 0,
+        minWidth:      isOpen ? 228 : 0,
+        opacity:       isOpen ? 1 : 0,
         pointerEvents: isOpen ? 'auto' : 'none',
-        transition: 'width 0.22s cubic-bezier(0.4,0,0.2,1), opacity 0.18s',
-        borderRadius: 0,
-        zIndex: 20,
+        borderRight:   isOpen ? '1px solid var(--border-med)' : 'none',
+        borderRadius:  0,
+        zIndex:        20,
       }}
     >
       {/* Header */}
       <div
-        className="flex items-center gap-2 px-3 py-2.5 flex-shrink-0"
-        style={{
-          borderBottom: '1px solid var(--border)',
-          height: 40,
-        }}
+        className="flex items-center gap-2 px-3 flex-shrink-0"
+        style={{ height: 40, borderBottom: '1px solid var(--border)' }}
       >
-        <FileText size={13} strokeWidth={2} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-        <span
-          className="text-xs font-semibold uppercase tracking-widest truncate"
-          style={{ color: 'var(--text-muted)', letterSpacing: '0.08em' }}
-        >
+        <BookOpen size={13} strokeWidth={2} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--text-4)' }}>
           Outline
         </span>
         <span
-          className="ml-auto text-xs rounded-full px-1.5 py-0.5"
-          style={{
-            background: 'var(--accent-subtle)',
-            color: 'var(--accent)',
-            fontVariantNumeric: 'tabular-nums',
-          }}
+          className="ml-auto rounded-full px-1.5 py-0.5"
+          style={{ fontSize: 11, background: 'var(--accent-subtle2)', color: 'var(--accent)', fontVariantNumeric: 'tabular-nums' }}
         >
           {headings.length}
         </span>
       </div>
 
-      {/* Heading list */}
+      {/* List */}
       <div className="flex-1 overflow-y-auto py-2 px-2">
         {headings.length === 0 ? (
-          <div
-            className="text-xs text-center mt-8 px-4"
-            style={{ color: 'var(--text-muted)', lineHeight: 1.6 }}
-          >
+          <div style={{ textAlign: 'center', marginTop: 32, color: 'var(--text-4)', fontSize: 12, lineHeight: 1.7, padding: '0 12px' }}>
             No headings yet.
             <br />
-            Add <code style={{ fontSize: 11 }}># H1</code> to start your outline.
+            Start with <code style={{ fontSize: 11 }}># Title</code>
           </div>
-        ) : (
-          headings.map((h, i) => (
-            <button
-              key={`${h.lineNumber}-${h.text}`}
-              className={clsx('outline-item w-full text-left', i === activeIndex && 'active')}
-              style={{
-                paddingLeft: 8 + INDENT[h.level],
-                fontSize: FONT_SIZE[h.level],
-                fontWeight: FONT_WEIGHT[h.level],
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-              }}
-              onClick={() => onHeadingClick(h.lineNumber)}
-              title={h.text}
-            >
-              {/* Level indicator dot */}
-              {h.level >= 3 && (
-                <span
-                  style={{
-                    display: 'inline-block',
-                    width: h.level === 3 ? 4 : 3,
-                    height: h.level === 3 ? 4 : 3,
-                    borderRadius: '50%',
-                    background: i === activeIndex ? 'var(--accent)' : 'var(--text-muted)',
-                    marginRight: 5,
-                    flexShrink: 0,
-                    verticalAlign: 'middle',
-                  }}
-                />
-              )}
-              <span className="truncate">{h.text}</span>
-            </button>
-          ))
-        )}
+        ) : headings.map((h, i) => (
+          <button
+            key={`${h.lineNumber}-${h.id}`}
+            className={clsx('outline-item', i === active && 'active')}
+            style={{ paddingLeft: 8 + IND[h.level], fontSize: FS[h.level], fontWeight: FW[h.level] }}
+            onClick={() => onHeadingClick(h.lineNumber)}
+            title={h.text}
+          >
+            {/* Active indicator bar */}
+            {i === active && (
+              <span style={{
+                position: 'absolute', left: 0, top: '20%', bottom: '20%',
+                width: 2, borderRadius: 1, background: 'var(--accent)',
+              }} />
+            )}
+            {h.level >= 3 && (
+              <span style={{
+                display: 'inline-block', width: h.level === 3 ? 4 : 3, height: h.level === 3 ? 4 : 3,
+                borderRadius: '50%', flexShrink: 0, verticalAlign: 'middle', marginRight: 4,
+                background: i === active ? 'var(--accent)' : 'var(--text-4)',
+              }} />
+            )}
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.text}</span>
+          </button>
+        ))}
       </div>
 
-      {/* Footer word count hint */}
+      {/* Footer stats */}
       <div
-        className="px-3 py-2 text-xs flex-shrink-0"
         style={{
           borderTop: '1px solid var(--border)',
-          color: 'var(--text-muted)',
+          padding: '6px 12px',
+          fontSize: 11,
+          color: 'var(--text-4)',
           fontVariantNumeric: 'tabular-nums',
         }}
       >
-        {headings.filter(h => h.level === 1).length} sections ·{' '}
-        {headings.filter(h => h.level === 2).length} subsections
+        {headings.filter(h => h.level === 1).length}H1 &nbsp;
+        {headings.filter(h => h.level === 2).length}H2 &nbsp;
+        {headings.filter(h => h.level === 3).length}H3
       </div>
     </aside>
   );
