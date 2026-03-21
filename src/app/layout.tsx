@@ -3,7 +3,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Carcino Scribe',
-  description: 'Beautiful markdown editor by The Carcino Foundation',
+  description: 'A Beautiful Markdown Editor for Writers Block of The Carcino Foundation.',
   icons: { icon: '/logo.svg' },
 };
 
