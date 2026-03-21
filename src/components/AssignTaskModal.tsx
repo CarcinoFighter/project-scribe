@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, 
   Briefcase, 
@@ -26,9 +27,10 @@ interface AssignTaskModalProps {
   member?: TeamMember | null;
   onClose: () => void;
   onSuccess: () => void;
+  defaultCategory?: 'task' | 'article' | 'blog' | 'survivor_story' | 'awareness_post';
 }
 
-export default function AssignTaskModal({ member, onClose, onSuccess }: AssignTaskModalProps) {
+export default function AssignTaskModal({ member, onClose, onSuccess, defaultCategory }: AssignTaskModalProps) {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -38,10 +40,17 @@ export default function AssignTaskModal({ member, onClose, onSuccess }: AssignTa
   const [assigneeId, setAssigneeId] = useState(member?.id || '');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState<'task' | 'article' | 'blog' | 'survivor_story'>('task');
+  const [category, setCategory] = useState<'task' | 'article' | 'blog' | 'survivor_story' | 'awareness_post'>(defaultCategory || 'task');
   const [department, setDepartment] = useState(member?.department || "Writers' Block");
   const [priority, setPriority] = useState<'low' | 'normal' | 'high'>('normal');
   const [dueDate, setDueDate] = useState('');
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { 
+    setMounted(true);
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = 'unset'; };
+  }, []);
 
   useEffect(() => {
     if (!member) {
@@ -104,14 +113,17 @@ export default function AssignTaskModal({ member, onClose, onSuccess }: AssignTa
 
   const CATEGORIES = [
     { id: 'task', label: 'General Task', icon: Briefcase, color: 'var(--text-4)' },
-    { id: 'article', label: 'Article', icon: FileText, color: '#3b82f6' },
+    { id: 'article', label: 'Research Article', icon: FileText, color: '#3b82f6' },
     { id: 'blog', label: 'Blog Post', icon: BookOpen, color: 'var(--accent)' },
     { id: 'survivor_story', label: 'Survivor Story', icon: Heart, color: '#10b981' },
+    { id: 'awareness_post', label: 'Awareness Post', icon: Layers, color: '#f59e0b' },
   ];
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-12 sm:pt-20 bg-black/60 backdrop-blur-md anim-fade-in overflow-y-auto">
-      <div className="glass-raised w-full max-w-lg rounded-[var(--r-xl)] overflow-hidden shadow-2xl anim-slide-down border-[var(--border-strong)] relative mb-12">
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[9500] flex items-start justify-center p-4 bg-black/80 backdrop-blur-xl anim-fade-in pt-[10vh]">
+      <div className="glass-raised w-full max-w-lg rounded-[var(--r-xl)] overflow-hidden shadow-2xl anim-slide-down border-[var(--border-strong)] relative sm:max-h-[80vh] flex flex-col">
         <div className="p-6 border-b border-[var(--border-med)] flex items-center justify-between bg-[var(--bg-deep)]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-[var(--accent-subtle2)] flex items-center justify-center text-[var(--accent)]">
@@ -277,6 +289,7 @@ export default function AssignTaskModal({ member, onClose, onSuccess }: AssignTa
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

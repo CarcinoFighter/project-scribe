@@ -12,13 +12,14 @@ import {
   ChevronRight, Plus, TrendingUp, Clock, BarChart2,
   Star, MoreHorizontal, Trash2, ExternalLink,
   ArrowRight, User, Settings, LogOut,
-  Activity, ChevronDown, PenTool,
+  Activity, ChevronDown, PenTool, Layers,
   Home, LayoutGrid, Edit3, Award,
   Check, X, ArrowUpDown, Target, Loader2,
-  Briefcase, Users,
+  Briefcase, Users, Heart, Calendar,
 } from 'lucide-react';
 import { useUser } from '@/lib/useUser';
 import AccountMenu from '@/components/AccountMenu';
+import Toast from '@/components/Toast';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -26,7 +27,7 @@ import AccountMenu from '@/components/AccountMenu';
 
 interface Doc {
   id: string;
-  type: 'article' | 'blog';
+  type: 'blogs' | 'survivor_stories' | 'cancer_docs';
   title: string;
   excerpt: string;
   words: number;
@@ -44,6 +45,18 @@ interface Notif {
   body: string;
   time: string;
   read: boolean;
+}
+
+interface Task {
+  id: string;
+  title: string;
+  description: string;
+  category: 'task' | 'article' | 'blog' | 'survivor_story' | 'awareness_post';
+  status: 'todo' | 'in_progress' | 'done';
+  priority: 'low' | 'normal' | 'high';
+  due_date: string;
+  department?: string;
+  document_id?: string;
 }
 
 interface Cmd {
@@ -113,49 +126,49 @@ function makeSeedDocs(): Doc[] {
 
   return [
     {
-      id: 'a1', type: 'article',
+      id: 'a1', type: 'cancer_docs',
       title: 'The Architecture of Modern Writing Systems',
       excerpt: 'How digital tools have reshaped the cognitive process of long-form writing, and what it means for the craft.',
       words: 3240, status: 'published', date: daysAgo(3), readTime: 16,
       tags: ['writing', 'cognition'], starred: true,
     },
     {
-      id: 'a2', type: 'article',
+      id: 'a2', type: 'cancer_docs',
       title: 'Markdown as a Thinking Tool',
       excerpt: 'Exploring how structured plain text enables clearer thinking through enforced simplicity.',
       words: 1870, status: 'draft', date: daysAgo(4), readTime: 9,
       tags: ['markdown', 'productivity'], starred: false,
     },
     {
-      id: 'a3', type: 'article',
+      id: 'a3', type: 'cancer_docs',
       title: 'The Case for Distraction-Free Editors',
       excerpt: 'An evidence-based argument for why interface minimalism directly correlates with writing quality.',
       words: 2650, status: 'published', date: daysAgo(8), readTime: 13,
       tags: ['tools', 'focus'], starred: true,
     },
     {
-      id: 'b1', type: 'blog',
+      id: 'b1', type: 'blogs',
       title: 'Week 11: Building in Public',
       excerpt: 'What shipping a writing tool taught me about the gap between what users say they want and what they need.',
       words: 890, status: 'published', date: daysAgo(2), readTime: 4,
       tags: ['personal', 'indie'], starred: false,
     },
     {
-      id: 'b2', type: 'blog',
+      id: 'b2', type: 'blogs',
       title: 'On Creative Momentum',
       excerpt: 'The subtle physics of creative work — how inertia applies to writing streaks, and how to protect them.',
       words: 1120, status: 'published', date: daysAgo(5), readTime: 5,
       tags: ['creativity', 'habits'], starred: true,
     },
     {
-      id: 'b3', type: 'blog',
+      id: 'b3', type: 'blogs',
       title: 'My Note-taking Stack in 2026',
       excerpt: 'After years of tool hopping, here is what actually stuck — and more importantly, why.',
       words: 740, status: 'draft', date: daysAgo(6), readTime: 4,
       tags: ['tools', 'notes'], starred: false,
     },
     {
-      id: 'b4', type: 'blog',
+      id: 'b4', type: 'blogs',
       title: 'Reading Aloud as an Editing Method',
       excerpt: 'The single highest-leverage editing habit I have developed this year, with a practical workflow.',
       words: 620, status: 'published', date: daysAgo(11), readTime: 3,
@@ -216,31 +229,6 @@ function buildCmds(): Cmd[] {
 // Toast
 // ─────────────────────────────────────────────────────────────────────────────
 
-function Toast({ message, onDismiss }: { message: string; onDismiss: () => void }) {
-  useEffect(() => {
-    const t = setTimeout(onDismiss, 3200);
-    return () => clearTimeout(t);
-  }, [onDismiss]);
-
-  return createPortal(
-    <div style={{
-      position: 'fixed', bottom: 24, right: 24, zIndex: 99999,
-      background: 'var(--surface-2)', border: '1px solid var(--border-med)',
-      borderRadius: 'var(--r-lg)', padding: '10px 14px',
-      boxShadow: 'var(--sh-md)', display: 'flex', alignItems: 'center', gap: 10,
-      animation: 'fadeIn 0.18s ease', fontFamily: 'inherit',
-    }}>
-      <div style={{ width: 18, height: 18, borderRadius: '50%', background: 'var(--accent-subtle2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        <Check size={10} style={{ color: 'var(--accent)' }} strokeWidth={2.5} />
-      </div>
-      <span style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{message}</span>
-      <button className="tb-btn" onClick={onDismiss} style={{ padding: '2px 3px', borderRadius: 4, marginLeft: 2 }}>
-        <X size={12} />
-      </button>
-    </div>,
-    document.body
-  );
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Notification panel
@@ -367,7 +355,7 @@ function CommandPalette({ docs, onClose, onCommand }: {
                   <div style={{ padding: '6px 10px 3px', fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-4)' }}>Documents</div>
                   {matchDocs.map(doc => {
                     const entry = flat.find(f => f.kind === 'doc' && f.doc.id === doc.id)!;
-                    const Icon = doc.type === 'article' ? FileText : BookOpen;
+                    const Icon = doc.type === 'blogs' ? BookOpen : FileText;
                     return (
                       <button key={doc.id} data-idx={entry.idx} className={`cmd-item${entry.idx === selected ? ' selected' : ''}`} onMouseEnter={() => setSelected(entry.idx)} onClick={() => { router.push('/editor'); onClose(); }}>
                         <Icon size={14} strokeWidth={1.8} style={{ flexShrink: 0, opacity: 0.75 }} />
@@ -472,15 +460,15 @@ function DocCard({ doc, onStar, onContextMenu }: {
 }) {
   const [hovered, setHovered] = useState(false);
   const router = useRouter();
-  const isArticle = doc.type === 'article';
+  const isArticle = doc.type === 'cancer_docs' || doc.type === 'survivor_stories';
 
   return (
     <div
       role="button" tabIndex={0}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onClick={() => router.push('/editor')}
-      onKeyDown={e => { if (e.key === 'Enter') router.push('/editor'); }}
+      onClick={() => router.push(`/editor?id=${doc.id}&type=${doc.type}`)}
+      onKeyDown={e => { if (e.key === 'Enter') router.push(`/editor?id=${doc.id}&type=${doc.type}`); }}
       style={{
         background: hovered ? 'var(--bg-alt)' : 'transparent',
         border: `1px solid ${doc.isActive ? 'rgba(152,117,193,0.35)' : hovered ? 'var(--border-med)' : 'var(--border)'}`,
@@ -493,10 +481,12 @@ function DocCard({ doc, onStar, onContextMenu }: {
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 26, height: 26, borderRadius: 7, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isArticle ? 'var(--accent-subtle)' : 'var(--bg-deep)' }}>
-            {isArticle
-              ? <FileText size={12} strokeWidth={2.2} style={{ color: 'var(--accent)' }} />
-              : <BookOpen  size={12} strokeWidth={2.2} style={{ color: 'var(--text-4)' }} />}
+          <div style={{ width: 26, height: 26, borderRadius: 7, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isArticle ? (doc.type === 'cancer_docs' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)') : 'var(--accent-subtle)' }}>
+            {doc.type === 'cancer_docs'
+              ? <FileText size={12} strokeWidth={2.2} style={{ color: '#3b82f6' }} />
+              : doc.type === 'survivor_stories'
+              ? <Heart size={12} strokeWidth={2.2} style={{ color: '#10b981' }} />
+              : <BookOpen  size={12} strokeWidth={2.2} style={{ color: 'var(--accent)' }} />}
           </div>
           <StatusPill status={doc.status} />
           {doc.isActive && (
@@ -514,24 +504,144 @@ function DocCard({ doc, onStar, onContextMenu }: {
       </div>
 
       <h3 style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text)', lineHeight: 1.45, margin: 0 }}>
-        {doc.title}
+        {doc.title || 'Untitled'}
       </h3>
 
       <p style={{ fontSize: 12, color: 'var(--text-4)', lineHeight: 1.6, margin: 0, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }}>
-        {doc.excerpt}
+        {doc.excerpt || 'No summary available.'}
       </p>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 2, gap: 8 }}>
         <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', minWidth: 0 }}>
-          {doc.tags.map(tag => (
+          {(doc.tags || []).map(tag => (
             <span key={tag} style={{ fontSize: 10.5, color: 'var(--text-4)', background: 'var(--bg-deep)', borderRadius: 4, padding: '1px 6px', flexShrink: 0 }}>#{tag}</span>
           ))}
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexShrink: 0 }}>
-          <span style={{ fontSize: 11, color: 'var(--text-4)', display: 'flex', alignItems: 'center', gap: 3 }}><Clock size={10} /> {doc.readTime}m</span>
-          <span style={{ fontSize: 11, color: 'var(--text-4)' }}>{fmtWords(doc.words)}</span>
+          <span style={{ fontSize: 11, color: 'var(--text-4)', display: 'flex', alignItems: 'center', gap: 3 }}><Clock size={10} /> {doc.readTime || 1}m</span>
+          <span style={{ fontSize: 11, color: 'var(--text-4)' }}>{fmtWords(doc.words || 0)}</span>
           <span style={{ fontSize: 11, color: 'var(--text-4)' }}>{fmtDate(doc.date)}</span>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function TaskCard({ task, onComplete }: { task: Task; onComplete: (id: string) => void }) {
+  const [hovered, setHovered] = useState(false);
+  const router = useRouter();
+  
+  const isArticle = task.category === 'article';
+  const isBlog = task.category === 'blog';
+  const isStory = task.category === 'survivor_story';
+  const isAwareness = task.category === 'awareness_post';
+
+  const showEditor = (isArticle || isBlog || isStory) && !!task.document_id;
+  
+  const handleEdit = (e: React.BaseSyntheticEvent) => {
+    e.stopPropagation();
+    const type = isArticle ? 'cancer_docs' : isBlog ? 'blogs' : 'survivor_stories';
+    router.push(`/editor?id=${task.document_id}&type=${type}`);
+  };
+
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className="glass-raised"
+      style={{
+        padding: '12px 16px',
+        borderRadius: 'var(--r-lg)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 14,
+        border: '1px solid var(--border-med)',
+        transition: 'transform 0.15s, border-color 0.15s',
+        transform: hovered ? 'translateY(-1px)' : 'none',
+      }}
+    >
+      <div style={{ 
+        width: 36, height: 36, borderRadius: 10, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', 
+        background: isArticle ? 'rgba(59, 130, 246, 0.1)' : isBlog ? 'var(--accent-subtle)' : isStory ? 'rgba(16, 185, 129, 0.1)' : isAwareness ? 'rgba(245, 158, 11, 0.1)' : 'var(--bg-deep)' 
+      }}>
+        {isArticle ? <FileText size={16} className="text-blue-500" /> : 
+         isBlog ? <BookOpen size={16} className="text-[var(--accent)]" /> : 
+         isStory ? <Heart size={16} className="text-emerald-500" /> : 
+         isAwareness ? <Layers size={16} className="text-amber-500" /> :
+         <Briefcase size={16} className="text-[var(--text-4)]" />}
+      </div>
+      
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+          <h4 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {task.title}
+          </h4>
+          <span style={{ 
+            fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', 
+            padding: '1px 6px', borderRadius: 4, 
+            background: task.priority === 'high' ? 'rgba(239, 68, 68, 0.1)' : 'var(--bg-deep)',
+            color: task.priority === 'high' ? '#ef4444' : 'var(--text-4)',
+            border: `1px solid ${task.priority === 'high' ? 'rgba(239, 68, 68, 0.2)' : 'var(--border-med)'}`
+          }}>
+            {task.priority}
+          </span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 11, color: 'var(--text-4)', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <Calendar size={10} /> {fmtDate(task.due_date)}
+          </span>
+          {task.department && (
+             <span style={{ fontSize: 11, color: 'var(--text-4)', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Users size={10} /> {task.department}
+            </span>
+          )}
+          {showEditor && (
+            <button
+              onClick={handleEdit}
+              style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 700, background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}
+              className="hover:underline"
+            >
+              Edit Document <ChevronRight size={10} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+        {showEditor && (
+          <button 
+            onClick={handleEdit}
+            className="tb-btn" 
+            style={{ 
+              background: 'var(--accent-subtle2)', 
+              color: 'var(--accent)', 
+              padding: '6px 12px', 
+              borderRadius: 8, 
+              fontSize: 11.5, 
+              fontWeight: 700,
+              border: '1px solid var(--accent-subtle)',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            Edit
+          </button>
+        )}
+        <button 
+          onClick={() => onComplete(task.id)}
+          className="tb-btn"
+          style={{ 
+            background: 'rgba(16, 185, 129, 0.1)', 
+            color: '#10b981', 
+            padding: '6px 12px', 
+            borderRadius: 8, 
+            fontSize: 11.5, 
+            fontWeight: 700,
+            border: '1px solid rgba(16, 185, 129, 0.2)',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          Complete
+        </button>
       </div>
     </div>
   );
@@ -703,6 +813,7 @@ export default function Dashboard() {
   const [showNotifPanel,   setShowNotifPanel]    = useState(false);
   const [showAccountMenu,  setShowAccountMenu]   = useState(false);
   const [wordGoal,         setWordGoal]          = useState(0);
+  const [tasks,            setTasks]             = useState<Task[]>([]);
 
   const notifRef   = useRef<HTMLDivElement>(null);
   const accountRef = useRef<HTMLDivElement>(null);
@@ -726,7 +837,7 @@ export default function Dashboard() {
         const excerpt  = excerptFrom(rawContent);
         setLsDoc({
           id:       'ls-active',
-          type:     'article',
+          type:     'cancer_docs',
           title:    name,
           excerpt:  excerpt || 'Document opened in the editor.',
           words,
@@ -755,6 +866,22 @@ export default function Dashboard() {
       }
     }
     fetchDocs();
+  }, []);
+
+  // ── Fetch tasks assigned to current user ────────────────────────────────
+  useEffect(() => {
+    async function fetchTasks() {
+      try {
+        const res = await fetch('/api/work');
+        if (res.ok) {
+          const data = await res.json();
+          setTasks(data.assignments || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch tasks:', error);
+      }
+    }
+    fetchTasks();
   }, []);
 
   // Apply theme to document
@@ -805,6 +932,26 @@ export default function Dashboard() {
     if (doc) setToast(`Deleted "${doc.title.slice(0, 28)}…"`);
   }, [docs, lsDoc]);
 
+  const handleCompleteTask = useCallback(async (taskId: string) => {
+    try {
+      const res = await fetch('/api/work', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: taskId, status: 'done' }),
+      });
+
+      if (res.ok) {
+        setTasks(ts => ts.map(t => t.id === taskId ? { ...t, status: 'done' } : t));
+        setToast('Task marked as completed');
+      } else {
+        setToast('Failed to update task');
+      }
+    } catch (err) {
+      console.error(err);
+      setToast('An error occurred');
+    }
+  }, []);
+
   const toggleTheme = useCallback(() => {
     setIsDark(d => { const nd = !d; localStorage.setItem('cs-dark', String(nd)); return nd; });
   }, []);
@@ -825,8 +972,8 @@ export default function Dashboard() {
   }, [docs, lsDoc]);
 
   // ── Derived metrics — all from allDocs ──────────────────────────────────
-  const articles     = useMemo(() => allDocs.filter(d => d.type === 'article'), [allDocs]);
-  const blogs        = useMemo(() => allDocs.filter(d => d.type === 'blog'),    [allDocs]);
+  const articles     = useMemo(() => allDocs.filter(d => d.type === 'cancer_docs' || d.type === 'survivor_stories'), [allDocs]);
+  const blogs        = useMemo(() => allDocs.filter(d => d.type === 'blogs'),    [allDocs]);
   const totalWords   = useMemo(() => allDocs.reduce((s, d) => s + d.words, 0),  [allDocs]);
   const published    = useMemo(() => allDocs.filter(d => d.status === 'published').length, [allDocs]);
   const drafts       = useMemo(() => allDocs.filter(d => d.status === 'draft').length,     [allDocs]);
@@ -1073,7 +1220,7 @@ export default function Dashboard() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 18 }}>
                 {[
                   { label: 'Total Words',  value: fmtWords(totalWords), sub: `${allDocs.length} documents`, icon: BarChart2, accent: true,  onClick: undefined, progress: undefined },
-                  { label: 'This Week',    value: fmtWords(weekWords),  sub: 'words written',               icon: TrendingUp, accent: false, onClick: () => {}, progress: undefined },
+                  { label: 'This Week',    value: fmtWords(weekWords),  sub: 'words written',               icon: TrendingUp, accent: false, onClick: () => showToastMsg('Detailed stats coming soon'), progress: undefined },
                   { label: 'Published',    value: published, sub: `${drafts} draft${drafts !== 1 ? 's' : ''} remaining`, icon: Award, accent: false, onClick: () => setActiveNav('articles'), progress: undefined },
                   goalProgress
                     ? { label: 'Word Goal', value: `${Math.round((goalProgress.current / goalProgress.goal) * 100)}%`, sub: `${goalProgress.current.toLocaleString()} / ${goalProgress.goal.toLocaleString()} words`, icon: Target, accent: false, onClick: undefined, progress: goalProgress }
@@ -1087,6 +1234,67 @@ export default function Dashboard() {
 
               {/* Activity chart — derived from allDocs dates */}
               <ActivityChart docs={allDocs} weekWords={weekWords} />
+
+              {/* Tasks section */}
+              {tasks.length > 0 && (
+                <>
+                  {tasks.filter(t => t.status !== 'done').length > 0 && (
+                    <div style={{ marginBottom: 26 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                        <Briefcase size={14} strokeWidth={2} style={{ color: 'var(--accent)' }} />
+                        <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>Pending Assignments</span>
+                        <span style={{ fontSize: 11, fontWeight: 600, borderRadius: 99, padding: '1px 8px', background: 'var(--accent-subtle)', color: 'var(--accent)' }}>
+                          {tasks.filter(t => t.status !== 'done').length}
+                        </span>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+                        {tasks.filter(t => t.status !== 'done').map(task => (
+                          <TaskCard key={task.id} task={task} onComplete={handleCompleteTask} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {tasks.filter(t => t.status === 'done').length > 0 && (
+                    <div style={{ marginBottom: 26 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                        <Check size={14} strokeWidth={2.5} style={{ color: '#4ade80' }} />
+                        <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>Completed Assignments</span>
+                        <span style={{ fontSize: 11, fontWeight: 600, borderRadius: 99, padding: '1px 8px', background: 'rgba(74, 222, 128, 0.1)', color: '#4ade80' }}>
+                          {tasks.filter(t => t.status === 'done').length}
+                        </span>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+                        {tasks.filter(t => t.status === 'done').map(task => (
+                          <div
+                            key={task.id}
+                            className="glass-raised"
+                            style={{
+                              padding: '12px 16px',
+                              borderRadius: 'var(--r-lg)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 14,
+                              border: '1px solid rgba(74, 222, 128, 0.15)',
+                              opacity: 0.65,
+                            }}
+                          >
+                            <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(74, 222, 128, 0.1)' }}>
+                              <Check size={16} style={{ color: '#4ade80' }} strokeWidth={2.5} />
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <h4 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'line-through', opacity: 0.7 }}>
+                                {task.title}
+                              </h4>
+                              <span style={{ fontSize: 11, color: '#4ade80', fontWeight: 600 }}>Completed</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
 
               {/* Recent docs — 2-col preview */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>

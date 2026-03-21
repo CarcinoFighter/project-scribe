@@ -28,24 +28,39 @@ export async function GET(req: NextRequest) {
   // Normalize data for the dashboard
   const normalizedBlogs = (blogs.data || []).map(b => ({
     ...b,
-    type: 'blog',
-    title: b.title,
+    type: 'blogs',
+    title: b.title || 'Untitled Blog',
+    excerpt: b.excerpt || 'No summary available.',
+    tags: b.tags || [],
+    words: b.words || 0,
+    readTime: b.read_time || Math.ceil((b.content?.length || 0) / 1000) || 1,
+    date: b.updated_at || b.created_at,
   }));
 
   const normalizedStories = (stories.data || []).map(s => ({
     ...s,
-    type: 'article', // Map survivor stories to 'article' for current UI
-    title: s.name,
+    type: 'survivor_stories',
+    title: s.name || 'Untitled Story',
+    excerpt: s.excerpt || 'No summary available.',
+    tags: s.tags || [],
+    words: s.words || 0,
+    readTime: s.read_time || Math.ceil((s.content?.length || 0) / 1000) || 1,
+    date: s.updated_at || s.created_at,
   }));
 
   const normalizedDocs = (docs.data || []).map(d => ({
     ...d,
-    type: 'article',
-    title: d.title,
+    type: 'cancer_docs',
+    title: d.title || 'Untitled Document',
+    excerpt: d.excerpt || 'No summary available.',
+    tags: d.tags || [],
+    words: d.words || 0,
+    readTime: d.read_time || Math.ceil((d.content?.length || 0) / 1000) || 1,
+    date: d.updated_at || d.created_at,
   }));
 
   const allDocs = [...normalizedBlogs, ...normalizedStories, ...normalizedDocs].sort(
-    (a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime()
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
   return NextResponse.json({ documents: allDocs });

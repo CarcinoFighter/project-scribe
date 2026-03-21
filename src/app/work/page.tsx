@@ -1,64 +1,311 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { 
   Briefcase, 
-  Clock, 
   CheckCircle2, 
   AlertCircle, 
   Calendar,
-  Search,
   ChevronRight,
   Plus,
-  Filter,
-  ArrowUpDown,
-  MoreHorizontal,
-  Layers
+  FileText,
+  BookOpen,
+  Heart,
+  Check,
+  Loader2,
+  Users,
+  ChevronDown,
+  ChevronRight as ChevronR,
+  Palette,
+  Code2,
+  Megaphone,
+  PenTool
 } from 'lucide-react';
 import { useUser } from '@/lib/useUser';
 import AccountMenu from '@/components/AccountMenu';
 import AssignTaskModal from '@/components/AssignTaskModal';
+import Toast from '@/components/Toast';
 
 interface Assignment {
   id: string;
   title: string;
   description: string;
-  status: 'todo' | 'in-progress' | 'completed';
+  status: 'todo' | 'in_progress' | 'done';
   priority: 'low' | 'normal' | 'high';
-  category: 'task' | 'article' | 'blog' | 'survivor_story';
+  category: 'task' | 'article' | 'blog' | 'survivor_story' | 'awareness_post';
   department?: string;
   due_date: string;
+  document_id?: string;
   created_at: string;
+  assignee?: { id: string; name: string; username: string; avatar_url: string | null; department: string };
+  assigner?: { id: string; name: string; username: string };
 }
 
-export default function WorkPage() {
-  const { user } = useUser();
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showAccountMenu, setShowAccountMenu] = useState(false);
-  const [showAssignModal, setShowAssignModal] = useState(false);
-  const [isDark, setIsDark] = useState(false);
+const DEPARTMENTS = [
+  { key: "Writers' Block", label: "Writers' Block", icon: PenTool, color: 'text-amber-500', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
+  { key: 'Design Lab', label: 'Design Lab', icon: Palette, color: 'text-pink-500', bg: 'bg-pink-500/10', border: 'border-pink-500/20' },
+  { key: 'Development', label: 'Development', icon: Code2, color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
+  { key: 'Marketing', label: 'Marketing', icon: Megaphone, color: 'text-emerald-500', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+];
 
-  const fetchWork = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/work');
-      if (res.ok) {
-        const data = await res.json();
-        setAssignments(data.assignments);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+const WRITERS_BLOCK_SECTIONS = [
+  { key: 'article', label: 'Research Articles', icon: FileText, color: '#3b82f6', hasEditor: true, table: 'cancer_docs' },
+  { key: 'blog', label: 'Blog Posts', icon: BookOpen, color: '#9875c1', hasEditor: true, table: 'blogs' },
+  { key: 'survivor_story', label: 'Survivors Community', icon: Heart, color: '#10b981', hasEditor: true, table: 'survivor_stories' },
+  { key: 'task', label: 'Task Assignments', icon: Briefcase, color: '#6b7280', hasEditor: false, table: null },
+  { key: 'awareness_post', label: 'Awareness Posts', icon: Megaphone, color: '#f59e0b', hasEditor: false, table: null },
+];
+
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, string> = {
+    done: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20',
+    in_progress: 'text-blue-500 bg-blue-500/10 border-blue-500/20',
+    todo: 'text-amber-500 bg-amber-500/10 border-amber-500/20',
+  };
+  return (
+    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border flex-shrink-0 ${map[status] || map.todo}`}>
+      {status.replace('_', ' ')}
+    </span>
+  );
+}
+
+function PriorityDot({ priority }: { priority: string }) {
+  const colors: Record<string, string> = { high: 'bg-red-500', normal: 'bg-amber-400', low: 'bg-emerald-500' };
+  return <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${colors[priority] || 'bg-gray-400'}`} title={priority} />;
+}
+
+function TaskRow({ task, onComplete, completing, isAdmin, showEditor, onInit }: {
+  task: Assignment;
+  onComplete: (id: string) => void;
+  completing: string | null;
+  isAdmin: boolean;
+  showEditor: boolean;
+  onInit: (id: string) => void;
+}) {
+  const router = useRouter();
+  const isDone = task.status === 'done';
+
+  const handleTitleClick = () => {
+    if (showEditor && task.document_id) {
+      router.push(`/editor?id=${task.document_id}&type=${task.category === 'article' ? 'cancer_docs' : task.category === 'blog' ? 'blogs' : 'survivor_stories'}`);
     }
   };
 
-  useEffect(() => {
-    fetchWork();
-  }, []);
+  return (
+    <div className={`flex items-center gap-4 px-4 py-3 border-b border-[var(--border)] last:border-b-0 hover:bg-[var(--bg-deep)] transition-colors group ${isDone ? 'opacity-55' : ''}`}>
+      <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${isDone ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>
+        {isDone ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
+      </div>
+      
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <PriorityDot priority={task.priority} />
+          {showEditor && task.document_id ? (
+            <button
+              onClick={handleTitleClick}
+              className={`text-sm font-semibold text-left hover:text-[var(--accent)] transition-colors truncate ${isDone ? 'line-through' : ''}`}
+            >
+              {task.title}
+            </button>
+          ) : (
+            <span className={`text-sm font-semibold text-[var(--text)] truncate ${isDone ? 'line-through' : ''}`}>{task.title}</span>
+          )}
+          <StatusBadge status={task.status} />
+        </div>
+        {task.description && (
+          <p className="text-xs text-[var(--text-4)] truncate mt-0.5">{task.description}</p>
+        )}
+      </div>
+
+      {isAdmin && task.assignee && (
+        <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
+          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--accent-hover)] flex items-center justify-center text-white text-[8px] font-bold flex-shrink-0">
+            {task.assignee.name?.split(' ').map(n => n[0]).join('').slice(0,2)}
+          </div>
+          <span className="text-xs text-[var(--text-4)] truncate max-w-[80px]">{task.assignee.name}</span>
+        </div>
+      )}
+
+      <div className="flex items-center gap-1.5 text-[11px] text-[var(--text-4)] flex-shrink-0">
+        <Calendar size={10} />
+        {task.due_date ? new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
+      </div>
+
+      {!isDone && (
+        <button
+          onClick={() => onComplete(task.id)}
+          disabled={completing === task.id}
+          className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 text-[10px] font-bold uppercase tracking-wider rounded-[var(--r-md)] border border-emerald-500/20 transition-all disabled:opacity-50 flex-shrink-0"
+        >
+          {completing === task.id ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
+          Complete
+        </button>
+      )}
+
+      {showEditor && !isDone && (
+        task.document_id ? (
+          <button
+            onClick={handleTitleClick}
+            className="flex items-center gap-1 px-2.5 py-1 bg-[var(--accent-subtle2)] hover:bg-[var(--accent-subtle)] text-[var(--accent)] text-[10px] font-bold uppercase tracking-wider rounded-[var(--r-md)] border border-[var(--accent-subtle)] transition-all flex-shrink-0"
+          >
+            Edit
+            <ChevronR size={10} />
+          </button>
+        ) : (
+          <button
+            onClick={() => onInit(task.id)}
+            className="flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 text-[10px] font-bold uppercase tracking-wider rounded-[var(--r-md)] border border-amber-500/20 transition-all flex-shrink-0"
+            title="Create internal document for this assignment"
+          >
+            Initialize
+          </button>
+        )
+      )}
+    </div>
+  );
+}
+
+function SectionTable({ 
+  section, tasks, onComplete, completing, isAdmin, onAssign, onToast, onInit
+}: {
+  section: typeof WRITERS_BLOCK_SECTIONS[0];
+  tasks: Assignment[];
+  onComplete: (id: string) => void;
+  completing: string | null;
+  isAdmin: boolean;
+  onAssign: (category: string) => void;
+  onToast: (m: string) => void;
+  onInit: (id: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(true);
+  const Icon = section.icon;
+  const pending = tasks.filter(t => t.status !== 'done');
+  const done = tasks.filter(t => t.status === 'done');
+
+  return (
+    <div className="rounded-[var(--r-lg)] border border-[var(--border-med)] overflow-hidden mb-4">
+      <div
+        className="flex items-center gap-3 px-4 py-3 bg-[var(--bg-deep)] cursor-pointer select-none"
+        onClick={() => setExpanded(e => !e)}
+      >
+        <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${section.color}18` }}>
+          <Icon size={14} style={{ color: section.color }} />
+        </div>
+        <span className="text-sm font-bold text-[var(--text)] flex-1">{section.label}</span>
+
+        {tasks.length > 0 && (
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: `${section.color}18`, color: section.color }}>
+            {pending.length} pending
+          </span>
+        )}
+
+        {isAdmin && (
+          <button
+            onClick={e => { e.stopPropagation(); onAssign(section.key); }}
+            className="p-1 rounded-md hover:bg-[var(--surface-2)] text-[var(--text-4)] hover:text-[var(--accent)] transition-colors"
+            title={`Assign ${section.label}`}
+          >
+            <Plus size={14} />
+          </button>
+        )}
+
+        <ChevronDown size={14} className={`text-[var(--text-4)] transition-transform ${expanded ? '' : '-rotate-90'}`} />
+      </div>
+
+      {expanded && (
+        <div>
+          {tasks.length === 0 ? (
+            <div className="py-8 text-center text-[var(--text-4)]">
+              <Icon size={22} className="mx-auto mb-2 opacity-30" style={{ color: section.color }} />
+              <p className="text-xs">No assignments yet</p>
+              {isAdmin && (
+                <button
+                  onClick={() => onAssign(section.key)}
+                  className="mt-2 text-xs font-semibold text-[var(--accent)] hover:underline flex items-center gap-1 mx-auto"
+                >
+                  <Plus size={11} /> Assign first task
+                </button>
+              )}
+            </div>
+          ) : (
+            <>
+              {pending.map(task => (
+                <TaskRow
+                  key={task.id}
+                  task={task}
+                  onComplete={onComplete}
+                  completing={completing}
+                  isAdmin={isAdmin}
+                  showEditor={section.hasEditor}
+                  onInit={onInit}
+                />
+              ))}
+              {done.length > 0 && (
+                <details className="group/done">
+                  <summary className="flex items-center gap-2 px-4 py-2 text-xs text-[var(--text-4)] cursor-pointer hover:bg-[var(--bg-deep)] select-none list-none border-t border-[var(--border)]">
+                    <ChevronR size={12} className="group-open/done:rotate-90 transition-transform" />
+                    {done.length} completed
+                  </summary>
+                  {done.map(task => (
+                    <TaskRow
+                      key={task.id}
+                      task={task}
+                      onComplete={onComplete}
+                      completing={completing}
+                      isAdmin={isAdmin}
+                      showEditor={section.hasEditor}
+                      onInit={onInit}
+                    />
+                  ))}
+                </details>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DepartmentPlaceholder({ dept, onToast }: { dept: typeof DEPARTMENTS[0], onToast: (m: string) => void }) {
+  const Icon = dept.icon;
+  return (
+    <div className={`rounded-[var(--r-lg)] border ${dept.border} overflow-hidden mb-4`}>
+      <div className="flex items-center gap-3 px-4 py-3" style={{ background: 'var(--bg-deep)' }}>
+        <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${dept.bg}`}>
+          <Icon size={14} className={dept.color} />
+        </div>
+        <span className="text-sm font-bold text-[var(--text)] flex-1">{dept.label}</span>
+        <button 
+          onClick={() => onToast('Department tables coming soon')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--r-md)] text-xs font-bold border transition-colors ${dept.border} ${dept.color} ${dept.bg} hover:opacity-80`}
+        >
+          <Plus size={12} />
+          Add Table
+        </button>
+      </div>
+      <div className="py-8 text-center text-[var(--text-4)] border-t border-[var(--border)]">
+        <p className="text-xs">No tables configured for this department yet.</p>
+      </div>
+    </div>
+  );
+}
+
+
+export default function WorkPage() {
+  const { user } = useUser();
+  const [myAssignments, setMyAssignments] = useState<Assignment[]>([]);
+  const [allAssignments, setAllAssignments] = useState<Assignment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAccountMenu, setShowAccountMenu] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState<{ category?: string } | null>(null);
+  const [isDark, setIsDark] = useState(false);
+  const [completing, setCompleting] = useState<string | null>(null);
+  const [view, setView] = useState<'my' | 'admin'>('my');
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     const dark = localStorage.getItem('cs-dark') === 'true';
@@ -66,21 +313,77 @@ export default function WorkPage() {
     document.documentElement.classList.toggle('dark', dark);
   }, []);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20';
-      case 'in-progress': return 'text-blue-500 bg-blue-500/10 border-blue-500/20';
-      default: return 'text-amber-500 bg-amber-500/10 border-amber-500/20';
+  const fetchWork = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [myRes, allRes] = await Promise.all([
+        fetch('/api/work'),
+        user?.admin_access ? fetch('/api/work/all') : Promise.resolve(null),
+      ]);
+
+      if (myRes.ok) {
+        const data = await myRes.json();
+        setMyAssignments(data.assignments || []);
+      }
+      if (allRes?.ok) {
+        const data = await allRes.json();
+        setAllAssignments(data.assignments || []);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.admin_access]);
+
+  useEffect(() => {
+    if (user !== undefined) fetchWork();
+  }, [user, fetchWork]);
+
+  const handleComplete = async (taskId: string) => {
+    setCompleting(taskId);
+    try {
+      const res = await fetch('/api/work', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: taskId, status: 'done' }),
+      });
+      if (res.ok) {
+        const updater = (prev: Assignment[]) =>
+          prev.map(a => a.id === taskId ? { ...a, status: 'done' as const } : a);
+        setMyAssignments(updater);
+        setAllAssignments(updater);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setCompleting(null);
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'text-red-500';
-      case 'normal': return 'text-amber-500';
-      default: return 'text-emerald-500';
+  const handleInitDoc = async (assignmentId: string) => {
+    try {
+      const res = await fetch('/api/work/initialize-doc', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assignmentId }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setToast('Document initialized successfully');
+        fetchWork(); // Refresh list to get the new document_id
+      } else {
+        setToast(data.error || 'Failed to initialize document');
+      }
+    } catch (err) {
+      setToast('An error occurred during initialization');
     }
   };
+
+  const isAdmin = !!user?.admin_access;
+
+  // Tasks to show in Writers' Block view: admins see all, others see their own
+  const writersBlockTasks = isAdmin && view === 'admin' ? allAssignments : myAssignments;
 
   return (
     <div className={`app-bg min-h-screen flex flex-col ${isDark ? 'dark' : ''}`}>
@@ -96,152 +399,156 @@ export default function WorkPage() {
         <div className="flex-1" />
 
         <div className="flex items-center gap-2">
+          {isAdmin && (
+            <button
+              onClick={() => setShowAssignModal({})}
+              className="bg-[var(--accent)] text-white px-3 py-1.5 rounded-[var(--r-md)] text-xs font-semibold flex items-center gap-1.5 shadow-lg shadow-[var(--accent-glow)]"
+            >
+              <Plus size={13} />
+              Assign Task
+            </button>
+          )}
           <button className="tb-btn" onClick={() => setShowAccountMenu(!showAccountMenu)}>
-             <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[var(--accent)] to-[var(--accent-hover)] flex items-center justify-center text-white text-[10px] font-bold">
-               {user?.name?.split(' ').map(n => n[0]).join('') || 'U'}
-             </div>
+            <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[var(--accent)] to-[var(--accent-hover)] flex items-center justify-center text-white text-[10px] font-bold">
+              {user?.name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
+            </div>
           </button>
           {showAccountMenu && (
-            <AccountMenu user={user} onClose={() => setShowAccountMenu(false)} onToast={() => {}} />
+            <AccountMenu user={user} onClose={() => setShowAccountMenu(false)} onToast={(m) => setToast(m)} />
           )}
         </div>
       </header>
 
       <div className="flex flex-1">
-        {/* Sidebar Mini */}
-        <aside className="w-52 border-r border-[var(--border-med)] p-4 space-y-1 hidden md:block">
+        {/* Sidebar */}
+        <aside className="w-52 border-r border-[var(--border-med)] p-4 space-y-1 hidden md:flex flex-col">
           <Link href="/" className="flex items-center gap-3 px-3 py-2 text-sm text-[var(--text-4)] hover:text-[var(--text)] rounded-[var(--r-md)] transition-colors">
             <ChevronRight size={14} className="rotate-180" />
             Dashboard
           </Link>
-          <div className="pt-4 pb-2 px-3 text-[10px] font-bold uppercase tracking-widest text-[var(--text-4)]">Assignments</div>
-          <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-[var(--accent)] bg-[var(--accent-subtle2)] rounded-[var(--r-md)] font-semibold">
+
+          <div className="pt-4 pb-2 px-3 text-[10px] font-bold uppercase tracking-widest text-[var(--text-4)]">Views</div>
+
+          <button
+            onClick={() => setView('my')}
+            className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-[var(--r-md)] font-semibold text-left transition-all ${view === 'my' ? 'text-[var(--accent)] bg-[var(--accent-subtle2)]' : 'text-[var(--text-4)] hover:text-[var(--text)] hover:bg-[var(--bg-deep)]'}`}
+          >
             <Briefcase size={14} />
-            My Tasks
+            My Assignments
           </button>
-          <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-[var(--text-4)] hover:text-[var(--text)] hover:bg-[var(--bg-deep)] rounded-[var(--r-md)] transition-all">
-            <CheckCircle2 size={14} />
-            Completed
-          </button>
+
+          {isAdmin && (
+            <button
+              onClick={() => setView('admin')}
+              className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-[var(--r-md)] font-semibold text-left transition-all ${view === 'admin' ? 'text-[var(--accent)] bg-[var(--accent-subtle2)]' : 'text-[var(--text-4)] hover:text-[var(--text)] hover:bg-[var(--bg-deep)]'}`}
+            >
+              <Users size={14} />
+              All Assignments
+            </button>
+          )}
+
+          <div className="flex-1" />
+
+          <div className="text-[10px] text-[var(--text-4)] px-3 py-2">
+            {myAssignments.filter(a => a.status !== 'done').length} pending tasks
+          </div>
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-8 overflow-y-auto">
+        <main className="flex-1 p-6 overflow-y-auto">
           <div className="max-w-5xl mx-auto">
-            <div className="flex items-center justify-between mb-8 anim-fade-up">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
               <div>
-                <h1 className="text-2xl font-bold text-[var(--text)] tracking-tight">Work Assignments</h1>
-                <p className="text-sm text-[var(--text-4)] mt-1">Manage and track your editorial tasks</p>
+                <h1 className="text-xl font-bold text-[var(--text)] tracking-tight">
+                  {view === 'admin' ? 'All Assignments' : 'My Assignments'}
+                </h1>
+                <p className="text-sm text-[var(--text-4)] mt-0.5">
+                  {view === 'admin'
+                    ? 'All tasks assigned across the team, organized by department'
+                    : 'Your editorial tasks and content assignments'}
+                </p>
               </div>
-              {user?.admin_access && (
-                <button 
-                  onClick={() => setShowAssignModal(true)}
+              {isAdmin && (
+                <button
+                  onClick={() => setShowAssignModal({})}
                   className="bg-[var(--accent)] text-white px-4 py-2 rounded-[var(--r-md)] text-sm font-semibold flex items-center gap-2 shadow-lg shadow-[var(--accent-glow)] hover:scale-[1.02] active:scale-[0.98] transition-all"
                 >
-                  <Plus size={16} />
+                  <Plus size={14} />
                   Assign Task
                 </button>
               )}
             </div>
 
-            {/* Filters */}
-            <div className="flex items-center gap-4 mb-6 anim-fade-up delay-75">
-              <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-4)]" size={14} />
-                <input 
-                  type="text" 
-                  placeholder="Filter tasks..." 
-                  className="w-full pl-9 pr-4 py-2 bg-[var(--bg-deep)] border border-[var(--border-med)] rounded-[var(--r-md)] text-xs text-[var(--text)] focus:outline-none focus:border-[var(--accent)]"
-                />
+            {loading ? (
+              <div className="py-20 flex flex-col items-center justify-center gap-4 text-[var(--text-4)]">
+                <div className="w-8 h-8 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm">Loading assignments...</span>
               </div>
-              <button className="tb-btn border border-[var(--border-med)] bg-[var(--bg-deep)] px-3 py-1.5 text-xs text-[var(--text-3)] flex items-center gap-2">
-                <Filter size={12} />
-                Status
-              </button>
-              <button className="tb-btn border border-[var(--border-med)] bg-[var(--bg-deep)] px-3 py-1.5 text-xs text-[var(--text-3)] flex items-center gap-2">
-                <ArrowUpDown size={12} />
-                Sort
-              </button>
-            </div>
-
-            {/* Tasks List */}
-            <div className="space-y-3">
-              {loading ? (
-                <div className="py-20 text-center text-[var(--text-4)] flex flex-col items-center gap-4">
-                  <div className="w-8 h-8 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
-                  <span className="text-sm">Loading your assignments...</span>
-                </div>
-              ) : assignments.length === 0 ? (
-                <div className="py-20 text-center glass-raised rounded-[var(--r-xl)] p-12 anim-fade-up">
-                   <div className="w-16 h-16 bg-[var(--bg-deep)] rounded-full flex items-center justify-center mx-auto mb-4 border border-[var(--border-med)]">
-                     <Briefcase size={28} className="text-[var(--text-4)] opacity-50" />
-                   </div>
-                   <h3 className="text-lg font-bold text-[var(--text)]">No assignments found</h3>
-                   <p className="text-sm text-[var(--text-4)] mt-2 mx-auto max-w-xs">You don't have any work assigned to you at the moment. Enjoy the break!</p>
-                </div>
-              ) : (
-                assignments.map((task, i) => (
-                  <div 
-                    key={task.id} 
-                    className="glass-raised p-5 rounded-[var(--r-lg)] flex items-center gap-6 hover:border-[var(--accent-subtle)] transition-all group anim-fade-up"
-                    style={{ animationDelay: `${i * 0.05}s` }}
-                  >
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${task.status === 'completed' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>
-                      {task.status === 'completed' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
+            ) : (
+              <>
+                {/* Writers' Block Section */}
+                <div className="mb-8">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                      <PenTool size={16} className="text-amber-500" />
                     </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-1">
-                        <h4 className="font-bold text-[var(--text)] truncate group-hover:text-[var(--accent)] transition-colors">{task.title}</h4>
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getStatusColor(task.status)}`}>
-                          {task.status.replace('-', ' ')}
-                        </span>
-                        {task.category !== 'task' && (
-                          <span className="text-[10px] font-bold text-[var(--text-4)] bg-[var(--bg-deep)] px-2 py-0.5 rounded border border-[var(--border-med)] uppercase tracking-wider">
-                            {task.category.replace('_', ' ')}
-                          </span>
-                        )}
-                        {task.department && (
-                          <span className="text-[10px] font-medium text-[var(--accent)] bg-[var(--accent-subtle2)] px-2 py-0.5 rounded border border-[var(--accent-subtle)] uppercase tracking-wider">
-                            {task.department}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-[var(--text-4)] line-clamp-1">{task.description}</p>
-                    </div>
-
-                    <div className="flex items-center gap-8 pr-4">
-                      <div className="text-right">
-                        <div className="text-[10px] uppercase font-bold tracking-widest text-[var(--text-4)] mb-1">Priority</div>
-                        <div className={`text-xs font-bold capitalize ${getPriorityColor(task.priority)}`}>{task.priority}</div>
-                      </div>
-                      
-                      <div className="text-right whitespace-nowrap">
-                        <div className="text-[10px] uppercase font-bold tracking-widest text-[var(--text-4)] mb-1 flex items-center gap-1 justify-end">
-                          <Calendar size={10} />
-                          Due Date
-                        </div>
-                        <div className="text-xs font-semibold text-[var(--text-3)]">{new Date(task.due_date).toLocaleDateString()}</div>
-                      </div>
-
-                      <button className="text-[var(--text-4)] hover:text-[var(--text)] transition-colors p-2">
-                        <MoreHorizontal size={18} />
-                      </button>
+                    <div>
+                      <h2 className="text-base font-bold text-[var(--text)]">Writers' Block</h2>
+                      <p className="text-xs text-[var(--text-4)]">Editorial content and writing assignments</p>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
+
+                  {WRITERS_BLOCK_SECTIONS.map(section => {
+                    const sectionTasks = writersBlockTasks.filter(a => {
+                      const matchCategory = a.category === section.key;
+                      // For Writers' Block: filter by department only in admin view where all departments show
+                      if (view === 'admin') {
+                        return matchCategory; // admin sees all regardless of department
+                      }
+                      return matchCategory;
+                    });
+
+                    return (
+                      <SectionTable
+                        key={section.key}
+                        section={section}
+                        tasks={sectionTasks}
+                        onComplete={handleComplete}
+                        completing={completing}
+                        isAdmin={isAdmin}
+                        onAssign={(category) => setShowAssignModal({ category })}
+                        onToast={(m) => setToast(m)}
+                        onInit={handleInitDoc}
+                      />
+                    );
+                  })}
+                </div>
+
+                {/* Other Departments — Placeholder sections */}
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <h2 className="text-base font-bold text-[var(--text)]">Other Departments</h2>
+                    <span className="text-xs text-[var(--text-4)] bg-[var(--bg-deep)] border border-[var(--border-med)] px-2 py-0.5 rounded-full">Coming soon</span>
+                  </div>
+                  {DEPARTMENTS.filter(d => d.key !== "Writers' Block").map(dept => (
+                    <DepartmentPlaceholder key={dept.key} dept={dept} onToast={(m) => setToast(m)} />
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </main>
       </div>
 
-      {showAssignModal && (
-        <AssignTaskModal 
-          onClose={() => setShowAssignModal(false)} 
-          onSuccess={fetchWork} 
+      {showAssignModal !== null && (
+        <AssignTaskModal
+          onClose={() => setShowAssignModal(null)}
+          onSuccess={() => { setShowAssignModal(null); fetchWork(); }}
+          defaultCategory={showAssignModal.category as any}
         />
       )}
+      {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
     </div>
   );
 }

@@ -21,6 +21,7 @@ import {
 import { useUser } from '@/lib/useUser';
 import AccountMenu from '@/components/AccountMenu';
 import AssignTaskModal from '@/components/AssignTaskModal';
+import Toast from '@/components/Toast';
 
 interface TeamMember {
   id: string;
@@ -40,6 +41,9 @@ export default function TeamPage() {
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState<TeamMember | null>(null);
   const [isDark, setIsDark] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const [filter, setFilter] = useState<'all' | 'admin'>('all');
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     async function fetchTeam() {
@@ -74,6 +78,15 @@ export default function TeamPage() {
     }
   };
 
+  const filteredMembers = members.filter(m => {
+    const matchesFilter = filter === 'all' || m.admin_access;
+    const matchesSearch = !search || 
+      m.name.toLowerCase().includes(search.toLowerCase()) || 
+      m.username.toLowerCase().includes(search.toLowerCase()) ||
+      m.department?.toLowerCase().includes(search.toLowerCase());
+    return matchesFilter && matchesSearch;
+  });
+
   return (
     <div className={`app-bg min-h-screen flex flex-col ${isDark ? 'dark' : ''}`}>
       {/* Header */}
@@ -94,7 +107,7 @@ export default function TeamPage() {
              </div>
           </button>
           {showAccountMenu && (
-            <AccountMenu user={currentUser} onClose={() => setShowAccountMenu(false)} onToast={() => {}} />
+            <AccountMenu user={currentUser} onClose={() => setShowAccountMenu(false)} onToast={(m) => setToast(m)} />
           )}
         </div>
       </header>
@@ -107,11 +120,17 @@ export default function TeamPage() {
             Dashboard
           </Link>
           <div className="pt-4 pb-2 px-3 text-[10px] font-bold uppercase tracking-widest text-[var(--text-4)]">Directory</div>
-          <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-[var(--accent)] bg-[var(--accent-subtle2)] rounded-[var(--r-md)] font-semibold text-left">
+          <button 
+            onClick={() => setFilter('all')}
+            className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-[var(--r-md)] font-semibold text-left transition-all ${filter === 'all' ? 'text-[var(--accent)] bg-[var(--accent-subtle2)]' : 'text-[var(--text-4)] hover:text-[var(--text)] hover:bg-[var(--bg-deep)]'}`}
+          >
             <Users size={14} />
             Members
           </button>
-          <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-[var(--text-4)] hover:text-[var(--text)] hover:bg-[var(--bg-deep)] rounded-[var(--r-md)] transition-all text-left">
+          <button 
+            onClick={() => setFilter('admin')}
+            className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-[var(--r-md)] transition-all text-left font-semibold ${filter === 'admin' ? 'text-[var(--accent)] bg-[var(--accent-subtle2)]' : 'text-[var(--text-4)] hover:text-[var(--text)] hover:bg-[var(--bg-deep)]'}`}
+          >
             <Shield size={14} />
             Admins
           </button>
@@ -134,15 +153,23 @@ export default function TeamPage() {
                 <input 
                   type="text" 
                   placeholder="Search team members..." 
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
                   className="w-full pl-9 pr-4 py-2 bg-[var(--bg-deep)] border border-[var(--border-med)] rounded-[var(--r-md)] text-xs text-[var(--text)] focus:outline-none focus:border-[var(--accent)]"
                 />
               </div>
               <div className="flex items-center gap-2">
-                 <button className="tb-btn border border-[var(--border-med)] bg-[var(--bg-deep)] px-3 py-1.5 text-xs text-[var(--text-3)] flex items-center gap-2">
+                 <button 
+                  onClick={() => setToast('Department filtering coming soon')}
+                  className="tb-btn border border-[var(--border-med)] bg-[var(--bg-deep)] px-3 py-1.5 text-xs text-[var(--text-3)] flex items-center gap-2"
+                >
                   <Filter size={12} />
                   Department
                 </button>
-                <button className="tb-btn border border-[var(--border-med)] bg-[var(--bg-deep)] px-3 py-1.5 text-xs text-[var(--text-3)] flex items-center gap-2">
+                <button 
+                  onClick={() => setToast('Sorting options coming soon')}
+                  className="tb-btn border border-[var(--border-med)] bg-[var(--bg-deep)] px-3 py-1.5 text-xs text-[var(--text-3)] flex items-center gap-2"
+                >
                   <ArrowUpDown size={12} />
                   Sort
                 </button>
@@ -172,7 +199,7 @@ export default function TeamPage() {
                    <p className="text-sm text-[var(--text-4)] mt-2">Try adjusting your search or filters.</p>
                 </div>
               ) : (
-                members.map((member, i) => (
+                filteredMembers.map((member, i) => (
                   <div 
                     key={member.id} 
                     className="glass-raised p-6 rounded-[var(--r-xl)] group hover:scale-[1.02] transition-all anim-fade-up"
@@ -212,15 +239,15 @@ export default function TeamPage() {
 
                     <div className="pt-5 border-t border-[var(--border)] flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <button className="text-[var(--text-4)] hover:text-[var(--accent)] transition-colors" title="GitHub">
+                        <a href={`https://github.com/${member.username}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-4)] hover:text-[var(--accent)] transition-colors" title="GitHub">
                           <Github size={14} />
-                        </button>
-                        <button className="text-[var(--text-4)] hover:text-[#1DA1F2] transition-colors" title="Twitter">
+                        </a>
+                        <a href={`https://twitter.com/${member.username}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-4)] hover:text-[#1DA1F2] transition-colors" title="Twitter">
                           <Twitter size={14} />
-                        </button>
-                        <button className="text-[var(--text-4)] hover:text-[#0A66C2] transition-colors" title="LinkedIn">
+                        </a>
+                        <a href={`https://linkedin.com/in/${member.username}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-4)] hover:text-[#0A66C2] transition-colors" title="LinkedIn">
                           <Linkedin size={14} />
-                        </button>
+                        </a>
                       </div>
                       
                       {currentUser?.admin_access && (
@@ -244,9 +271,10 @@ export default function TeamPage() {
         <AssignTaskModal 
           member={showAssignModal}
           onClose={() => setShowAssignModal(null)}
-          onSuccess={() => {/* Toast or notification can go here */}}
+          onSuccess={() => { setShowAssignModal(null); setToast('Task assigned successfully'); }}
         />
       )}
+      {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
     </div>
   );
 }

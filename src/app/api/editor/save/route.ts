@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
   }
 
-  const { id, title, slug, content, contentType, status, tags } = await req.json();
+  const { id, title, slug, content, contentType, status, tags, author_id } = await req.json();
 
   if (!title || !slug || !contentType) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -28,8 +28,7 @@ export async function POST(req: NextRequest) {
     slug,
     content,
     status,
-    tags,
-    author_id: payload.userId,
+    tags: tags || [],
     updated_at: new Date().toISOString(),
   };
 
@@ -50,6 +49,8 @@ export async function POST(req: NextRequest) {
       .single();
   } else {
     // Insert new
+    data.author_id = author_id || payload.userId; // Use provided author_id or fallback to current user
+    data.created_at = new Date().toISOString();
     result = await supabaseAdmin
       .from(table)
       .insert([data])
