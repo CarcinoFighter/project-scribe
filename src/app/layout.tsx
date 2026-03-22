@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import { ThemeInitializer } from '@/components/ThemeInitializer';
 
 export const metadata: Metadata = {
   title: 'Carcino Scribe',
@@ -20,7 +21,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <ThemeInitializer />
+        {children}
+      </body>
     </html>
   );
 }
