@@ -30,7 +30,7 @@ export default function AccountMenu({ user, onClose, onToast, onOpenSettings }: 
   };
 
   return (
-    <div className="glass-overlay" style={{ position: 'absolute', right: 0, top: 'calc(100% + 8px)', borderRadius: 'var(--r-lg)', minWidth: 210, overflow: 'hidden', zIndex: 200 }}>
+    <div className="glass-overlay anim-drop-in" style={{ borderRadius: 'var(--r-lg)', minWidth: 210, overflow: 'hidden', zIndex: 200 }}>
       <div style={{ padding: '144x 16px', borderBottom: '1px solid var(--border)' }} className="p-4">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {user?.avatar_url ? (

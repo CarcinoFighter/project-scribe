@@ -224,7 +224,7 @@ function ReviewQueue({
           const bg = doc.type === 'blogs' ? 'bg-[#9875c118]' : doc.type === 'survivor_stories' ? 'bg-[#10b98118]' : doc.type === 'tasks' ? 'bg-amber-500/10' : 'bg-[#3b82f618]';
 
           return (
-            <div key={doc.id} className="glass-raised p-4 rounded-[var(--r-lg)] border border-[var(--border-med)] flex flex-col gap-3 hover:border-[var(--accent-subtle)] transition-colors group">
+            <div key={doc.id} className="glass-raised grain p-4 rounded-[var(--r-lg)] border border-[var(--border-med)] flex flex-col gap-3 hover:border-[var(--accent-subtle)] transition-colors group">
               <div className="flex items-start justify-between gap-3">
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${bg}`}>
                   <Icon size={16} className={color} />
@@ -309,7 +309,7 @@ function SectionTable({
   const done = tasks.filter((t: Assignment) => t.status === 'done');
 
   return (
-    <div className="rounded-[var(--r-lg)] border border-[var(--border-med)] overflow-hidden mb-4">
+    <div className="glass-raised grain rounded-[var(--r-lg)] border border-[var(--border-med)] overflow-hidden mb-4">
       <div
         className="flex items-center gap-3 px-4 py-3 bg-[var(--bg-deep)] cursor-pointer select-none"
         onClick={() => setExpanded(e => !e)}
@@ -435,9 +435,19 @@ export default function WorkPage() {
   const [viewingMedia, setViewingMedia] = useState<{ url: string; title: string } | null>(null);
 
   useEffect(() => {
-    const dark = localStorage.getItem('cs-dark') === 'true';
-    setIsDark(dark);
-    document.documentElement.classList.toggle('dark', dark);
+    try {
+      const raw = localStorage.getItem('cs-settings');
+      if (raw) {
+        const s = JSON.parse(raw);
+        const themes: Record<string,boolean> = {
+          'default-dark': true, 'catppuccin-mocha': true, 'solarized-dark': true,
+          'default-light': false, 'catppuccin-latte': false, 'solarized-light': false,
+        };
+        const isDarkTheme = themes[s?.theme] ?? false;
+        setIsDark(isDarkTheme);
+        document.documentElement.classList.toggle('dark', isDarkTheme);
+      }
+    } catch {}
   }, []);
 
   const fetchWork = useCallback(async () => {
@@ -572,7 +582,7 @@ export default function WorkPage() {
   return (
     <div className={`app-bg min-h-screen flex flex-col ${isDark ? 'dark' : ''}`}>
       {/* Header */}
-      <header className="app-header glass glass-rim flex items-center px-4 h-[52px] border-b border-[var(--border-med)] sticky top-0 z-50">
+      <header className="app-header anim-slide-down flex items-center px-4 h-[52px] sticky top-0 z-50" style={{ borderBottom: "1px solid var(--border-med)", background: "var(--surface-0)", backdropFilter: "blur(20px) saturate(180%) brightness(1.02)", WebkitBackdropFilter: "blur(20px) saturate(180%) brightness(1.02)", boxShadow: "inset 0 -1px 0 var(--border-med), 0 1px 12px rgba(0,0,0,0.04)" }}>
         <div className="flex items-center gap-2 select-none mr-4">
           <Image src="/logo.svg" alt="Carcino" width={18} height={22} priority />
           <span className="font-bold text-[13.5px] text-[var(--text)] tracking-tight">
@@ -604,8 +614,17 @@ export default function WorkPage() {
       </header>
 
       <div className="flex flex-1">
+        {/* Mobile nav strip — visible only on small screens */}
+        <div className="md:hidden flex items-center gap-3 px-4 py-2 border-b border-[var(--border)] bg-[var(--bg-alt)] text-xs">
+          <Link href="/" className="text-[var(--text-4)] hover:text-[var(--accent)] flex items-center gap-1 transition-colors">
+            <ChevronRight size={12} className="rotate-180" /> Dashboard
+          </Link>
+          <span className="text-[var(--border-strong)]">/</span>
+          <span className="text-[var(--text-3)] font-semibold">Work</span>
+        </div>
+
         {/* Sidebar */}
-        <aside className="w-52 border-r border-[var(--border-med)] p-4 space-y-1 hidden md:flex flex-col">
+        <aside className="sidebar-col w-52 p-4 space-y-1 hidden md:flex flex-col" style={{ position: 'sticky', top: 52, height: 'calc(100vh - 52px)', overflowY: 'auto' }}>
           <Link href="/" className="flex items-center gap-3 px-3 py-2 text-sm text-[var(--text-4)] hover:text-[var(--text)] rounded-[var(--r-md)] transition-colors">
             <ChevronRight size={14} className="rotate-180" />
             Dashboard

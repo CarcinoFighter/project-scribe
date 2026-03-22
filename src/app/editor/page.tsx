@@ -13,7 +13,7 @@ import GuidedTour from '@/components/GuidedTour';
 import CommandPalette from '@/components/CommandPalette';
 import ConfirmModal from '@/components/ConfirmModal';
 import MetadataPanel from '@/components/MetadataPanel';
-import SettingsModal, { loadSettings, saveSettings, applySettings, DEFAULT_SETTINGS } from '@/components/SettingsModal';
+import SettingsModal, { loadSettings, saveSettings, applySettings, DEFAULT_SETTINGS, THEMES } from '@/components/SettingsModal';
 import type { AppSettings } from '@/components/SettingsModal';
 import { X, Plus, FileText, BookOpen, Heart, Loader2 } from 'lucide-react';
 
@@ -147,11 +147,15 @@ function EditorContent() {
   const [goalCelebrated, setGoalCelebrated] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [appSettings, setAppSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+
+  // Keep a ref in sync so handleCommand closures always get the latest settings
+  useEffect(() => { appSettingsRef.current = appSettings; }, [appSettings]);
   
   const editorRef = useRef<EditorAPI | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const splitRef = useRef<HTMLDivElement>(null);
   const prevGoalHit = useRef(false);
+  const appSettingsRef = useRef<AppSettings>(DEFAULT_SETTINGS);
 
   // Helper: Active Tab
   const activeTab = tabs.find(t => t.id === activeTabId) || tabs[0];
@@ -248,14 +252,16 @@ function EditorContent() {
   // ---- Auto-save (debounced) ----
   useEffect(() => {
     if (!activeTab || activeTab.title === 'Error loading') return;
-    
-    // Mark as unsaved immediately on change
-    setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, isSaved: false } : t));
+
+    // Mark unsaved after a short delay (avoids flicker on fast typing)
+    const markUnsaved = setTimeout(() => {
+      setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, isSaved: false } : t));
+    }, 300);
 
     const t = setTimeout(async () => {
       try {
         // Local persist (filter out error tabs)
-        const tabsToSave = tabs.filter(tab => tab.title !== 'Error loading' && !tab.isLoading);
+        const tabsToSave = tabsRef.current.filter(tab => tab.title !== 'Error loading' && !tab.isLoading);
         if (tabsToSave.length > 0) {
           localStorage.setItem('cs-tabs', JSON.stringify(tabsToSave));
         }
@@ -291,8 +297,8 @@ function EditorContent() {
         }
       } catch (e) {}
     }, 1500);
-    return () => clearTimeout(t);
-  }, [activeTab?.content, activeTab?.title, activeTab?.slug, activeTab?.status]);
+    return () => { clearTimeout(markUnsaved); clearTimeout(t); };
+  }, [activeTab?.content, activeTab?.title, activeTab?.slug, activeTab?.status, activeTabId]);
 
   // ---- Title Management ----
   useEffect(() => {
@@ -301,6 +307,39 @@ function EditorContent() {
     const base = `${activeTab.title} — Scribe`;
     document.title = unsaved ? `\u25CF ${base}` : base;
   }, [activeTab?.title, activeTab?.isSaved]);
+
+  // ---- Persist word goal ----
+  useEffect(() => {
+    localStorage.setItem('cs-goal', String(wordGoal));
+  }, [wordGoal]);
+
+  // handleCommandRef lets keyboard handler always call latest version without re-registering
+  const handleCommandRef = useRef<(id: string) => void>(() => {});
+
+  // ---- Global keyboard shortcuts ----
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const ctrl = e.ctrlKey || e.metaKey;
+      if (ctrl && e.shiftKey && e.key === 'Z') { e.preventDefault(); setZenMode(z => !z); }
+      if (ctrl && e.shiftKey && e.key === 'F') { e.preventDefault(); setFocusMode(f => !f); }
+      if (ctrl && e.shiftKey && e.key === 'D') { e.preventDefault(); handleCommandRef.current('theme'); }
+      if (e.key === 'Escape' && zenMode)        { e.preventDefault(); setZenMode(false); }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [zenMode]);
+
+  // ---- Word goal celebration ----
+  useEffect(() => {
+    if (!wordGoal || wordGoal <= 0) return;
+    const stats = activeTab ? computeStats(activeTab.content) : computeStats('');
+    const hit = stats.words >= wordGoal;
+    if (hit && !prevGoalHit.current) {
+      setGoalCelebrated(true);
+      setTimeout(() => setGoalCelebrated(false), 3000);
+    }
+    prevGoalHit.current = hit;
+  }, [activeTab?.content, wordGoal]);
 
   // ---- Actions ----
   const handleAddNew = useCallback(() => {
@@ -318,11 +357,9 @@ function EditorContent() {
     setActiveTabId(id);
   }, []);
 
-  const handleCloseTab = useCallback((id: string) => {
+  const doCloseTab = useCallback((id: string) => {
     setTabs(prev => {
       const next = prev.filter(t => t.id !== id);
-      
-      // If we closed the last tab, reset to a default one
       if (next.length === 0) {
         const defaultTab: Tab = {
           id: 'ls-active',
@@ -336,7 +373,6 @@ function EditorContent() {
         setActiveTabId(defaultTab.id);
         return [defaultTab];
       }
-
       if (activeTabId === id) {
         const currentIdx = prev.findIndex(t => t.id === id);
         const nextIdx = Math.max(0, currentIdx - 1);
@@ -345,6 +381,21 @@ function EditorContent() {
       return next;
     });
   }, [activeTabId]);
+
+  const handleCloseTab = useCallback((id: string) => {
+    const tab = tabsRef.current.find(t => t.id === id);
+    if (tab && !tab.isSaved && tab.content.trim() && tab.title !== 'Untitled Document') {
+      setConfirm({
+        title: 'Close unsaved tab?',
+        message: `"${tab.title}" has unsaved changes that will be lost.`,
+        confirmLabel: 'Close anyway',
+        danger: true,
+        onConfirm: () => doCloseTab(id),
+      });
+      return;
+    }
+    doCloseTab(id);
+  }, [activeTabId, doCloseTab]);
 
   const updateActiveTab = (patch: Partial<Tab>) => {
     setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, ...patch } : t));
@@ -369,14 +420,76 @@ function EditorContent() {
       case 'h1': api?.prefixLines('#'); break;
       case 'h2': api?.prefixLines('##'); break;
       case 'ul': api?.prefixLines('-'); break;
+      case 'ol': api?.prefixLines('', true); break;
+      case 'h3': api?.prefixLines('###'); break;
+      case 'strikethrough': api?.wrapSelection('~~', '~~', 'strikethrough text'); break;
+      case 'code': api?.wrapSelection('`', '`', 'code'); break;
+      case 'codeblock': api?.insertAtCursor('```\n\n```'); break;
+      case 'quote': api?.prefixLines('>'); break;
+      case 'link': api?.wrapSelection('[', '](url)', 'link text'); break;
+      case 'image': api?.insertAtCursor('![alt text](image-url)'); break;
+      case 'hr': api?.insertAtCursor('\n---\n'); break;
+      case 'table': api?.insertAtCursor('| Column 1 | Column 2 | Column 3 |\n| --- | --- | --- |\n| Cell | Cell | Cell |\n'); break;
       case 'new': handleAddNew(); break;
       case 'zen': setZenMode(z => !z); break;
       case 'focus': setFocusMode(f => !f); break;
       case 'view-editor': setViewMode('editor'); break;
       case 'view-split': setViewMode('split'); break;
       case 'view-preview': setViewMode('preview'); break;
+      case 'theme': {
+        const currentTheme = appSettingsRef.current.theme;
+        const darkToLight: Record<string, string> = { 'default-dark': 'default-light', 'catppuccin-mocha': 'catppuccin-latte', 'solarized-dark': 'solarized-light' };
+        const lightToDark: Record<string, string> = Object.fromEntries(Object.entries(darkToLight).map(([k, v]) => [v, k]));
+        const currentIsDark = THEMES[currentTheme]?.dark ?? true;
+        const nextTheme = currentIsDark ? (darkToLight[currentTheme] ?? 'default-light') : (lightToDark[currentTheme] ?? 'default-dark');
+        const next = { ...appSettingsRef.current, theme: nextTheme };
+        setAppSettings(next); saveSettings(next); setIsDark(applySettings(next));
+        break;
+      }
+      case 'search': editorRef.current?.openSearch(); break;
+      case 'open': {
+        const input = document.createElement('input');
+        input.type = 'file'; input.accept = '.md,.markdown,.txt';
+        input.onchange = (e) => {
+          const file = (e.target as HTMLInputElement).files?.[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const content = ev.target?.result as string;
+            const id = `file-${Date.now()}`;
+            setTabs(prev => [...prev, { id, type: 'blogs', title: file.name.replace(/\.[^/.]+$/, ''), content, slug: '', status: 'draft', isSaved: true }]);
+            setActiveTabId(id);
+          };
+          reader.readAsText(file);
+        };
+        input.click(); break;
+      }
+      case 'export-md': {
+        const tab = tabs.find(t => t.id === activeTabId);
+        if (!tab) break;
+        const blob = new Blob([tab.content], { type: 'text/markdown' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = `${tab.title}.md`; a.click(); URL.revokeObjectURL(a.href); break;
+      }
+      case 'export-html': {
+        const tab = tabs.find(t => t.id === activeTabId);
+        if (!tab) break;
+        const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${tab.title}</title></head><body><pre>${tab.content}</pre></body></html>`;
+        const blob = new Blob([html], { type: 'text/html' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = `${tab.title}.html`; a.click(); URL.revokeObjectURL(a.href); break;
+      }
+      case 'tour': setShowTour(true); break;
+      default:
+        if (id.startsWith('tpl-')) {
+          const templates = makeTemplates();
+          if (templates[id]) updateActiveTab({ content: templates[id] });
+        }
     }
-  }, [handleAddNew]);
+  }, [handleAddNew, activeTabId, tabs]);
+
+  // Keep handleCommandRef up to date
+  useEffect(() => { handleCommandRef.current = handleCommand; }, [handleCommand]);
 
   // Word stats
   const stats = activeTab ? computeStats(activeTab.content) : computeStats('');
@@ -398,44 +511,27 @@ function EditorContent() {
         zenMode={zenMode}
         focusMode={focusMode}
         onNew={handleAddNew}
-        onOpenFile={() => {}}
-        onExportMd={() => {}}
-        onExportHtml={() => {}}
+        onOpenFile={() => handleCommand('open')}
+        onExportMd={() => handleCommand('export-md')}
+        onExportHtml={() => handleCommand('export-html')}
         onOpenSearch={() => editorRef.current?.openSearch()}
         onOpenTour={() => setShowTour(true)}
         onOpenCmd={() => setShowCmd(true)}
         onToggleZen={() => setZenMode(!zenMode)}
         onToggleFocus={() => setFocusMode(!focusMode)}
         onOpenSettings={() => setShowSettings(true)}
-        onToggleDark={() => {
-          const currentTheme = appSettings.theme;
-          // Pick matching opposite theme or flip between defaults
-          const darkToLight: Record<string, string> = {
-            'default-dark': 'default-light',
-            'catppuccin-mocha': 'catppuccin-latte',
-            'solarized-dark': 'solarized-light',
-          };
-          const lightToDark: Record<string, string> = Object.fromEntries(
-            Object.entries(darkToLight).map(([k, v]) => [v, k])
-          );
-          const nextTheme = isDark
-            ? (darkToLight[currentTheme] ?? 'default-light')
-            : (lightToDark[currentTheme] ?? 'default-dark');
-          const next = { ...appSettings, theme: nextTheme };
-          setAppSettings(next);
-          saveSettings(next);
-          const dark = applySettings(next);
-          setIsDark(dark);
-        }}
+        onToggleDark={() => handleCommand('theme')}
       />
 
-      <TabBar 
-        tabs={tabs} 
-        activeTabId={activeTabId} 
-        onSwitch={setActiveTabId} 
-        onClose={handleCloseTab} 
-        onNew={handleAddNew} 
-      />
+      <div className={`zen-tabbar${zenMode ? ' zen-hidden' : ''}`}>
+        <TabBar 
+          tabs={tabs} 
+          activeTabId={activeTabId} 
+          onSwitch={setActiveTabId} 
+          onClose={handleCloseTab} 
+          onNew={handleAddNew} 
+        />
+      </div>
 
       <div ref={splitRef} className="flex flex-1 overflow-hidden">
         <OutlineSidebar
@@ -476,7 +572,7 @@ function EditorContent() {
               />
             )}
 
-            <div style={{ flex: viewMode === 'preview' ? 1 : (viewMode === 'split' ? 1 : 0), overflow: 'hidden' }}>
+            <div style={{ flex: viewMode === 'preview' ? 1 : (viewMode === 'split' ? 1 : 0), overflow: 'hidden', borderLeft: viewMode === 'split' ? '1px solid var(--border-med)' : 'none' }}>
               <PreviewPane content={activeTab.content} containerRef={previewRef} />
             </div>
           </div>
@@ -511,6 +607,16 @@ function EditorContent() {
 
       {showCmd && <CommandPalette isDark={isDark} onClose={() => setShowCmd(false)} onCommand={handleCommand} />}
       {showTour && <GuidedTour onClose={() => setShowTour(false)} />}
+      {confirm && (
+        <ConfirmModal
+          title={confirm.title}
+          message={confirm.message}
+          confirmLabel={confirm.confirmLabel}
+          danger={confirm.danger}
+          onConfirm={() => { confirm.onConfirm(); setConfirm(null); }}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
       {showSettings && (
         <SettingsModal
           settings={appSettings}
