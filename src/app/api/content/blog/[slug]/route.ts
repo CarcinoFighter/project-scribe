@@ -7,15 +7,28 @@ export async function GET(
 ) {
   const { slug } = params;
 
-  const { data: blog, error } = await supabaseAdmin
+  const { data: blog, error } = (await supabaseAdmin
     .from('blogs')
-    .select('*, author:users(name, avatar_url)')
+    .select('*, author_id')
     .eq('slug', slug)
     .eq('status', 'published')
-    .single();
+    .single()) as { data: any, error: any };
 
   if (error || !blog) {
     return NextResponse.json({ error: 'Blog not found' }, { status: 404 });
+  }
+
+  // Manually fetch author if author_id exists
+  if (blog.author_id) {
+    const { data: author } = await supabaseAdmin
+      .from('users')
+      .select('name, avatar_url')
+      .eq('id', blog.author_id)
+      .single();
+    
+    if (author) {
+      blog.author = author;
+    }
   }
 
   return NextResponse.json({ blog });

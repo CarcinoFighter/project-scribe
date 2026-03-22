@@ -7,15 +7,28 @@ export async function GET(
 ) {
   const { slug } = params;
 
-  const { data: story, error } = await supabaseAdmin
+  const { data: story, error } = (await supabaseAdmin
     .from('survivor_stories')
-    .select('*, author:users(name, avatar_url)')
+    .select('*, name:title, author_id')
     .eq('slug', slug)
     .eq('status', 'published')
-    .single();
+    .single()) as { data: any, error: any };
 
   if (error || !story) {
     return NextResponse.json({ error: 'Story not found' }, { status: 404 });
+  }
+
+  // Manually fetch author if author_id exists
+  if (story.author_id) {
+    const { data: author } = await supabaseAdmin
+      .from('users')
+      .select('name, avatar_url')
+      .eq('id', story.author_id)
+      .single();
+    
+    if (author) {
+      story.author = author;
+    }
   }
 
   return NextResponse.json({ story });
