@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
   }
 
-  const { id, title, slug, content, contentType, status, tags, author_id } = await req.json();
+  const { id, title, slug, content, contentType, status, tags, author_id: providedAuthorId } = await req.json();
 
   if (!title || !slug || !contentType) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -23,14 +23,50 @@ export async function POST(req: NextRequest) {
   // Map contentType to table name
   const table = contentType; // survivor_stories, blogs, cancer_docs
   
+  // 1. If it's an existing document, check current state for status transitions
+  let currentAuthorId = providedAuthorId;
+  if (id && id !== 'ls-active') {
+    const { data: existing, error: fetchError } = await supabaseAdmin
+      .from(table)
+      .select('author_id, status')
+      .eq('id', id)
+      .single();
+
+    if (fetchError) {
+      console.error('Error fetching document for validation:', fetchError);
+    } else if (existing) {
+      currentAuthorId = existing.author_id;
+      
+      // Validation: Only admins can publish
+      if (status === 'published' && existing.status !== 'published') {
+        if (!payload.adminAccess) {
+          return NextResponse.json({ error: 'Only administrators can publish content.' }, { status: 403 });
+        }
+        // Validation: Admins cannot self-approve
+        if (currentAuthorId === payload.userId) {
+          return NextResponse.json({ error: 'Self-approval is not allowed. Another admin must approve this content.' }, { status: 403 });
+        }
+      }
+    }
+  } else {
+    // For NEW documents, ensure they don't start as published if they are not admin
+    if (status === 'published' && !payload.adminAccess) {
+       return NextResponse.json({ error: 'Only administrators can create published content.' }, { status: 403 });
+    }
+  }
+
   // Handle 'name' vs 'title' column
   const data: any = {
     slug,
     content,
     status,
-    tags: tags || [],
     updated_at: new Date().toISOString(),
   };
+
+  // Only include tags for supported content types
+  if (table !== 'cancer_docs') {
+    data.tags = tags || [];
+  }
 
   if (table === 'survivor_stories') {
     data.name = title;
@@ -49,7 +85,7 @@ export async function POST(req: NextRequest) {
       .single();
   } else {
     // Insert new
-    data.author_id = author_id || payload.userId; // Use provided author_id or fallback to current user
+    data.author_id = currentAuthorId || payload.userId; // Use provided author_id or fallback to current user
     data.created_at = new Date().toISOString();
     result = await supabaseAdmin
       .from(table)

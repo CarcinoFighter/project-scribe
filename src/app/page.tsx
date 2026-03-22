@@ -31,7 +31,7 @@ interface Doc {
   title: string;
   excerpt: string;
   words: number;
-  status: 'published' | 'draft';
+  status: 'published' | 'review' | 'draft';
   date: string; // YYYY-MM-DD
   readTime: number;
   tags: string[];
@@ -69,7 +69,7 @@ interface Cmd {
 }
 
 type SortKey = 'date' | 'words' | 'status';
-type FilterStatus = 'all' | 'published' | 'draft';
+type FilterStatus = 'all' | 'published' | 'review' | 'draft';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Dynamic dates — always computed from the real current date
@@ -443,8 +443,16 @@ function DocContextMenu({ pos, docs, onStar, onDelete, onOpen, onClose }: {
 
 function StatusPill({ status }: { status: string }) {
   const pub = status === 'published';
+  const rev = status === 'review';
   return (
-    <span style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', padding: '2px 8px', borderRadius: 99, background: pub ? 'var(--accent-subtle2)' : 'var(--bg-deep)', color: pub ? 'var(--accent)' : 'var(--text-4)', border: `1px solid ${pub ? 'rgba(152,117,193,0.22)' : 'var(--border-med)'}`, flexShrink: 0 }}>
+    <span style={{ 
+      fontSize: 10.5, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', 
+      padding: '2px 8px', borderRadius: 99, 
+      background: pub ? 'var(--accent-subtle2)' : rev ? 'rgba(245, 158, 11, 0.1)' : 'var(--bg-deep)', 
+      color: pub ? 'var(--accent)' : rev ? '#f59e0b' : 'var(--text-4)', 
+      border: `1px solid ${pub ? 'rgba(152,117,193,0.22)' : rev ? 'rgba(245, 158, 11, 0.2)' : 'var(--border-med)'}`, 
+      flexShrink: 0 
+    }}>
       {status}
     </span>
   );
@@ -712,7 +720,7 @@ function SortFilterBar({ sortBy, setSortBy, filter, setFilter, total }: {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
       <div style={{ display: 'flex', gap: 4 }}>
-        {(['all', 'published', 'draft'] as FilterStatus[]).map(f => (
+        {(['all', 'published', 'review', 'draft'] as FilterStatus[]).map(f => (
           <button key={f} className="tb-btn" onClick={() => setFilter(f)} style={{ padding: '4px 11px', borderRadius: 99, fontSize: 12, fontWeight: filter === f ? 600 : 400, background: filter === f ? 'var(--accent-subtle2)' : 'var(--bg-deep)', color: filter === f ? 'var(--accent)' : 'var(--text-4)', border: `1px solid ${filter === f ? 'rgba(152,117,193,0.22)' : 'var(--border)'}`, textTransform: 'capitalize' }}>
             {f === 'all' ? `All (${total})` : f}
           </button>

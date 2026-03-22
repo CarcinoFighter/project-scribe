@@ -22,12 +22,18 @@ import {
   Palette,
   Code2,
   Megaphone,
-  PenTool
+  PenTool,
+  ShieldCheck,
+  Send,
+  Eye,
+  Trash2
 } from 'lucide-react';
 import { useUser } from '@/lib/useUser';
 import AccountMenu from '@/components/AccountMenu';
 import AssignTaskModal from '@/components/AssignTaskModal';
 import Toast from '@/components/Toast';
+import TaskSubmissionModal from '@/components/TaskSubmissionModal';
+import MediaViewerModal from '@/components/MediaViewerModal';
 
 interface Assignment {
   id: string;
@@ -46,9 +52,10 @@ interface Assignment {
 
 const DEPARTMENTS = [
   { key: "Writers' Block", label: "Writers' Block", icon: PenTool, color: 'text-amber-500', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
-  { key: 'Design Lab', label: 'Design Lab', icon: Palette, color: 'text-pink-500', bg: 'bg-pink-500/10', border: 'border-pink-500/20' },
-  { key: 'Development', label: 'Development', icon: Code2, color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
-  { key: 'Marketing', label: 'Marketing', icon: Megaphone, color: 'text-emerald-500', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+  { key: 'Design Lab', label: 'Design Lab', icon: Palette, color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
+  { key: 'Development', label: 'Development', icon: Code2, color: 'text-emerald-500', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+  { key: 'Public Relations', label: 'Public Relations', icon: Megaphone, color: 'text-pink-500', bg: 'bg-pink-500/10', border: 'border-pink-500/20' },
+  { key: 'Leadership', label: 'Leadership', icon: Users, color: 'text-indigo-500', bg: 'bg-indigo-500/10', border: 'border-indigo-500/20' },
 ];
 
 const WRITERS_BLOCK_SECTIONS = [
@@ -58,6 +65,16 @@ const WRITERS_BLOCK_SECTIONS = [
   { key: 'task', label: 'Task Assignments', icon: Briefcase, color: '#6b7280', hasEditor: false, table: null },
   { key: 'awareness_post', label: 'Awareness Posts', icon: Megaphone, color: '#f59e0b', hasEditor: false, table: null },
 ];
+
+interface ReviewDoc {
+  id: string;
+  title: string;
+  type: 'blogs' | 'survivor_stories' | 'cancer_docs' | 'tasks';
+  status: 'review' | 'in_review';
+  updated_at: string;
+  author?: { id: string; name: string; avatar_url: string | null };
+  submission_media_url?: string;
+}
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
@@ -77,9 +94,9 @@ function PriorityDot({ priority }: { priority: string }) {
   return <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${colors[priority] || 'bg-gray-400'}`} title={priority} />;
 }
 
-function TaskRow({ task, onComplete, completing, isAdmin, showEditor, onInit }: {
+function TaskRow({ task, onCompleteClick, completing, isAdmin, showEditor, onInit }: {
   task: Assignment;
-  onComplete: (id: string) => void;
+  onCompleteClick: (task: Assignment) => void;
   completing: string | null;
   isAdmin: boolean;
   showEditor: boolean;
@@ -136,7 +153,7 @@ function TaskRow({ task, onComplete, completing, isAdmin, showEditor, onInit }: 
 
       {!isDone && (
         <button
-          onClick={() => onComplete(task.id)}
+          onClick={() => onCompleteClick(task)}
           disabled={completing === task.id}
           className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 text-[10px] font-bold uppercase tracking-wider rounded-[var(--r-md)] border border-emerald-500/20 transition-all disabled:opacity-50 flex-shrink-0"
         >
@@ -168,12 +185,118 @@ function TaskRow({ task, onComplete, completing, isAdmin, showEditor, onInit }: 
   );
 }
 
+function ReviewQueue({ 
+  docs, onApprove, approving, isAdmin, currentUserId, onToast, onViewMedia
+}: { 
+  docs: ReviewDoc[]; 
+  onApprove: (doc: ReviewDoc) => void; 
+  approving: string | null; 
+  isAdmin: boolean;
+  currentUserId: string;
+  onToast: (m: string) => void;
+  onViewMedia: (url: string, title: string) => void;
+}) {
+  const router = useRouter();
+  if (docs.length === 0) return null;
+
+  return (
+    <div className="mb-8 anim-fade-in">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center">
+            <ShieldCheck size={16} className="text-amber-500" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-[var(--text)]">Review Queue</h2>
+            <p className="text-xs text-[var(--text-4)]">Documents awaiting administrator approval</p>
+          </div>
+        </div>
+        <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+          {docs.length} pending
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {docs.map((doc) => {
+          const isAuthor = doc.author?.id === currentUserId;
+          const Icon = doc.type === 'blogs' ? BookOpen : doc.type === 'survivor_stories' ? Heart : doc.type === 'tasks' ? Briefcase : FileText;
+          const color = doc.type === 'blogs' ? 'text-[#9875c1]' : doc.type === 'survivor_stories' ? 'text-[#10b981]' : doc.type === 'tasks' ? 'text-amber-500' : 'text-[#3b82f6]';
+          const bg = doc.type === 'blogs' ? 'bg-[#9875c118]' : doc.type === 'survivor_stories' ? 'bg-[#10b98118]' : doc.type === 'tasks' ? 'bg-amber-500/10' : 'bg-[#3b82f618]';
+
+          return (
+            <div key={doc.id} className="glass-raised p-4 rounded-[var(--r-lg)] border border-[var(--border-med)] flex flex-col gap-3 hover:border-[var(--accent-subtle)] transition-colors group">
+              <div className="flex items-start justify-between gap-3">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${bg}`}>
+                  <Icon size={16} className={color} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-[13px] font-bold text-[var(--text)] mb-0.5 truncate group-hover:text-[var(--accent)] cursor-pointer" onClick={() => {
+                    if (doc.type === 'tasks' && doc.submission_media_url) {
+                      onViewMedia(doc.submission_media_url, doc.title);
+                    } else if (doc.type !== 'tasks') {
+                      router.push(`/editor?id=${doc.id}&type=${doc.type}`);
+                    }
+                  }}>
+                    {doc.title}
+                  </h4>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-[var(--text-4)] capitalize">{doc.type.replace('_', ' ')}</span>
+                    <span className="text-[10px] text-[var(--text-4)]">•</span>
+                    <span className="text-[10px] text-[var(--text-4)]">{new Date(doc.updated_at).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-deep)] rounded-[var(--r-md)] border border-[var(--border-med)]">
+                {doc.author?.avatar_url ? (
+                  <Image src={doc.author.avatar_url} alt={doc.author.name || ''} width={18} height={18} className="rounded-full" />
+                ) : (
+                  <div className="w-[18px] h-[18px] rounded-full bg-[var(--accent-subtle)] flex items-center justify-center text-[7px] font-bold text-[var(--accent)]">
+                    {doc.author?.name?.[0] || 'U'}
+                  </div>
+                )}
+                <span className="text-[10px] text-[var(--text-3)] font-medium">Author: {doc.author?.name || 'Unknown'}</span>
+              </div>
+
+              <div className="flex items-center gap-2 mt-auto pt-2">
+                <button
+                  onClick={() => {
+                    if (doc.type === 'tasks' && doc.submission_media_url) {
+                      onViewMedia(doc.submission_media_url, doc.title);
+                    } else if (doc.type !== 'tasks') {
+                      router.push(`/editor?id=${doc.id}&type=${doc.type}`);
+                    }
+                  }}
+                  disabled={doc.type === 'tasks' && !doc.submission_media_url}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-[var(--bg-alt)] hover:bg-[var(--surface-0)] text-[var(--text-3)] text-[10px] font-bold uppercase tracking-wider rounded-[var(--r-md)] border border-[var(--border-med)] transition-all"
+                >
+                  <Eye size={12} />
+                  View
+                </button>
+                <button
+                  onClick={() => onApprove(doc)}
+                  disabled={approving === doc.id || isAuthor}
+                  title={isAuthor ? 'You cannot approve your own work' : 'Approve and Publish'}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-green-500/10 hover:bg-green-500 text-green-500 hover:text-white text-[10px] font-bold uppercase tracking-wider rounded-[var(--r-md)] border border-green-500/20 transition-all ${isAuthor ? 'opacity-30 grayscale cursor-not-allowed' : ''}`}
+                >
+                  {approving === doc.id ? <Loader2 size={12} className="animate-spin" /> : <ShieldCheck size={12} />}
+                  Approve
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function SectionTable({ 
-  section, tasks, onComplete, completing, isAdmin, onAssign, onToast, onInit
+  section, tasks, onCompleteClick, completing, isAdmin, onAssign, onToast, onInit
 }: {
   section: typeof WRITERS_BLOCK_SECTIONS[0];
   tasks: Assignment[];
-  onComplete: (id: string) => void;
+  onCompleteClick: (task: Assignment) => void;
   completing: string | null;
   isAdmin: boolean;
   onAssign: (category: string) => void;
@@ -182,8 +305,8 @@ function SectionTable({
 }) {
   const [expanded, setExpanded] = useState(true);
   const Icon = section.icon;
-  const pending = tasks.filter(t => t.status !== 'done');
-  const done = tasks.filter(t => t.status === 'done');
+  const pending = tasks.filter((t: Assignment) => t.status !== 'done');
+  const done = tasks.filter((t: Assignment) => t.status === 'done');
 
   return (
     <div className="rounded-[var(--r-lg)] border border-[var(--border-med)] overflow-hidden mb-4">
@@ -236,7 +359,7 @@ function SectionTable({
                 <TaskRow
                   key={task.id}
                   task={task}
-                  onComplete={onComplete}
+                  onCompleteClick={onCompleteClick}
                   completing={completing}
                   isAdmin={isAdmin}
                   showEditor={section.hasEditor}
@@ -253,7 +376,7 @@ function SectionTable({
                     <TaskRow
                       key={task.id}
                       task={task}
-                      onComplete={onComplete}
+                      onCompleteClick={onCompleteClick}
                       completing={completing}
                       isAdmin={isAdmin}
                       showEditor={section.hasEditor}
@@ -299,13 +422,17 @@ export default function WorkPage() {
   const { user } = useUser();
   const [myAssignments, setMyAssignments] = useState<Assignment[]>([]);
   const [allAssignments, setAllAssignments] = useState<Assignment[]>([]);
+  const [reviewDocs, setReviewDocs] = useState<ReviewDoc[]>([]);
   const [loading, setLoading] = useState(true);
+  const [approving, setApproving] = useState<string | null>(null);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState<{ category?: string } | null>(null);
   const [isDark, setIsDark] = useState(false);
   const [completing, setCompleting] = useState<string | null>(null);
   const [view, setView] = useState<'my' | 'admin'>('my');
   const [toast, setToast] = useState<string | null>(null);
+  const [submittingTask, setSubmittingTask] = useState<{ id: string; title: string } | null>(null);
+  const [viewingMedia, setViewingMedia] = useState<{ url: string; title: string } | null>(null);
 
   useEffect(() => {
     const dark = localStorage.getItem('cs-dark') === 'true';
@@ -329,6 +456,14 @@ export default function WorkPage() {
         const data = await allRes.json();
         setAllAssignments(data.assignments || []);
       }
+      
+      if (user?.admin_access) {
+        const reviewRes = await fetch('/api/work/review-queue');
+        if (reviewRes.ok) {
+          const data = await reviewRes.json();
+          setReviewDocs(data.documents || []);
+        }
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -339,6 +474,14 @@ export default function WorkPage() {
   useEffect(() => {
     if (user !== undefined) fetchWork();
   }, [user, fetchWork]);
+
+  const handleCompleteClick = (task: Assignment) => {
+    if (task.category === 'task') {
+      setSubmittingTask({ id: task.id, title: task.title });
+    } else {
+      handleComplete(task.id);
+    }
+  };
 
   const handleComplete = async (taskId: string) => {
     setCompleting(taskId);
@@ -377,6 +520,47 @@ export default function WorkPage() {
       }
     } catch (err) {
       setToast('An error occurred during initialization');
+    }
+  };
+  
+  const handleApprove = async (doc: ReviewDoc) => {
+    setApproving(doc.id);
+    try {
+      let res;
+      if (doc.type === 'tasks') {
+        res = await fetch('/api/work/tasks/approve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: doc.id, status: 'done' }),
+        });
+      } else {
+        res = await fetch('/api/editor/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: doc.id,
+            title: doc.title,
+            slug: (doc as any).slug || doc.title.toLowerCase().replace(/\s+/g, '-'),
+            content: (doc as any).content || '',
+            contentType: doc.type,
+            status: 'published',
+            author_id: doc.author?.id,
+          }),
+        });
+      }
+
+      if (res.ok) {
+        setToast(doc.type === 'tasks' ? 'Task approved and published' : 'Document approved and published');
+        setReviewDocs(prev => prev.filter(d => d.id !== doc.id));
+        fetchWork(); // Refresh assignments in case status changed
+      } else {
+        const data = await res.json();
+        setToast(data.error || 'Failed to approve');
+      }
+    } catch (err) {
+      setToast('An error occurred during approval');
+    } finally {
+      setApproving(null);
     }
   };
 
@@ -487,6 +671,19 @@ export default function WorkPage() {
               </div>
             ) : (
               <>
+                {/* Review Queue (Admins only) */}
+                {isAdmin && view === 'admin' && (
+                  <ReviewQueue 
+                    docs={reviewDocs}
+                    onApprove={handleApprove}
+                    approving={approving}
+                    isAdmin={isAdmin}
+                    currentUserId={user?.id || ''}
+                    onToast={setToast}
+                    onViewMedia={(url, title) => setViewingMedia({ url, title })}
+                  />
+                )}
+
                 {/* Writers' Block Section */}
                 <div className="mb-8">
                   <div className="flex items-center gap-3 mb-4">
@@ -514,11 +711,11 @@ export default function WorkPage() {
                         key={section.key}
                         section={section}
                         tasks={sectionTasks}
-                        onComplete={handleComplete}
+                        onCompleteClick={handleCompleteClick}
                         completing={completing}
                         isAdmin={isAdmin}
-                        onAssign={(category) => setShowAssignModal({ category })}
-                        onToast={(m) => setToast(m)}
+                        onAssign={(category: string) => setShowAssignModal({ category })}
+                        onToast={(m: string) => setToast(m)}
                         onInit={handleInitDoc}
                       />
                     );
@@ -546,6 +743,25 @@ export default function WorkPage() {
           onClose={() => setShowAssignModal(null)}
           onSuccess={() => { setShowAssignModal(null); fetchWork(); }}
           defaultCategory={showAssignModal.category as any}
+        />
+      )}
+      {submittingTask !== null && (
+        <TaskSubmissionModal
+          taskId={submittingTask.id}
+          taskTitle={submittingTask.title}
+          onClose={() => setSubmittingTask(null)}
+          onSuccess={(url) => { 
+            setSubmittingTask(null); 
+            fetchWork(); 
+            setToast('Task submitted for review successfully');
+          }}
+        />
+      )}
+      {viewingMedia !== null && (
+        <MediaViewerModal
+          url={viewingMedia.url}
+          title={viewingMedia.title}
+          onClose={() => setViewingMedia(null)}
         />
       )}
       {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}

@@ -33,7 +33,8 @@ interface Tab {
   title: string;
   content: string;
   slug: string;
-  status: 'draft' | 'published';
+  status: 'draft' | 'review' | 'published';
+  author_id?: string;
   isSaved: boolean;
   isLoading?: boolean;
 }
@@ -189,20 +190,24 @@ function EditorContent() {
     }
   }, []);
 
+  // Use a ref for tabs to check for existence in effects without dependency cycles
+  const tabsRef = useRef<Tab[]>([]);
+  useEffect(() => { tabsRef.current = tabs; }, [tabs]);
+
   // ---- Handle Search Params ----
   useEffect(() => {
     const id = searchParams.get('id');
     const type = searchParams.get('type') as Tab['type'];
 
     if (id && type) {
-      // Check if already open
-      const existing = tabs.find(t => t.id === id);
+      // Check if already open (using ref to avoid stale state issues)
+      const existing = tabsRef.current.find(t => t.id === id);
       if (existing) {
         setActiveTabId(id);
         return;
       }
 
-      // Switch to existing or add new
+      // Add new tab
       const newTab: Tab = {
         id, type, 
         title: 'Loading...', 
@@ -234,18 +239,21 @@ function EditorContent() {
 
   // ---- Auto-save (debounced) ----
   useEffect(() => {
-    if (!activeTab) return;
+    if (!activeTab || activeTab.title === 'Error loading') return;
     
     // Mark as unsaved immediately on change
     setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, isSaved: false } : t));
 
     const t = setTimeout(async () => {
       try {
-        // Local persist
-        localStorage.setItem('cs-tabs', JSON.stringify(tabs));
+        // Local persist (filter out error tabs)
+        const tabsToSave = tabs.filter(tab => tab.title !== 'Error loading' && !tab.isLoading);
+        if (tabsToSave.length > 0) {
+          localStorage.setItem('cs-tabs', JSON.stringify(tabsToSave));
+        }
 
         // Cloud sync if named
-        if (activeTab.title !== 'Untitled Document' && activeTab.slug) {
+        if (activeTab.title !== 'Untitled Document' && activeTab.slug && activeTab.title !== 'Error loading') {
           const res = await fetch('/api/editor/save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -305,10 +313,22 @@ function EditorContent() {
   const handleCloseTab = useCallback((id: string) => {
     setTabs(prev => {
       const next = prev.filter(t => t.id !== id);
+      
+      // If we closed the last tab, reset to a default one
       if (next.length === 0) {
-        // Don't allow 0 tabs
-        return prev;
+        const defaultTab: Tab = {
+          id: 'ls-active',
+          type: 'blogs',
+          title: 'Untitled Document',
+          content: DEFAULT_CONTENT,
+          slug: '',
+          status: 'draft',
+          isSaved: true
+        };
+        setActiveTabId(defaultTab.id);
+        return [defaultTab];
       }
+
       if (activeTabId === id) {
         const currentIdx = prev.findIndex(t => t.id === id);
         const nextIdx = Math.max(0, currentIdx - 1);
@@ -442,6 +462,7 @@ function EditorContent() {
             status={activeTab.status}
             setStatus={(s) => updateActiveTab({ status: s })}
             contentType={activeTab.type}
+            author_id={activeTab.author_id}
             setContentType={(t) => updateActiveTab({ type: t })}
             onAutoGenerateSlug={handleAutoSlug}
           />

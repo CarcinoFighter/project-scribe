@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useUser } from '@/lib/useUser';
 import { 
   FileText, 
   Globe, 
@@ -10,16 +11,20 @@ import {
   ChevronDown, 
   Info,
   RefreshCw,
-  ExternalLink
+  ExternalLink,
+  ShieldCheck,
+  Send,
+  AlertCircle
 } from 'lucide-react';
 
 interface MetadataPanelProps {
   title: string;
   slug: string;
   setSlug: (s: string) => void;
-  status: 'draft' | 'published';
-  setStatus: (s: 'draft' | 'published') => void;
+  status: 'draft' | 'review' | 'published';
+  setStatus: (s: 'draft' | 'review' | 'published') => void;
   contentType: 'blogs' | 'survivor_stories' | 'cancer_docs';
+  author_id?: string;
   setContentType: (t: 'blogs' | 'survivor_stories' | 'cancer_docs') => void;
   onAutoGenerateSlug: () => void;
 }
@@ -29,8 +34,9 @@ export default function MetadataPanel(props: MetadataPanelProps) {
     title, slug, setSlug, 
     status, setStatus, 
     contentType, setContentType,
-    onAutoGenerateSlug 
+    onAutoGenerateSlug, author_id
   } = props;
+  const { user } = useUser();
 
   const [isOpen, setIsOpen] = useState(true);
 
@@ -119,35 +125,78 @@ export default function MetadataPanel(props: MetadataPanelProps) {
           </p>
         </div>
 
-        {/* Publication Status */}
-        <div className="space-y-2">
+        {/* Publication Status & Actions */}
+        <div className="space-y-3">
           <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-4)] flex items-center gap-1.5">
             <RefreshCw size={10} />
-            Publication Status
+            Publication Flow
           </label>
-          <div className="flex p-1 bg-[var(--bg-deep)] rounded-[var(--r-md)] border border-[var(--border-med)]">
-            <button
-              onClick={() => setStatus('draft')}
-              className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-[var(--r-sm)] text-[11px] font-semibold transition-all ${
-                status === 'draft' 
-                  ? 'bg-[var(--surface-2)] text-[var(--text)] shadow-sm' 
-                  : 'text-[var(--text-4)] hover:text-[var(--text-3)]'
-              }`}
-            >
-              <Lock size={12} />
-              Draft
-            </button>
-            <button
-              onClick={() => setStatus('published')}
-              className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-[var(--r-sm)] text-[11px] font-semibold transition-all ${
-                status === 'published' 
-                  ? 'bg-[var(--accent)] text-white shadow-md' 
-                  : 'text-[var(--text-4)] hover:text-[var(--text-3)]'
-              }`}
-            >
-              <Globe size={12} />
-              Publish
-            </button>
+          
+          <div className="space-y-2">
+            {/* Current Status Indicator */}
+            <div className={`flex items-center gap-3 px-3 py-2.5 rounded-[var(--r-md)] border ${
+              status === 'published' ? 'bg-green-500/10 border-green-500/20 text-green-500' :
+              status === 'review' ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' :
+              'bg-[var(--bg-deep)] border-[var(--border-med)] text-[var(--text-3)]'
+            }`}>
+              {status === 'published' ? <Globe size={14} /> : 
+               status === 'review' ? <ShieldCheck size={14} /> : 
+               <Lock size={14} />}
+              <div className="flex flex-col">
+                <span className="text-[10px] uppercase font-bold tracking-tight opacity-70">Current Status</span>
+                <span className="text-xs font-bold capitalize">{status.replace('_', ' ')}</span>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col gap-2 pt-2">
+              {status === 'draft' && (
+                <button
+                  onClick={() => setStatus('review')}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white rounded-[var(--r-md)] text-xs font-bold transition-all shadow-md active:scale-[0.98]"
+                >
+                  <Send size={14} />
+                  Submit for Review
+                </button>
+              )}
+
+              {status === 'review' && (
+                <>
+                  {user?.admin_access && user?.id !== author_id ? (
+                    <button
+                      onClick={() => setStatus('published')}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-[var(--r-md)] text-xs font-bold transition-all shadow-md active:scale-[0.98]"
+                    >
+                      <ShieldCheck size={14} />
+                      Approve & Publish
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-2 p-3 bg-amber-500/5 border border-amber-500/10 rounded-[var(--r-md)] text-[10px] text-amber-600 font-medium">
+                      <AlertCircle size={12} className="shrink-0" />
+                      {user?.id === author_id 
+                        ? "Under review. You cannot self-approve your own work." 
+                        : "Under review. Admin approval required."}
+                    </div>
+                  )}
+                  <button
+                    onClick={() => setStatus('draft')}
+                    className="w-full flex items-center justify-center gap-2 py-2 bg-[var(--surface-1)] hover:bg-[var(--surface-2)] text-[var(--text-2)] rounded-[var(--r-md)] text-xs transition-all border border-[var(--border-med)]"
+                  >
+                    Return to Draft
+                  </button>
+                </>
+              )}
+
+              {status === 'published' && user?.admin_access && (
+                <button
+                  onClick={() => setStatus('draft')}
+                  className="w-full flex items-center justify-center gap-2 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-[var(--r-md)] text-xs font-bold transition-all border border-red-500/20"
+                >
+                  <Lock size={14} />
+                  Unpublish to Draft
+                </button>
+              )}
+            </div>
           </div>
         </div>
 

@@ -18,8 +18,8 @@ export async function GET(req: NextRequest) {
   const id = searchParams.get('id');
   const type = searchParams.get('type'); // blogs, survivor_stories, cancer_docs
 
-  if (!id || !type) {
-    return NextResponse.json({ error: 'Missing id or type parameter' }, { status:400 });
+  if (!id || !type || id === 'ls-active') {
+    return NextResponse.json({ error: 'Document not found or local-only draft' }, { status: 404 });
   }
 
   try {

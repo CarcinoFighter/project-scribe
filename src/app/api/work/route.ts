@@ -41,22 +41,32 @@ export async function PATCH(req: NextRequest) {
   }
 
   try {
-    const { id, status } = await req.json();
+    const { id, status, submission_media_url } = await req.json();
 
     if (!id || !status) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const { data, error } = await supabaseAdmin
+    const updateData: any = {
+      status, 
+      updated_at: new Date().toISOString() 
+    };
+
+    if (submission_media_url !== undefined) {
+      updateData.submission_media_url = submission_media_url;
+      updateData.submitted_at = new Date().toISOString();
+    }
+
+    let query = supabaseAdmin
       .from('work_assignments')
-      .update({ 
-        status, 
-        updated_at: new Date().toISOString() 
-      })
-      .eq('id', id)
-      .eq('assigned_to', payload.userId) // Ensure user can only update their own assignments
-      .select()
-      .single();
+      .update(updateData)
+      .eq('id', id);
+
+    if (!payload.adminAccess) {
+      query = query.eq('assigned_to', payload.userId); // Ensure user can only update their own assignments
+    }
+
+    const { data, error } = await query.select().single();
 
     if (error) {
       console.error('Update assignment error:', error);

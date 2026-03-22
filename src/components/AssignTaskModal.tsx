@@ -210,7 +210,7 @@ export default function AssignTaskModal({ member, onClose, onSuccess, defaultCat
                 onChange={(e) => setDepartment(e.target.value)}
                 className="w-full bg-[var(--bg-deep)] border border-[var(--border-med)] rounded-[var(--r-md)] py-2.5 px-3 text-sm text-[var(--text)] focus:outline-none focus:border-[var(--accent)] transition-colors appearance-none cursor-pointer"
               >
-                {["Writers' Block", 'Design Lab', 'Development', 'Marketing'].map(d => (
+                {["Writers' Block", 'Public Relations', 'Design Lab', 'Development', 'Leadership'].map(d => (
                   <option key={d} value={d}>{d}</option>
                 ))}
               </select>
