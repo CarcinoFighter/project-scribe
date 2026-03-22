@@ -13,6 +13,8 @@ import GuidedTour from '@/components/GuidedTour';
 import CommandPalette from '@/components/CommandPalette';
 import ConfirmModal from '@/components/ConfirmModal';
 import MetadataPanel from '@/components/MetadataPanel';
+import SettingsModal, { loadSettings, saveSettings, applySettings, DEFAULT_SETTINGS } from '@/components/SettingsModal';
+import type { AppSettings } from '@/components/SettingsModal';
 import { X, Plus, FileText, BookOpen, Heart, Loader2 } from 'lucide-react';
 
 const EditorPane = dynamic(() => import('@/components/EditorPane'), {
@@ -143,6 +145,8 @@ function EditorContent() {
 
   const [confirm, setConfirm] = useState<{ title: string; message: string; confirmLabel?: string; danger?: boolean; onConfirm: () => void; } | null>(null);
   const [goalCelebrated, setGoalCelebrated] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [appSettings, setAppSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   
   const editorRef = useRef<EditorAPI | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -163,6 +167,12 @@ function EditorContent() {
       setIsDark(dark);
       if (goal) setWordGoal(parseInt(goal, 10) || 0);
       if (!toured) setShowTour(true);
+
+      // Load and apply app settings
+      const s = loadSettings();
+      setAppSettings(s);
+      const darkFromTheme = applySettings(s);
+      setIsDark(darkFromTheme);
 
       if (savedTabs) {
         const parsed = JSON.parse(savedTabs);
@@ -398,6 +408,7 @@ function EditorContent() {
         onOpenCmd={() => setShowCmd(true)}
         onToggleZen={() => setZenMode(!zenMode)}
         onToggleFocus={() => setFocusMode(!focusMode)}
+        onOpenSettings={() => setShowSettings(true)}
       />
 
       <TabBar 
@@ -482,6 +493,18 @@ function EditorContent() {
 
       {showCmd && <CommandPalette isDark={isDark} onClose={() => setShowCmd(false)} onCommand={handleCommand} />}
       {showTour && <GuidedTour onClose={() => setShowTour(false)} />}
+      {showSettings && (
+        <SettingsModal
+          settings={appSettings}
+          onClose={() => setShowSettings(false)}
+          onChange={(next) => {
+            setAppSettings(next);
+            saveSettings(next);
+            const dark = applySettings(next);
+            setIsDark(dark);
+          }}
+        />
+      )}
     </div>
   );
 }

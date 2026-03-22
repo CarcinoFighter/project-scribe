@@ -9,13 +9,14 @@ interface AccountMenuProps {
   user: any;
   onClose: () => void;
   onToast: (m: string) => void;
+  onOpenSettings?: () => void;
 }
 
-export default function AccountMenu({ user, onClose, onToast }: AccountMenuProps) {
+export default function AccountMenu({ user, onClose, onToast, onOpenSettings }: AccountMenuProps) {
   const router = useRouter();
   const items = [
     { icon: User,       label: 'Profile',      active: false, action: () => { onClose(); onToast('Profile settings coming soon'); } },
-    { icon: Settings,   label: 'Settings',     active: false, action: () => { onClose(); onToast('Account settings coming soon'); } },
+    { icon: Settings,   label: 'Settings',     active: false, action: () => { onClose(); onOpenSettings?.(); } },
     { icon: LayoutGrid, label: 'Dashboard',    active: false, action: () => { onClose(); router.push('/'); } },
     { icon: Edit3,      label: 'Open Editor',  active: false, action: () => { onClose(); router.push('/editor'); } },
   ];

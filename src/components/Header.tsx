@@ -51,6 +51,7 @@ interface HeaderProps {
   onOpenCmd: () => void;
   onToggleZen: () => void;
   onToggleFocus: () => void;
+  onOpenSettings: () => void;
 }
 
 const VIEW_MODES = [
@@ -65,7 +66,7 @@ export default function Header(props: HeaderProps) {
     viewMode, setViewMode, sidebarOpen, setSidebarOpen,
     isSaved, zenMode, focusMode,
     onNew, onOpenFile, onExportMd, onExportHtml,
-    onOpenSearch, onOpenTour, onOpenCmd, onToggleZen, onToggleFocus,
+    onOpenSearch, onOpenTour, onOpenCmd, onToggleZen, onToggleFocus, onOpenSettings,
   } = props;
 
   const [editingName,  setEditingName]  = useState(false);
@@ -366,6 +367,7 @@ export default function Header(props: HeaderProps) {
               user={user} 
               onClose={() => setShowAccountMenu(false)} 
               onToast={(m) => console.log(m)} 
+              onOpenSettings={onOpenSettings}
             />
           )}
         </div>

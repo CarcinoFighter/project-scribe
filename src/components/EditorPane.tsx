@@ -13,7 +13,7 @@ import { createTheme } from '@uiw/codemirror-themes';
 import { tags as t } from '@lezer/highlight';
 import type { EditorAPI } from '@/types';
 
-const makeTheme = (dark: boolean) =>
+const makeTheme = (dark: boolean, fontFamily?: string) =>
   createTheme({
     theme: dark ? 'dark' : 'light',
     settings: {
@@ -27,7 +27,7 @@ const makeTheme = (dark: boolean) =>
       gutterForeground:    dark ? 'rgba(152,117,193,0.30)' : 'rgba(120,90,170,0.35)',
       gutterActiveForeground: '#9875c1',
       gutterBorder:        'transparent',
-      fontFamily:          "'Google Sans Flex','Google Sans','DM Sans',sans-serif",
+      fontFamily:          fontFamily ?? "'Google Sans Flex','Google Sans','DM Sans',sans-serif",
     },
     styles: [
       { tag: [t.heading1, t.heading2, t.heading3, t.heading4, t.heading5, t.heading6],
@@ -158,7 +158,7 @@ export default function EditorPane({ content, onChange, isDark, focusMode, onCur
         value={content}
         onChange={onChange}
         onUpdate={onUpdate}
-        theme={makeTheme(isDark)}
+        theme={makeTheme(isDark, typeof window !== 'undefined' ? getComputedStyle(document.documentElement).getPropertyValue('--editor-font').trim() || undefined : undefined)}
         extensions={extensions}
         style={{ height: '100%' }}
         basicSetup={{
