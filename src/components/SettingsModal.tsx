@@ -684,7 +684,7 @@ export default function SettingsModal({ onClose, settings, onChange }: SettingsM
                 <ShortcutRow label="Toggle dark mode" keys={['⌘', 'Shift', 'D']} />
                 <ShortcutRow label="Focus mode" keys={['⌘', 'Shift', 'F']} />
                 <ShortcutRow label="Zen mode" keys={['⌘', 'Shift', 'Z']} />
-                <ShortcutRow label="Split view" keys={['⌘', '\']} />
+                <ShortcutRow label="Split view" keys={['⌘', '\\']} />
                 <ShortcutRow label="Bold" keys={['⌘', 'B']} />
                 <ShortcutRow label="Italic" keys={['⌘', 'I']} />
                 <ShortcutRow label="Save" keys={['⌘', 'S']} />
