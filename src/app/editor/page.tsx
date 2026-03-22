@@ -342,11 +342,11 @@ function EditorContent() {
   }, [activeTab?.content, wordGoal]);
 
   // ---- Actions ----
-  const handleAddNew = useCallback(() => {
+  const handleAddNew = useCallback((type: Tab['type'] = 'blogs') => {
     const id = `new-${Date.now()}`;
     const newTab: Tab = {
       id,
-      type: 'blogs',
+      type,
       title: 'Untitled Document',
       content: '# New Document\n\n',
       slug: '',

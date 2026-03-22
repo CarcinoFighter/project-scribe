@@ -25,9 +25,11 @@ export async function POST(req: NextRequest) {
   const dbStatus = status === 'review' ? 'in_review' : status;
   
   // Predict if it's a completely new doc
-  const isNewDoc = !id || id === 'ls-active' || id.startsWith('new-');
+  let isNewDoc = !id || id === 'ls-active' || id.startsWith('new-');
+  let isMovingTable = false;
+  let oldTableToCleanup = '';
   
-  // 1. If it's an existing document, check current state for status transitions
+  // 1. If it's an existing document, check current table and potential migration
   let currentAuthorId = providedAuthorId;
   if (!isNewDoc) {
     const { data: existing, error: fetchError } = await supabaseAdmin
@@ -37,7 +39,18 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (fetchError) {
-      console.error('Error fetching document for validation:', fetchError);
+      // Document not found in target table, check other tables for migration
+      const otherTables = ['blogs', 'survivor_stories', 'cancer_docs'].filter(t => t !== table);
+      for (const ot of otherTables) {
+        const { data: found } = await supabaseAdmin.from(ot).select('author_id, status').eq('id', id).single();
+        if (found) {
+          isMovingTable = true;
+          oldTableToCleanup = ot;
+          currentAuthorId = found.author_id;
+          isNewDoc = true; // Treat as insert into new table
+          break;
+        }
+      }
     } else if (existing) {
       currentAuthorId = existing.author_id;
       
@@ -89,18 +102,40 @@ export async function POST(req: NextRequest) {
       .single();
   } else {
     // Insert new
-    data.author_id = currentAuthorId || payload.userId; // Use provided author_id or fallback to current user
+    data.author_id = currentAuthorId || payload.userId;
     data.created_at = new Date().toISOString();
+    if (isMovingTable && id) {
+      data.id = id; // Preserve ID across migration
+    }
     result = await supabaseAdmin
       .from(table)
       .insert([data])
       .select()
       .single();
+
+    // If was moving tables, cleanup the old one on success
+    if (isMovingTable && !result.error && oldTableToCleanup) {
+      await supabaseAdmin.from(oldTableToCleanup).delete().eq('id', id);
+    }
   }
 
   if (result.error) {
     console.error('Save error:', result.error);
     return NextResponse.json({ error: result.error.message }, { status: 500 });
+  }
+
+  // 2. Synchronize status with work_assignments if applicable
+  if (!isNewDoc) {
+     let assignmentStatus = '';
+     if (dbStatus === 'in_review') assignmentStatus = 'in_review';
+     else if (dbStatus === 'published') assignmentStatus = 'done';
+
+     if (assignmentStatus) {
+       await supabaseAdmin
+         .from('work_assignments')
+         .update({ status: assignmentStatus, updated_at: new Date().toISOString() })
+         .eq('document_id', id);
+     }
   }
 
   return NextResponse.json({ success: true, doc: result.data });

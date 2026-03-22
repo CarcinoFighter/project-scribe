@@ -28,9 +28,10 @@ interface AssignTaskModalProps {
   onClose: () => void;
   onSuccess: () => void;
   defaultCategory?: 'task' | 'article' | 'blog' | 'survivor_story' | 'awareness_post';
+  defaultDepartment?: string;
 }
 
-export default function AssignTaskModal({ member, onClose, onSuccess, defaultCategory }: AssignTaskModalProps) {
+export default function AssignTaskModal({ member, onClose, onSuccess, defaultCategory, defaultDepartment }: AssignTaskModalProps) {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -40,8 +41,9 @@ export default function AssignTaskModal({ member, onClose, onSuccess, defaultCat
   const [assigneeId, setAssigneeId] = useState(member?.id || '');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState<'task' | 'article' | 'blog' | 'survivor_story' | 'awareness_post'>(defaultCategory || 'task');
-  const [department, setDepartment] = useState(member?.department || "Writers' Block");
+  const [category, setCategory] = useState<string>(defaultCategory || 'task');
+  const [customCategory, setCustomCategory] = useState('');
+  const [department, setDepartment] = useState(defaultDepartment || member?.department || "Writers' Block");
   const [priority, setPriority] = useState<'low' | 'normal' | 'high'>('normal');
   const [dueDate, setDueDate] = useState('');
 
@@ -83,6 +85,12 @@ export default function AssignTaskModal({ member, onClose, onSuccess, defaultCat
     setError(null);
 
     try {
+      const finalCategory = category === 'other' ? customCategory : category;
+      if (category === 'other' && !customCategory) {
+        setError('Please specify a category name');
+        return;
+      }
+      
       const res = await fetch('/api/work/assign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -90,8 +98,8 @@ export default function AssignTaskModal({ member, onClose, onSuccess, defaultCat
           assigned_to: assigneeId,
           title,
           description,
-          category,
-          department: category === 'task' ? department : null,
+          category: finalCategory,
+          department: (finalCategory === 'task' || category === 'other') ? department : null,
           priority,
           due_date: dueDate,
         }),
@@ -117,6 +125,7 @@ export default function AssignTaskModal({ member, onClose, onSuccess, defaultCat
     { id: 'blog', label: 'Blog Post', icon: BookOpen, color: 'var(--accent)' },
     { id: 'survivor_story', label: 'Survivor Story', icon: Heart, color: '#10b981' },
     { id: 'awareness_post', label: 'Awareness Post', icon: Layers, color: '#f59e0b' },
+    { id: 'other', label: 'Other...', icon: Layers, color: '#6b7280' },
   ];
 
   if (!mounted) return null;
@@ -187,7 +196,7 @@ export default function AssignTaskModal({ member, onClose, onSuccess, defaultCat
                 <button
                   key={cat.id}
                   type="button"
-                  onClick={() => setCategory(cat.id as any)}
+                  onClick={() => setCategory(cat.id)}
                   className={`flex items-center gap-2.5 px-3 py-2.5 rounded-[var(--r-md)] text-xs border transition-all ${
                     category === cat.id 
                       ? 'bg-[var(--accent-subtle2)] border-[var(--accent-subtle)] text-[var(--accent)] font-semibold' 
@@ -201,8 +210,23 @@ export default function AssignTaskModal({ member, onClose, onSuccess, defaultCat
             </div>
           </div>
 
+          {/* Custom Category Input */}
+          {category === 'other' && (
+            <div className="space-y-2 anim-fade-up">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-4)]">Category Name</label>
+              <input
+                type="text"
+                value={customCategory}
+                onChange={(e) => setCustomCategory(e.target.value)}
+                placeholder="e.g., UI Design, Sound Editing, etc."
+                className="w-full bg-[var(--bg-deep)] border border-[var(--border-med)] rounded-[var(--r-md)] py-2.5 px-3 text-sm text-[var(--text)] focus:outline-none focus:border-[var(--accent)] transition-colors"
+                autoFocus
+              />
+            </div>
+          )}
+
           {/* Department (Conditional) */}
-          {category === 'task' && (
+          {(category === 'task' || category === 'other') && (
             <div className="space-y-2 anim-fade-up">
               <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-4)]">Department</label>
               <select

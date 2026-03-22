@@ -24,6 +24,8 @@ import {
   Megaphone,
   PenTool,
   ShieldCheck,
+  Shield,
+  Layers,
   Send,
   Eye,
   Trash2
@@ -39,7 +41,7 @@ interface Assignment {
   id: string;
   title: string;
   description: string;
-  status: 'todo' | 'in_progress' | 'done';
+  status: 'todo' | 'in_progress' | 'done' | 'in_review';
   priority: 'low' | 'normal' | 'high';
   category: 'task' | 'article' | 'blog' | 'survivor_story' | 'awareness_post';
   department?: string;
@@ -62,9 +64,17 @@ const WRITERS_BLOCK_SECTIONS = [
   { key: 'article', label: 'Research Articles', icon: FileText, color: '#3b82f6', hasEditor: true, table: 'cancer_docs' },
   { key: 'blog', label: 'Blog Posts', icon: BookOpen, color: '#9875c1', hasEditor: true, table: 'blogs' },
   { key: 'survivor_story', label: 'Survivors Community', icon: Heart, color: '#10b981', hasEditor: true, table: 'survivor_stories' },
-  { key: 'task', label: 'Task Assignments', icon: Briefcase, color: '#6b7280', hasEditor: false, table: null },
   { key: 'awareness_post', label: 'Awareness Posts', icon: Megaphone, color: '#f59e0b', hasEditor: false, table: null },
+  { key: 'task', label: 'Task Assignments', icon: Briefcase, color: '#6b7280', hasEditor: false, table: null },
 ];
+
+const KNOWN_CATEGORIES: Record<string, { label: string; icon: any; color: string }> = {
+  article: { label: 'Research Articles', icon: FileText, color: '#3b82f6' },
+  blog: { label: 'Blog Posts', icon: BookOpen, color: '#9875c1' },
+  survivor_story: { label: 'Survivor Stories', icon: Heart, color: '#10b981' },
+  awareness_post: { label: 'Awareness Posts', icon: Megaphone, color: '#f59e0b' },
+  task: { label: 'Task Assignments', icon: Briefcase, color: '#6b7280' },
+};
 
 interface ReviewDoc {
   id: string;
@@ -80,11 +90,13 @@ function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
     done: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20',
     in_progress: 'text-blue-500 bg-blue-500/10 border-blue-500/20',
-    todo: 'text-amber-500 bg-amber-500/10 border-amber-500/20',
+    in_review: 'text-amber-500 bg-amber-500/10 border-amber-500/20',
+    todo: 'text-gray-500 bg-gray-500/10 border-gray-500/20',
   };
+  const label = status.replace('_', ' ');
   return (
     <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border flex-shrink-0 ${map[status] || map.todo}`}>
-      {status.replace('_', ' ')}
+      {label}
     </span>
   );
 }
@@ -426,7 +438,8 @@ export default function WorkPage() {
   const [loading, setLoading] = useState(true);
   const [approving, setApproving] = useState<string | null>(null);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
-  const [showAssignModal, setShowAssignModal] = useState<{ category?: string } | null>(null);
+  const [showAssignModal, setShowAssignModal] = useState<{ category?: string; department?: string } | null>(null);
+  const [activeDeptKey, setActiveDeptKey] = useState("Writers' Block");
   const [isDark, setIsDark] = useState(false);
   const [completing, setCompleting] = useState<string | null>(null);
   const [view, setView] = useState<'my' | 'admin'>('my');
@@ -575,9 +588,14 @@ export default function WorkPage() {
   };
 
   const isAdmin = !!user?.admin_access;
+  const assignments = isAdmin && view === 'admin' ? allAssignments : myAssignments;
 
-  // Tasks to show in Writers' Block view: admins see all, others see their own
-  const writersBlockTasks = isAdmin && view === 'admin' ? allAssignments : myAssignments;
+  // Filter tasks for the active department
+  const activeDeptTasks = assignments.filter(a => a.department === activeDeptKey);
+  
+  // Special case for Writers' Block: categorization
+  const isWritersBlock = activeDeptKey === "Writers' Block";
+  const activeDept = DEPARTMENTS.find(d => d.key === activeDeptKey) || DEPARTMENTS[0];
 
   return (
     <div className={`app-bg min-h-screen flex flex-col ${isDark ? 'dark' : ''}`}>
@@ -595,8 +613,8 @@ export default function WorkPage() {
         <div className="flex items-center gap-2">
           {isAdmin && (
             <button
-              onClick={() => setShowAssignModal({})}
-              className="bg-[var(--accent)] text-white px-3 py-1.5 rounded-[var(--r-md)] text-xs font-semibold flex items-center gap-1.5 shadow-lg shadow-[var(--accent-glow)]"
+               onClick={() => setShowAssignModal({ department: activeDeptKey })}
+               className="bg-[var(--accent)] text-white px-3 py-1.5 rounded-[var(--r-md)] text-xs font-semibold flex items-center gap-1.5 shadow-lg shadow-[var(--accent-glow)]"
             >
               <Plus size={13} />
               Assign Task
@@ -674,13 +692,35 @@ export default function WorkPage() {
               </div>
               {isAdmin && (
                 <button
-                  onClick={() => setShowAssignModal({})}
+                  onClick={() => setShowAssignModal({ department: activeDeptKey })}
                   className="bg-[var(--accent)] text-white px-4 py-2 rounded-[var(--r-md)] text-sm font-semibold flex items-center gap-2 shadow-lg shadow-[var(--accent-glow)] hover:scale-[1.02] active:scale-[0.98] transition-all"
                 >
                   <Plus size={14} />
                   Assign Task
                 </button>
               )}
+            </div>
+
+            {/* Department Tabs */}
+            <div className="flex items-center gap-1 mb-8 p-1 bg-[var(--bg-deep)] rounded-[var(--r-lg)] border border-[var(--border-med)] overflow-x-auto no-scrollbar">
+              {DEPARTMENTS.map((dept) => {
+                const isActive = activeDeptKey === dept.key;
+                const Icon = dept.icon;
+                return (
+                  <button
+                    key={dept.key}
+                    onClick={() => setActiveDeptKey(dept.key)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-[var(--r-md)] text-xs font-bold transition-all whitespace-nowrap ${
+                      isActive 
+                        ? 'bg-[var(--surface-0)] text-[var(--accent)] shadow-sm border border-[var(--border-med)]' 
+                        : 'text-[var(--text-4)] hover:text-[var(--text-2)] hover:bg-[var(--surface-1)]'
+                    }`}
+                  >
+                    <Icon size={14} className={isActive ? dept.color : 'text-current'} />
+                    {dept.label}
+                  </button>
+                );
+              })}
             </div>
 
             {loading ? (
@@ -702,55 +742,130 @@ export default function WorkPage() {
                     onViewMedia={(url, title) => setViewingMedia({ url, title })}
                   />
                 )}
+                                {/* Specialized Content Section (Writers' Block) */}
+                {isWritersBlock ? (
+                  <div className="anim-fade-in">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                          <PenTool size={16} className="text-amber-500" />
+                        </div>
+                        <div>
+                          <h2 className="text-base font-bold text-[var(--text)]">Editorial Workflow</h2>
+                          <p className="text-xs text-[var(--text-4)]">Articles, blogs, and community stories</p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => setShowAssignModal({ department: "Writers' Block" })}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--r-md)] text-xs font-bold border border-amber-500/20 text-amber-600 bg-amber-500/10 hover:bg-amber-500/20 transition-colors"
+                      >
+                        <Plus size={12} />
+                        Add Category / Task
+                      </button>
+                    </div>
 
-                {/* Writers' Block Section */}
-                <div className="mb-8">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                      <PenTool size={16} className="text-amber-500" />
-                    </div>
-                    <div>
-                      <h2 className="text-base font-bold text-[var(--text)]">Writers' Block</h2>
-                      <p className="text-xs text-[var(--text-4)]">Editorial content and writing assignments</p>
-                    </div>
+                    {(() => {
+                      // 1. Get default sections
+                      const renderedSections = [...WRITERS_BLOCK_SECTIONS];
+                      // 2. Add any other dynamic categories found in tasks
+                      const dynamicCategories = Array.from(new Set(activeDeptTasks.map(t => t.category)))
+                        .filter(cat => !WRITERS_BLOCK_SECTIONS.some(s => s.key === cat));
+                      
+                      const allSections = [
+                        ...renderedSections,
+                        ...dynamicCategories.map(cat => ({
+                          key: cat,
+                          label: cat.charAt(0).toUpperCase() + cat.slice(1).replace(/_/g, ' '),
+                          icon: Layers,
+                          color: '#6b7280',
+                          hasEditor: false,
+                          table: null
+                        }))
+                      ];
+
+                      return allSections.map(section => {
+                        const sectionTasks = activeDeptTasks.filter(a => a.category === section.key);
+                        return (
+                          <SectionTable
+                            key={section.key}
+                            section={section as any}
+                            tasks={sectionTasks}
+                            onCompleteClick={handleCompleteClick}
+                            completing={completing}
+                            isAdmin={isAdmin}
+                            onAssign={(category: string) => setShowAssignModal({ category, department: activeDeptKey })}
+                            onToast={(m: string) => setToast(m)}
+                            onInit={handleInitDoc}
+                          />
+                        );
+                      });
+                    })()}
                   </div>
+                ) : (
+                  <div className="anim-fade-in">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-xl ${activeDept.bg} flex items-center justify-center`}>
+                          <activeDept.icon size={16} className={activeDept.color} />
+                        </div>
+                        <div>
+                          <h2 className="text-base font-bold text-[var(--text)]">{activeDept.label} Board</h2>
+                          <p className="text-xs text-[var(--text-4)]">Active projects and tasks for {activeDept.label}</p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => setShowAssignModal({ department: activeDeptKey })}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--r-md)] text-xs font-bold border transition-colors ${activeDept.border} ${activeDept.color} ${activeDept.bg} hover:opacity-80`}
+                      >
+                        <Plus size={12} />
+                        Add Category / Task
+                      </button>
+                    </div>
 
-                  {WRITERS_BLOCK_SECTIONS.map(section => {
-                    const sectionTasks = writersBlockTasks.filter(a => {
-                      const matchCategory = a.category === section.key;
-                      // For Writers' Block: filter by department only in admin view where all departments show
-                      if (view === 'admin') {
-                        return matchCategory; // admin sees all regardless of department
+                    {(() => {
+                      const categories = Array.from(new Set(activeDeptTasks.map(t => t.category)));
+                      if (categories.length === 0) {
+                        return (
+                          <SectionTable
+                            section={{ key: 'task', label: 'General Tasks', icon: Briefcase, color: '#6b7280', hasEditor: false, table: null }}
+                            tasks={[]}
+                            onCompleteClick={handleCompleteClick}
+                            completing={completing}
+                            isAdmin={isAdmin}
+                            onAssign={() => setShowAssignModal({ category: 'task', department: activeDeptKey })}
+                            onToast={(m: string) => setToast(m)}
+                            onInit={handleInitDoc}
+                          />
+                        );
                       }
-                      return matchCategory;
-                    });
-
-                    return (
-                      <SectionTable
-                        key={section.key}
-                        section={section}
-                        tasks={sectionTasks}
-                        onCompleteClick={handleCompleteClick}
-                        completing={completing}
-                        isAdmin={isAdmin}
-                        onAssign={(category: string) => setShowAssignModal({ category })}
-                        onToast={(m: string) => setToast(m)}
-                        onInit={handleInitDoc}
-                      />
-                    );
-                  })}
-                </div>
-
-                {/* Other Departments — Placeholder sections */}
-                <div className="mb-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <h2 className="text-base font-bold text-[var(--text)]">Other Departments</h2>
-                    <span className="text-xs text-[var(--text-4)] bg-[var(--bg-deep)] border border-[var(--border-med)] px-2 py-0.5 rounded-full">Coming soon</span>
+                      
+                      return categories.sort().map(cat => {
+                        const sectionTasks = activeDeptTasks.filter(a => a.category === cat);
+                        const known = KNOWN_CATEGORIES[cat];
+                        return (
+                          <SectionTable
+                            key={cat}
+                            section={{
+                              key: cat,
+                              label: known?.label || cat.charAt(0).toUpperCase() + cat.slice(1).replace(/_/g, ' '),
+                              icon: known?.icon || Layers,
+                              color: known?.color || '#6b7280',
+                              hasEditor: ['article', 'blog', 'survivor_story'].includes(cat),
+                              table: null
+                            }}
+                            tasks={sectionTasks}
+                            onCompleteClick={handleCompleteClick}
+                            completing={completing}
+                            isAdmin={isAdmin}
+                            onAssign={(category: string) => setShowAssignModal({ category, department: activeDeptKey })}
+                            onToast={(m: string) => setToast(m)}
+                            onInit={handleInitDoc}
+                          />
+                        );
+                      });
+                    })()}
                   </div>
-                  {DEPARTMENTS.filter(d => d.key !== "Writers' Block").map(dept => (
-                    <DepartmentPlaceholder key={dept.key} dept={dept} onToast={(m) => setToast(m)} />
-                  ))}
-                </div>
+                )}
               </>
             )}
           </div>
@@ -762,6 +877,7 @@ export default function WorkPage() {
           onClose={() => setShowAssignModal(null)}
           onSuccess={() => { setShowAssignModal(null); fetchWork(); }}
           defaultCategory={showAssignModal.category as any}
+          defaultDepartment={showAssignModal.department}
         />
       )}
       {submittingTask !== null && (

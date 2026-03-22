@@ -17,9 +17,9 @@ export async function GET(req: NextRequest) {
   try {
     // Fetch from all 4 tables documents/tasks in 'review' status (no join)
     const [blogs, stories, docs, tasks] = await Promise.all([
-      supabaseAdmin.from('blogs').select('*').eq('status', 'review'),
-      supabaseAdmin.from('survivor_stories').select('*').eq('status', 'review'),
-      supabaseAdmin.from('cancer_docs').select('*').eq('status', 'review'),
+      supabaseAdmin.from('blogs').select('*').eq('status', 'in_review'),
+      supabaseAdmin.from('survivor_stories').select('*').eq('status', 'in_review'),
+      supabaseAdmin.from('cancer_docs').select('*').eq('status', 'in_review'),
       supabaseAdmin.from('work_assignments').select('*').eq('status', 'in_review').eq('category', 'task'),
     ]);
 
