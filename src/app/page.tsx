@@ -336,7 +336,6 @@ function StatCard({ label, value, sub, icon: Icon, accent, onClick, progress }: 
         cursor: onClick?'pointer':'default',
         transform: hov?'translateY(-2px)':'none',
         transition: 'transform 0.14s, box-shadow 0.14s',
-        boxShadow: hov && !accent ? 'var(--sh-sm)' : accent ? '0 4px 24px var(--accent-glow)' : 'var(--sh-xs)',
         userSelect: 'none', isolation: 'isolate',
       }}
     >
