@@ -327,7 +327,10 @@ function Select({ value, onChange, options }: { value: string | number; onChange
   return (
     <select
       value={value}
-      onChange={e => onChange(e.target.type === 'number' ? Number(e.target.value) : e.target.value)}
+      // We removed the invalid e.target.type === 'number' check. 
+      // Since you already call Number(v) in your 'tabSize' update, 
+      // simply passing the string value here is enough.
+      onChange={e => onChange(e.target.value)} 
       style={{
         background: 'var(--bg-alt)', border: '1px solid var(--border-med)',
         color: 'var(--text)', borderRadius: 'var(--r-sm)', padding: '4px 8px',
