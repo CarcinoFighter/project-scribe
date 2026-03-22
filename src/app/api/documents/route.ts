@@ -65,3 +65,35 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({ documents: allDocs });
 }
+
+export async function DELETE(req: NextRequest) {
+  const token = req.cookies.get('cw_token')?.value;
+
+  if (!token) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  }
+
+  const payload = verifyToken(token);
+  if (!payload) {
+    return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+  }
+
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get('id');
+  const type = searchParams.get('type');
+
+  if (!id || !type) {
+    return NextResponse.json({ error: 'Missing document id or type' }, { status: 400 });
+  }
+
+  const { error } = await supabaseAdmin
+    .from(type)
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
+}

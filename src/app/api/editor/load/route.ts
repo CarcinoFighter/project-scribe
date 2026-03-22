@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
       title: data.title || data.name || 'Untitled',
       content: data.content || '',
       slug: data.slug || '',
-      status: data.status || 'draft',
+      status: data.status === 'in_review' ? 'review' : (data.status || 'draft'),
       type: type as any,
       author_id: data.author_id,
       created_at: data.created_at,

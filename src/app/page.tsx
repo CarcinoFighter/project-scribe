@@ -932,12 +932,25 @@ export default function Dashboard() {
     setToast(doc?.starred ? 'Removed from starred' : 'Added to starred');
   }, [docs, lsDoc]);
 
-  const deleteDoc = useCallback((id: string) => {
+  const deleteDoc = useCallback(async (id: string) => {
     const allDocs = lsDoc ? [lsDoc, ...docs] : docs;
     const doc = allDocs.find(d => d.id === id);
-    if (id === 'ls-active') { setLsDoc(null); }
-    else { setDocs(ds => ds.filter(d => d.id !== id)); }
-    if (doc) setToast(`Deleted "${doc.title.slice(0, 28)}…"`);
+    if (!doc) return;
+
+    if (id === 'ls-active') { 
+      setLsDoc(null); 
+      localStorage.removeItem('cs-content');
+      localStorage.removeItem('cs-name');
+      localStorage.removeItem('cs-tabs');
+    } else { 
+      setDocs(ds => ds.filter(d => d.id !== id)); 
+      try {
+        await fetch(`/api/documents?id=${id}&type=${doc.type}`, { method: 'DELETE' });
+      } catch (err) {
+        console.error('Deletion error:', err);
+      }
+    }
+    setToast(`Deleted "${doc.title.slice(0, 28)}…"`);
   }, [docs, lsDoc]);
 
   const handleCompleteTask = useCallback(async (taskId: string) => {

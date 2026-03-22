@@ -54,13 +54,30 @@ export async function POST(req: NextRequest) {
     // If approving, delete the file from storage bucket 'task-submissions'
     if (newStatus === 'done' && task.submission_media_url) {
       try {
+        console.log("Attempting to delete task media:", task.submission_media_url);
         const urlObj = new URL(task.submission_media_url);
-        const pathParts = urlObj.pathname.split('/task-submissions/');
-        if (pathParts.length > 1) {
-          const filePath = decodeURIComponent(pathParts[1]);
-          await supabaseAdmin.storage.from('task-submissions').remove([filePath]);
+        
+        // Match everything after /task-submissions/
+        const match = urlObj.pathname.match(/\/task-submissions\/(.+)$/);
+        
+        if (match && match[1]) {
+          const filePath = decodeURIComponent(match[1]);
+          console.log(`Extracted file path to delete: "${filePath}"`);
           
+          const { data: removeData, error: removeError } = await supabaseAdmin.storage
+            .from('task-submissions')
+            .remove([filePath]);
+            
+          if (removeError) {
+            console.error("Supabase Storage remove error:", removeError);
+          } else {
+            console.log("Successfully deleted from Storage. Removed data:", removeData);
+          }
+          
+          // Clear it in DB
           await supabaseAdmin.from('work_assignments').update({ submission_media_url: null }).eq('id', id);
+        } else {
+          console.error("Could not extract proper file path from URL:", urlObj.pathname);
         }
       } catch (e) {
         console.error("Failed to parse and delete task submission media:", e);

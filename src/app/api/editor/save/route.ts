@@ -22,10 +22,14 @@ export async function POST(req: NextRequest) {
 
   // Map contentType to table name
   const table = contentType; // survivor_stories, blogs, cancer_docs
+  const dbStatus = status === 'review' ? 'in_review' : status;
+  
+  // Predict if it's a completely new doc
+  const isNewDoc = !id || id === 'ls-active' || id.startsWith('new-');
   
   // 1. If it's an existing document, check current state for status transitions
   let currentAuthorId = providedAuthorId;
-  if (id && id !== 'ls-active') {
+  if (!isNewDoc) {
     const { data: existing, error: fetchError } = await supabaseAdmin
       .from(table)
       .select('author_id, status')
@@ -59,7 +63,7 @@ export async function POST(req: NextRequest) {
   const data: any = {
     slug,
     content,
-    status,
+    status: dbStatus,
     updated_at: new Date().toISOString(),
   };
 
@@ -75,7 +79,7 @@ export async function POST(req: NextRequest) {
   }
 
   let result;
-  if (id && id !== 'ls-active') {
+  if (!isNewDoc) {
     // Update existing
     result = await supabaseAdmin
       .from(table)
