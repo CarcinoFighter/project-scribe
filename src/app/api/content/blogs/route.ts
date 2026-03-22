@@ -4,7 +4,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 export async function GET(req: NextRequest) {
   const { data: blogs, error } = await supabaseAdmin
     .from('blogs')
-    .select('id, title, slug, content, tags, image_url, created_at, updated_at')
+    .select('id, title, slug, content, tags, image_url, created_at, updated_at, author:users(name, avatar_url)')
     .eq('status', 'published')
     .order('created_at', { ascending: false });
 
