@@ -251,7 +251,7 @@ export function applySettings(settings: AppSettings): boolean {
   const uiFontStack     = UI_FONTS.find(f => f.id === settings.uiFont)?.stack         ?? UI_FONTS[0].stack;
 
   // Build the complete set of vars to apply
-  const vars: Record<string, string> = {
+  const vars: Record<string, string | undefined> = {
     ...theme.vars,
     ...accentVars,
     '--editor-font':        editorFontStack,
