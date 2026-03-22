@@ -228,7 +228,22 @@ export function applySettings(settings: AppSettings): boolean {
   const isDark = theme.dark;
   const root = document.documentElement;
 
-  // Apply theme CSS vars on :root
+  // Manage .dark class on <html> so inline styles (set below) take precedence
+  // over the .dark class vars — if .dark is on a child div it cascades closer
+  // and overrides our inline styles, hence we put it on the root element.
+  if (isDark) root.classList.add('dark');
+  else root.classList.remove('dark');
+
+  // Clear previously set theme vars so switching light↔dark doesn't leave stale values
+  const ALL_THEME_VARS = [
+    '--bg','--bg-alt','--bg-deep','--surface-0','--surface-1','--surface-2',
+    '--border','--border-med','--border-strong','--text','--text-2','--text-3',
+    '--text-4','--text-5','--surface-sidebar','--sh-xs','--sh-sm','--sh-md','--sh-lg',
+    '--accent','--accent-hover','--accent-light','--accent-subtle','--accent-subtle2','--accent-glow',
+  ];
+  ALL_THEME_VARS.forEach(v => root.style.removeProperty(v));
+
+  // Apply theme CSS vars on :root as inline styles — these override .dark class vars
   Object.entries(theme.vars).forEach(([k, v]) => root.style.setProperty(k, v));
 
   // If theme doesn't define accent, apply user accent
@@ -324,13 +339,11 @@ function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) =>
 }
 
 function Select({ value, onChange, options }: { value: string | number; onChange: (v: any) => void; options: { value: string | number; label: string }[] }) {
+  const isNumeric = options.length > 0 && typeof options[0].value === 'number';
   return (
     <select
       value={value}
-      // We removed the invalid e.target.type === 'number' check. 
-      // Since you already call Number(v) in your 'tabSize' update, 
-      // simply passing the string value here is enough.
-      onChange={e => onChange(e.target.value)} 
+      onChange={e => onChange(isNumeric ? Number(e.target.value) : e.target.value)}
       style={{
         background: 'var(--bg-alt)', border: '1px solid var(--border-med)',
         color: 'var(--text)', borderRadius: 'var(--r-sm)', padding: '4px 8px',
@@ -687,7 +700,7 @@ export default function SettingsModal({ onClose, settings, onChange }: SettingsM
                 <ShortcutRow label="Toggle dark mode" keys={['⌘', 'Shift', 'D']} />
                 <ShortcutRow label="Focus mode" keys={['⌘', 'Shift', 'F']} />
                 <ShortcutRow label="Zen mode" keys={['⌘', 'Shift', 'Z']} />
-                <ShortcutRow label="Split view" keys={['⌘', '\\']} />
+                <ShortcutRow label="Split view" keys={['⌘', '\']} />
                 <ShortcutRow label="Bold" keys={['⌘', 'B']} />
                 <ShortcutRow label="Italic" keys={['⌘', 'I']} />
                 <ShortcutRow label="Save" keys={['⌘', 'S']} />

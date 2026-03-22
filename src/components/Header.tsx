@@ -52,6 +52,7 @@ interface HeaderProps {
   onToggleZen: () => void;
   onToggleFocus: () => void;
   onOpenSettings: () => void;
+  onToggleDark: () => void;
 }
 
 const VIEW_MODES = [
@@ -66,7 +67,7 @@ export default function Header(props: HeaderProps) {
     viewMode, setViewMode, sidebarOpen, setSidebarOpen,
     isSaved, zenMode, focusMode,
     onNew, onOpenFile, onExportMd, onExportHtml,
-    onOpenSearch, onOpenTour, onOpenCmd, onToggleZen, onToggleFocus, onOpenSettings,
+    onOpenSearch, onOpenTour, onOpenCmd, onToggleZen, onToggleFocus, onOpenSettings, onToggleDark,
   } = props;
 
   const [editingName,  setEditingName]  = useState(false);
@@ -332,7 +333,7 @@ export default function Header(props: HeaderProps) {
         {/* Theme */}
         <button
           className="tb-btn"
-          onClick={() => { setIsDark(!isDark); localStorage.setItem('cs-dark', String(!isDark)); }}
+          onClick={onToggleDark}
           title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
         >
           {isDark ? <Sun size={15} strokeWidth={1.8} /> : <Moon size={15} strokeWidth={1.8} />}

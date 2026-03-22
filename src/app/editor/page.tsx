@@ -160,15 +160,13 @@ function EditorContent() {
   useEffect(() => {
     try {
       const savedTabs = localStorage.getItem('cs-tabs');
-      const dark = localStorage.getItem('cs-dark') === 'true';
       const goal = localStorage.getItem('cs-goal');
       const toured = localStorage.getItem('cs-toured');
 
-      setIsDark(dark);
       if (goal) setWordGoal(parseInt(goal, 10) || 0);
       if (!toured) setShowTour(true);
 
-      // Load and apply app settings
+      // Load settings, apply theme (manages .dark on <html>), sync isDark state
       const s = loadSettings();
       setAppSettings(s);
       const darkFromTheme = applySettings(s);
@@ -386,7 +384,7 @@ function EditorContent() {
   if (!activeTab) return null;
 
   return (
-    <div className={`h-screen overflow-hidden flex flex-col app-bg ${isDark ? 'dark' : ''} ${zenMode ? 'zen-mode' : ''}`}>
+    <div className={`h-screen overflow-hidden flex flex-col app-bg ${zenMode ? 'zen-mode' : ''}`}>
       <Header
         fileName={activeTab.title}
         setFileName={(n) => updateActiveTab({ title: n, slug: n.toLowerCase().replace(/\s+/g, '-') })}
@@ -409,6 +407,26 @@ function EditorContent() {
         onToggleZen={() => setZenMode(!zenMode)}
         onToggleFocus={() => setFocusMode(!focusMode)}
         onOpenSettings={() => setShowSettings(true)}
+        onToggleDark={() => {
+          const currentTheme = appSettings.theme;
+          // Pick matching opposite theme or flip between defaults
+          const darkToLight: Record<string, string> = {
+            'default-dark': 'default-light',
+            'catppuccin-mocha': 'catppuccin-latte',
+            'solarized-dark': 'solarized-light',
+          };
+          const lightToDark: Record<string, string> = Object.fromEntries(
+            Object.entries(darkToLight).map(([k, v]) => [v, k])
+          );
+          const nextTheme = isDark
+            ? (darkToLight[currentTheme] ?? 'default-light')
+            : (lightToDark[currentTheme] ?? 'default-dark');
+          const next = { ...appSettings, theme: nextTheme };
+          setAppSettings(next);
+          saveSettings(next);
+          const dark = applySettings(next);
+          setIsDark(dark);
+        }}
       />
 
       <TabBar 
