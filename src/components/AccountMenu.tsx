@@ -15,7 +15,7 @@ interface AccountMenuProps {
 export default function AccountMenu({ user, onClose, onToast, onOpenSettings }: AccountMenuProps) {
   const router = useRouter();
   const items = [
-    { icon: User,       label: 'Profile',      active: false, action: () => { onClose(); onToast('Profile settings coming soon'); } },
+    { icon: User,       label: 'Profile',      active: false, action: () => { onClose(); router.push('/profile'); } },
     { icon: Settings,   label: 'Settings',     active: false, action: () => { onClose(); onOpenSettings?.(); } },
     { icon: LayoutGrid, label: 'Dashboard',    active: false, action: () => { onClose(); router.push('/'); } },
     { icon: Edit3,      label: 'Open Editor',  active: false, action: () => { onClose(); router.push('/editor'); } },

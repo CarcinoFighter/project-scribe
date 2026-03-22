@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export async function GET(req: NextRequest) {
   const { data: docs, error } = await supabaseAdmin
@@ -14,3 +14,4 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({ docs });
 }
+

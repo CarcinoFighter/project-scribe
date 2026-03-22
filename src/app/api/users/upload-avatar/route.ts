@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   const token = req.cookies.get('cw_token')?.value;
 
@@ -22,25 +24,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm', 'video/quicktime'];
-    if (!allowedTypes.includes(file.type) && !file.type.startsWith('image/') && !file.type.startsWith('video/')) {
-      return NextResponse.json({ error: 'Invalid file type. Only images and videos are allowed.' }, { status: 400 });
+    // Validate image
+    if (!file.type.startsWith('image/')) {
+      return NextResponse.json({ error: 'File must be an image' }, { status: 400 });
     }
 
-    const timestamp = Date.now();
-    const cleanFileName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '');
-    const path = `${payload.userId}/${timestamp}-${cleanFileName}`;
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${payload.userId}-${Date.now()}.${fileExt}`;
+    const path = `public/${fileName}`;
 
+    // Upload using admin client to bypass RLS
     const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
-      .from('task-submissions')
-      .upload(path, file, { upsert: true });
+      .from('avatars')
+      .upload(path, file, { 
+        contentType: file.type,
+        upsert: true 
+      });
 
     if (uploadError) {
       console.error('Upload Error:', uploadError);
       return NextResponse.json({ error: uploadError.message }, { status: 500 });
     }
     
-    const { data } = supabaseAdmin.storage.from('task-submissions').getPublicUrl(uploadData.path);
+    const { data } = supabaseAdmin.storage.from('avatars').getPublicUrl(path);
     
     return NextResponse.json({ success: true, url: data.publicUrl });
   } catch (err: any) {
@@ -48,4 +54,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
-

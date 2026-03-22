@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export async function GET(req: NextRequest) {
   const token = req.cookies.get('cw_token')?.value;
@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   // Fetch fresh user data from DB
   const { data: user, error } = await supabaseAdmin
     .from('users')
-    .select('id, name, avatar_url, admin_access')
+    .select('id, name, email, avatar_url, admin_access')
     .eq('id', payload.userId)
     .single();
 
@@ -27,3 +27,4 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({ user });
 }
+

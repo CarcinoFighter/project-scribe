@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -437,10 +437,14 @@ export default function WorkPage() {
   const [reviewDocs, setReviewDocs] = useState<ReviewDoc[]>([]);
   const [loading, setLoading] = useState(true);
   const [approving, setApproving] = useState<string | null>(null);
-  const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState<{ category?: string; department?: string } | null>(null);
   const [activeDeptKey, setActiveDeptKey] = useState("Writers' Block");
   const [isDark, setIsDark] = useState(false);
+  const [showAccountMenu, setShowAccountMenu] = useState(false);
+  const [accountMenuPos, setAccountMenuPos] = useState<{ top: number; right: number } | null>(null);
+  const accountBtnRef = useRef<HTMLButtonElement>(null);
+  
+  const isWritersBlock = activeDeptKey === "Writers' Block";
   const [completing, setCompleting] = useState<string | null>(null);
   const [view, setView] = useState<'my' | 'admin'>('my');
   const [toast, setToast] = useState<string | null>(null);
@@ -594,42 +598,77 @@ export default function WorkPage() {
   const activeDeptTasks = assignments.filter(a => a.department === activeDeptKey);
   
   // Special case for Writers' Block: categorization
-  const isWritersBlock = activeDeptKey === "Writers' Block";
   const activeDept = DEPARTMENTS.find(d => d.key === activeDeptKey) || DEPARTMENTS[0];
 
   return (
     <div className={`app-bg min-h-screen flex flex-col ${isDark ? 'dark' : ''}`}>
-      {/* Header */}
-      <header className="app-header anim-slide-down flex items-center px-4 h-[52px] sticky top-0 z-50" style={{ borderBottom: "1px solid var(--border-med)", background: "var(--surface-0)", backdropFilter: "blur(20px) saturate(180%) brightness(1.02)", WebkitBackdropFilter: "blur(20px) saturate(180%) brightness(1.02)", boxShadow: "inset 0 -1px 0 var(--border-med), 0 1px 12px rgba(0,0,0,0.04)" }}>
-        <div className="flex items-center gap-2 select-none mr-4">
-          <Image src="/logo.svg" alt="Carcino" width={18} height={22} priority />
-          <span className="font-bold text-[13.5px] text-[var(--text)] tracking-tight">
-            Carcino <span className="text-[var(--accent)]">Work</span>
-          </span>
-        </div>
-        
-        <div className="flex-1" />
+      {/* Navigation / Header (Unified Style) */}
+        <header 
+          className="h-[52px] border-b border-[var(--border-med)] bg-[var(--surface-0)] backdrop-blur-xl px-4 flex items-center justify-between sticky top-0 z-[200] shadow-sm anim-slide-down"
+          style={{ 
+            boxShadow: 'inset 0 -1px 0 var(--border), 0 1px 12px rgba(0,0,0,0.06)' 
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <Image src="/logo.svg" alt="Carcino" width={16} height={20} priority />
+              <span className="text-[12.5px] font-bold text-[var(--text-4)] uppercase tracking-tight">Scribe</span>
+            </Link>
+            <ChevronRight size={11} strokeWidth={2.2} className="text-[var(--border-strong)] mx-1" />
+            <span className="text-[12.5px] font-bold text-[var(--text-3)] tracking-tight">Dashboard</span>
+            <ChevronRight size={11} strokeWidth={2.2} className="text-[var(--border-strong)] mx-1" />
+            <span className="text-[12.5px] font-bold text-[var(--text)] tracking-tight">{activeDeptKey}</span>
+          </div>
 
-        <div className="flex items-center gap-2">
-          {isAdmin && (
+          <div className="flex items-center gap-3">
+            {isAdmin && (
+              <button 
+                onClick={() => setShowAssignModal({ department: activeDeptKey })}
+                className="p-1.5 rounded-lg hover:bg-[var(--accent-subtle)] text-[var(--text-4)] hover:text-[var(--accent)] transition-all"
+                title="Assign Task"
+              >
+                <Plus size={16} strokeWidth={2} />
+              </button>
+            )}
+            
+            <div className="w-[1px] h-4 bg-[var(--border-med)] mx-1" />
+
             <button
-               onClick={() => setShowAssignModal({ department: activeDeptKey })}
-               className="bg-[var(--accent)] text-white px-3 py-1.5 rounded-[var(--r-md)] text-xs font-semibold flex items-center gap-1.5 shadow-lg shadow-[var(--accent-glow)]"
+              ref={accountBtnRef}
+              onClick={() => {
+                const r = accountBtnRef.current?.getBoundingClientRect();
+                if (r) setAccountMenuPos({ top: r.bottom + 6, right: window.innerWidth - r.right });
+                setShowAccountMenu(!showAccountMenu);
+              }}
+              className="p-0.5 rounded-full hover:ring-2 hover:ring-[var(--accent-subtle)] transition-all"
             >
-              <Plus size={13} />
-              Assign Task
+              {user?.avatar_url ? (
+                <div className="w-6 h-6 rounded-full overflow-hidden border border-[var(--border-med)]">
+                  <Image src={user.avatar_url} alt="Profile" width={24} height={24} />
+                </div>
+              ) : (
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--accent-hover)] flex items-center justify-center text-white text-[9px] font-bold">
+                  {user?.name?.split(' ').map((n: any) => n[0]).join('').slice(0, 2) || 'S'}
+                </div>
+              )}
             </button>
-          )}
-          <button className="tb-btn" onClick={() => setShowAccountMenu(!showAccountMenu)}>
-            <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[var(--accent)] to-[var(--accent-hover)] flex items-center justify-center text-white text-[10px] font-bold">
-              {user?.name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
-            </div>
-          </button>
-          {showAccountMenu && (
-            <AccountMenu user={user} onClose={() => setShowAccountMenu(false)} onToast={(m) => setToast(m)} />
-          )}
-        </div>
-      </header>
+          </div>
+        </header>
+
+        {/* Account Menu Portal */}
+        {showAccountMenu && accountMenuPos && (
+          <div 
+            className="fixed z-[9999]" 
+            style={{ top: accountMenuPos.top, right: accountMenuPos.right }}
+            onMouseLeave={() => setShowAccountMenu(false)}
+          >
+            <AccountMenu 
+              user={user} 
+              onClose={() => setShowAccountMenu(false)} 
+              onToast={(m) => setToast(m)} 
+            />
+          </div>
+        )}
 
       <div className="flex flex-1">
         {/* Mobile nav strip — visible only on small screens */}
@@ -713,7 +752,7 @@ export default function WorkPage() {
                     className={`flex items-center gap-2 px-4 py-2 rounded-[var(--r-md)] text-xs font-bold transition-all whitespace-nowrap ${
                       isActive 
                         ? 'bg-[var(--surface-0)] text-[var(--accent)] shadow-sm border border-[var(--border-med)]' 
-                        : 'text-[var(--text-4)] hover:text-[var(--text-2)] hover:bg-[var(--surface-1)]'
+                        : 'text-[var(--text-4)] hover:text-[var(--text-2)] hover:bg-[var(--bg-deep)]'
                     }`}
                   >
                     <Icon size={14} className={isActive ? dept.color : 'text-current'} />
