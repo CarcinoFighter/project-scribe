@@ -205,40 +205,9 @@ export default function Header(props: HeaderProps) {
           </div>
         </div>
 
-          {/* ── Compact command bar — left-aligned, inline ── */}
           <SEP />
-          <button
-            onClick={onOpenCmd}
-            title="Search commands (Ctrl+K)"
-            aria-label="Open command palette"
-            style={{
-              display: 'flex', alignItems: 'center', gap: 5,
-              height: 26, padding: '0 7px',
-              borderRadius: 6,
-              border: '1px solid var(--border)',
-              background: 'var(--bg-deep)',
-              cursor: 'pointer', fontFamily: 'inherit',
-              color: 'var(--text-4)', fontSize: 11,
-              transition: 'border-color 0.12s, background 0.12s, box-shadow 0.12s',
-              flexShrink: 0, whiteSpace: 'nowrap',
-            }}
-            onMouseEnter={e => {
-              const b = e.currentTarget as HTMLButtonElement;
-              b.style.borderColor = 'var(--border-strong)';
-              b.style.boxShadow = '0 0 0 2px var(--accent-subtle)';
-            }}
-            onMouseLeave={e => {
-              const b = e.currentTarget as HTMLButtonElement;
-              b.style.borderColor = 'var(--border)';
-              b.style.boxShadow = 'none';
-            }}
-          >
-            <Search size={11} strokeWidth={2} style={{ opacity: 0.45, flexShrink: 0 }} />
-            <span className="hidden xl:inline" style={{ letterSpacing: '-0.01em' }}>Search</span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 2, opacity: 0.55 }}>
-              <kbd style={{ padding: '1px 4px', borderRadius: 3, border: '1px solid var(--border-strong)', background: 'var(--bg-alt)', fontSize: 9, lineHeight: '14px', fontFamily: 'inherit', color: 'var(--text-4)' }}>⌘</kbd>
-              <kbd style={{ padding: '1px 4px', borderRadius: 3, border: '1px solid var(--border-strong)', background: 'var(--bg-alt)', fontSize: 9, lineHeight: '14px', fontFamily: 'inherit', color: 'var(--text-4)' }}>K</kbd>
-            </span>
+          <button className="tb-btn" onClick={onOpenCmd} title="Search commands (Ctrl+K)">
+            <Search size={15} strokeWidth={1.8} />
           </button>
 
         {/* ── Flex spacer ── */}

@@ -361,7 +361,7 @@ export default function LoginPage() {
                   <label className="lp-label" htmlFor="lp-email">Email address</label>
                   <div className="lp-wrap">
                     <Mail size={14} className="lp-ico" aria-hidden />
-                    <input id="lp-email" type="email" className="lp-inp" placeholder="name@organisation.com"
+                    <input id="lp-email" type="email" className="lp-inp" placeholder="username@carcino.work"
                       value={email} onChange={e => setEmail(e.target.value)}
                       autoComplete="email" required aria-required="true" aria-invalid={!!error} />
                   </div>
