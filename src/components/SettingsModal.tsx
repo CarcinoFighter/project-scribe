@@ -265,9 +265,11 @@ export function applySettings(settings: AppSettings): boolean {
   // both the :root block and the .dark class block in globals.css.
   // (.dark has specificity 0,1,0 — same as :root — so whichever is
   // declared LATER wins without !important. With !important we always win.)
-  Object.entries(vars).forEach(([k, v]) => {
+Object.entries(vars).forEach(([k, v]) => {
+  if (v !== undefined) {
     root.style.setProperty(k, v, 'important');
-  });
+  }
+});
 
   // Accessibility
   if (settings.reducedMotion) root.classList.add('reduced-motion');
