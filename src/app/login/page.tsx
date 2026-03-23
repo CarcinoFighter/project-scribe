@@ -80,6 +80,7 @@ export default function LoginPage() {
           font-family: 'Google Sans Flex','Google Sans','DM Sans',system-ui,sans-serif;
           -webkit-font-smoothing: antialiased;
           background: ${dark ? '#06060c' : '#f5f4f2'};
+          transition: background 0.45s ease, color 0.45s ease;
           position: relative; overflow: hidden;
         }
         @media (max-width: 860px) {
@@ -100,8 +101,9 @@ export default function LoginPage() {
           position: relative; z-index: 1; overflow: hidden;
           background: ${dark ? '#09080f' : '#eceaf0'};
           border-right: 1px solid ${dark ? 'rgba(143,107,187,0.12)' : 'rgba(143,107,187,0.16)'};
-          display: flex; flex-direction: column; justify-content: space-between;
+          display: flex; flex-direction: column; justify-content: space-evenly; align-items: flex-start;
           padding: 36px 44px;
+          min-height: 100dvh;
         }
 
         /* Corner reticles */
@@ -115,22 +117,6 @@ export default function LoginPage() {
         .lp-bl { bottom:18px; left:18px; border-width:0 0 1px 1px; }
         .lp-br { bottom:18px; right:18px; border-width:0 1px 1px 0; }
 
-        /* Horizontal scan line */
-        .lp-scan {
-          position: absolute; left: 0; right: 0; height: 1px;
-          background: linear-gradient(90deg, transparent 0%, rgba(143,107,187,0.7) 30%,
-            rgba(180,148,220,0.9) 50%, rgba(143,107,187,0.7) 70%, transparent 100%);
-          box-shadow: 0 0 16px rgba(143,107,187,0.5);
-          animation: lp-scan-anim 9s ease-in-out infinite;
-          pointer-events: none; z-index: 0;
-        }
-        @keyframes lp-scan-anim {
-          0%    { top: 18%; opacity: 0; }
-          6%    { opacity: 1; }
-          46%   { top: 80%; opacity: 1; }
-          54%   { opacity: 0; top: 80%; }
-          100%  { top: 80%; opacity: 0; }
-        }
 
         /* Brand */
         .lp-brand {
@@ -179,19 +165,31 @@ export default function LoginPage() {
           background: ${dark ? 'rgba(143,107,187,0.55)' : 'rgba(100,60,160,0.50)'};
         }
         .lp-headline {
-          font-size: clamp(26px, 3.2vw, 42px); font-weight: 700;
-          letter-spacing: -0.03em; line-height: 1.09;
-          color: ${dark ? 'rgba(237,233,228,0.93)' : 'rgba(15,12,8,0.90)'};
+          font-size: clamp(32px, 4.4vw, 58px); font-weight: 700;
+          letter-spacing: -0.03em; line-height: 1.05;
+          color: ${dark ? 'rgba(237,233,228,0.96)' : 'rgba(15,12,8,0.96)'};
           margin-bottom: 14px;
+          animation: fade-in-left 0.85s ease 0.1s both;
+          transform-origin: left;
+          transition: color 0.4s ease;
         }
         .lp-headline em {
-          font-style: italic; font-weight: 400;
-          color: ${dark ? 'rgba(180,148,220,0.88)' : 'rgba(100,60,160,0.80)'};
+          display: inline-block;
+          font-style: italic; font-weight: 800;
+          font-size: 1.07em;
+          background: linear-gradient(90deg, #f59e0b, #3b82f6, #10b981, #ec4899, #8b5cf6);
+          background-size: 300% 300%;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          color: transparent;
+          animation: gradientShift 5.2s ease infinite;
+          transition: opacity 0.4s ease;
         }
         .lp-sub {
           font-size: 13px; line-height: 1.72; font-weight: 400;
           color: ${dark ? 'rgba(237,233,228,0.30)' : 'rgba(15,12,8,0.38)'};
           max-width: 310px; margin-bottom: 22px;
+          animation: fade-in-left 0.85s ease 0.15s both;
         }
 
         /* Dept chips */
@@ -236,11 +234,24 @@ export default function LoginPage() {
         /* Card */
         .lp-card {
           width: 100%; max-width: 380px;
-          opacity: 0; transform: translateY(20px);
+          opacity: 0; transform: translateY(22px) scale(0.99);
           transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.22,1,0.36,1);
           position: relative; z-index: 2;
+          will-change: opacity, transform;
         }
-        .lp-card.rdy { opacity: 1; transform: translateY(0); }
+
+        .lp-card.rdy {
+          opacity: 1; transform: translateY(0) scale(1);
+        }
+
+        .lp-panel {
+          transition: box-shadow 0.4s ease, border-color 0.4s ease, background 0.4s ease;
+        }
+
+        .lp-card:hover .lp-panel {
+          box-shadow: ${dark ? '0 33px 80px rgba(0,0,0,0.78)' : '0 22px 45px rgba(0,0,0,0.18)'};
+          transform: translateY(-2px);
+        }        .lp-card.rdy { opacity: 1; transform: translateY(0); }
 
         .lp-panel {
           background: ${dark ? 'rgba(14,12,24,0.88)' : 'rgba(255,255,255,0.92)'};
@@ -265,6 +276,22 @@ export default function LoginPage() {
         @keyframes lp-shim {
           0%   { background-position: 200% 0; }
           100% { background-position: -200% 0; }
+        }
+
+        @keyframes content-fade-in {
+          from { opacity: 0; transform: translateY(16px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fade-in-left {
+          from { opacity: 0; transform: translateX(-18px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes gradientShift {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
         }
 
         /* Soft inner glow */
@@ -397,6 +424,27 @@ export default function LoginPage() {
           color: ${dark ? 'rgba(237,233,228,0.14)' : 'rgba(15,12,8,0.24)'};
         }
 
+        /* Mobile brand */
+        .lp-mobile-brand {
+          display: none;
+        }
+        @media (max-width: 860px) {
+          .lp-right {
+            display: flex; flex-direction: column; align-items: center;
+          }
+          .lp-mobile-brand {
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            position: relative; z-index: 2;
+            margin-top: 20px;
+            margin-bottom: 40px;
+          }
+          .lp-mobile-brand-name {
+            font-size: 24px; font-weight: 700; letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: ${dark ? 'rgba(237,233,228,0.92)' : 'rgba(15,12,8,0.90)'};
+          }
+        }
+
         @keyframes lp-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
 
@@ -408,7 +456,6 @@ export default function LoginPage() {
           <div className="lp-reticle lp-tr" aria-hidden />
           <div className="lp-reticle lp-bl" aria-hidden />
           <div className="lp-reticle lp-br" aria-hidden />
-          <div className="lp-scan" aria-hidden />
 
           {/* Brand */}
           <div className="lp-brand">
@@ -417,143 +464,6 @@ export default function LoginPage() {
               <path d="M8.00883 18.0928C5.32942 19.6789 3.54237 20.5984 1.2981 21.2277L0 24C1.2981 23.9064 5.74874 21.7424 9.23739 19.169L8.00883 18.0928Z" fill={dark ? '#9875c1' : '#7659a0'}/>
             </svg>
             <span className="lp-brand-name">Carcino Vantage</span>
-          </div>
-
-          {/* ── Orbital ─────────────────────────────────────────── */}
-          <div className="lp-orbital" aria-hidden>
-            <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <radialGradient id="core-glow" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%"   stopColor="#9875c1" stopOpacity="0.9" />
-                  <stop offset="45%"  stopColor="#7659a0" stopOpacity="0.4" />
-                  <stop offset="100%" stopColor="#7659a0" stopOpacity="0"   />
-                </radialGradient>
-                <radialGradient id="core-fill" cx="38%" cy="38%" r="60%">
-                  <stop offset="0%"   stopColor="#d4b8f0" />
-                  <stop offset="60%"  stopColor="#9875c1" />
-                  <stop offset="100%" stopColor="#6040a0" />
-                </radialGradient>
-                {DEPTS.map((d, i) => (
-                  <radialGradient key={i} id={`dg${i}`} cx="50%" cy="50%" r="50%">
-                    <stop offset="0%"   stopColor={d.color} stopOpacity="0.55" />
-                    <stop offset="100%" stopColor={d.color} stopOpacity="0"    />
-                  </radialGradient>
-                ))}
-                <filter id="f-blur-md"><feGaussianBlur stdDeviation="6" /></filter>
-                <filter id="f-blur-lg"><feGaussianBlur stdDeviation="18" /></filter>
-                <filter id="f-glow">
-                  <feGaussianBlur stdDeviation="2.5" result="b"/>
-                  <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-                </filter>
-              </defs>
-
-              {/* Ambient core bloom */}
-              <circle cx="250" cy="250" r="220" fill="url(#core-glow)"
-                filter="url(#f-blur-lg)" opacity={dark ? 0.28 : 0.18} />
-
-              {/* Ring 1 — outermost, very slow */}
-              <g className="r1">
-                <circle cx="250" cy="250" r="228" fill="none"
-                  stroke={dark ? 'rgba(143,107,187,0.13)' : 'rgba(143,107,187,0.18)'}
-                  strokeWidth="1" strokeDasharray="3 15" />
-              </g>
-
-              {/* Ring 2 — department orbit */}
-              <g className="r2">
-                <circle cx="250" cy="250" r="174" fill="none"
-                  stroke={dark ? 'rgba(143,107,187,0.30)' : 'rgba(143,107,187,0.38)'}
-                  strokeWidth="1.2" strokeDasharray="6 16" />
-              </g>
-
-              {/* Ring 3 */}
-              <g className="r3">
-                <circle cx="250" cy="250" r="120" fill="none"
-                  stroke={dark ? 'rgba(143,107,187,0.22)' : 'rgba(143,107,187,0.28)'}
-                  strokeWidth="1" strokeDasharray="4 10" />
-              </g>
-
-              {/* Ring 4 — innermost */}
-              <g className="r4">
-                <circle cx="250" cy="250" r="70" fill="none"
-                  stroke={dark ? 'rgba(143,107,187,0.38)' : 'rgba(143,107,187,0.42)'}
-                  strokeWidth="1" strokeDasharray="2 8" />
-              </g>
-
-              {/* ── Department nodes (static — rings pass around them) ── */}
-              {DEPTS.map((dept, i) => {
-                const { x, y } = nodePos(dept.angle);
-                const active = tick === i;
-                const dx = x - 250, dy = y - 250;
-                const len = Math.sqrt(dx * dx + dy * dy);
-                const nx = dx / len, ny = dy / len;
-                const lx = x + nx * 30, ly = y + ny * 28;
-                const anchor = nx > 0.35 ? 'start' : nx < -0.35 ? 'end' : 'middle';
-
-                return (
-                  <g key={i} filter="url(#f-glow)">
-                    {/* Dept glow disc */}
-                    <circle cx={x} cy={y} r="30"
-                      fill={`url(#dg${i})`} filter="url(#f-blur-md)"
-                      opacity={active ? 1 : 0.45}
-                      style={{ transition: 'opacity 0.4s' }} />
-
-                    {/* Ping ring (active) */}
-                    {active && (
-                      <circle cx={x} cy={y} r="7" fill="none"
-                        stroke={dept.color} strokeWidth="1.2"
-                        style={{ animation: 'node-ping 1.3s ease-out forwards' }} />
-                    )}
-
-                    {/* Node dot */}
-                    <circle cx={x} cy={y}
-                      r={active ? 7 : 5}
-                      fill={dept.color}
-                      style={{
-                        transition: 'r 0.35s cubic-bezier(0.34,1.6,0.64,1)',
-                        filter: `drop-shadow(0 0 ${active ? 9 : 4}px ${dept.color})`,
-                      }} />
-
-                    {/* Connector */}
-                    <line
-                      x1={x + nx * 9} y1={y + ny * 9}
-                      x2={lx - nx * 8} y2={ly - ny * 8}
-                      stroke={dept.color} strokeWidth="0.7"
-                      opacity={active ? 0.75 : 0.30}
-                      style={{ transition: 'opacity 0.4s' }} />
-
-                    {/* Label bg */}
-                    <rect
-                      x={anchor === 'start' ? lx : anchor === 'end' ? lx - 96 : lx - 48}
-                      y={ly - 10} width="96" height="18" rx="5"
-                      fill={dark ? 'rgba(9,8,15,0.80)' : 'rgba(245,244,242,0.88)'}
-                      stroke={dept.color} strokeWidth="0.5"
-                      opacity={active ? 1 : 0.50}
-                      style={{ transition: 'opacity 0.4s' }} />
-
-                    {/* Label text */}
-                    <text x={lx} y={ly + 1}
-                      textAnchor={anchor} dominantBaseline="middle"
-                      fontSize="8.5" fontWeight="600"
-                      fontFamily="'Google Sans Flex','DM Sans',system-ui"
-                      fill={active ? dept.color : (dark ? 'rgba(237,233,228,0.55)' : 'rgba(15,12,8,0.52)')}
-                      style={{ transition: 'fill 0.4s' }}>
-                      {dept.name}
-                    </text>
-                  </g>
-                );
-              })}
-
-              {/* ── Core ── */}
-              <circle cx="250" cy="250" r="46"
-                fill="url(#core-glow)" filter="url(#f-blur-md)" opacity="0.85" />
-              <circle cx="250" cy="250" r="22" fill="url(#core-fill)"
-                style={{ filter: 'drop-shadow(0 0 12px rgba(152,117,193,0.85))' }} />
-              {/* Logo inside core */}
-              <g transform="translate(239.5, 238.5) scale(0.5)" opacity="0.92">
-                <path d="M9.13307 5.97435C9.21934 5.23291 9.33279 4.80925 9.89802 4.0092C10.9029 2.80263 11.6709 2.67501 12.9912 2.4556L13.0042 2.45344C14.8586 2.34816 15.7395 3.26056 16.1799 4.26653C16.6203 5.27251 16.5553 7.03881 16.4233 7.9863C16.2913 8.93378 15.7627 11.4166 12.7608 13.8614C13.5837 14.1538 13.6573 14.1074 14.65 14.2561C15.6004 13.2384 16.1436 12.4864 17.5128 10.8405C18.882 9.19453 19.661 6.91014 19.8772 5.50646C20.0934 4.10278 20.1438 2.45344 18.9963 1.26031C17.8489 0.0671784 15.5888 -0.131673 14.198 0.067179C12.8072 0.266031 10.3732 1.26031 8.68105 2.6289C6.98888 3.9975 6.20076 5.50646 5.57488 7.5418C4.949 9.57714 5.30938 11.2467 6.08485 13.332C7.40174 16.0707 9.01717 17.9291 10.4196 18.8415C11.822 19.7539 12.8072 20.2451 14.3487 22.842C16.2495 19.8123 16.9991 18.6706 18.4632 16.9465C17.5128 15.7767 16.2842 15.1142 13.8735 14.7825C11.4627 14.4508 10.6865 13.6665 10.2341 13.6478C9.78183 13.6291 9.26057 13.6244 9.09831 13.5776C8.93605 13.5309 8.89093 13.5242 8.76218 13.2384C8.62326 12.7331 8.76218 11.9985 8.76218 11.8932C8.76218 11.7879 8.54197 11.6476 8.54197 11.5072C8.54197 11.3668 8.61607 11.2835 8.77377 11.2031C8.77377 11.2031 8.41448 11.0042 8.41448 10.8405C8.41448 10.6767 8.57673 10.0567 8.54197 9.91637C8.50721 9.776 7.68429 9.60054 7.83497 9.3198C7.98565 9.03906 9.16153 7.60314 9.30692 7.30785C9.45232 7.01256 9.15359 6.6787 9.13307 5.97435Z" fill="white"/>
-                <path d="M8.00883 18.0928C5.32942 19.6789 3.54237 20.5984 1.2981 21.2277L0 24C1.2981 23.9064 5.74874 21.7424 9.23739 19.169L8.00883 18.0928Z" fill="white"/>
-              </g>
-            </svg>
           </div>
 
           {/* ── Hero text ── */}
@@ -590,6 +500,15 @@ export default function LoginPage() {
             aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>
             {dark ? <Sun size={14} strokeWidth={1.8} /> : <Moon size={14} strokeWidth={1.8} />}
           </button>
+
+          {/* Mobile brand - visible only on small screens */}
+          <div className="lp-mobile-brand">
+            <svg width="20" height="24" viewBox="0 0 20 24" fill="none" aria-hidden>
+              <path d="M9.13307 5.97435C9.21934 5.23291 9.33279 4.80925 9.89802 4.0092C10.9029 2.80263 11.6709 2.67501 12.9912 2.4556L13.0042 2.45344C14.8586 2.34816 15.7395 3.26056 16.1799 4.26653C16.6203 5.27251 16.5553 7.03881 16.4233 7.9863C16.2913 8.93378 15.7627 11.4166 12.7608 13.8614C13.5837 14.1538 13.6573 14.1074 14.65 14.2561C15.6004 13.2384 16.1436 12.4864 17.5128 10.8405C18.882 9.19453 19.661 6.91014 19.8772 5.50646C20.0934 4.10278 20.1438 2.45344 18.9963 1.26031C17.8489 0.0671784 15.5888 -0.131673 14.198 0.067179C12.8072 0.266031 10.3732 1.26031 8.68105 2.6289C6.98888 3.9975 6.20076 5.50646 5.57488 7.5418C4.949 9.57714 5.30938 11.2467 6.08485 13.332C7.40174 16.0707 9.01717 17.9291 10.4196 18.8415C11.822 19.7539 12.8072 20.2451 14.3487 22.842C16.2495 19.8123 16.9991 18.6706 18.4632 16.9465C17.5128 15.7767 16.2842 15.1142 13.8735 14.7825C11.4627 14.4508 10.6865 13.6665 10.2341 13.6478C9.78183 13.6291 9.26057 13.6244 9.09831 13.5776C8.93605 13.5309 8.89093 13.5242 8.76218 13.2384C8.62326 12.7331 8.76218 11.9985 8.76218 11.8932C8.76218 11.7879 8.54197 11.6476 8.54197 11.5072C8.54197 11.3668 8.61607 11.2835 8.77377 11.2031C8.77377 11.2031 8.41448 11.0042 8.41448 10.8405C8.41448 10.6767 8.57673 10.0567 8.54197 9.91637C8.50721 9.776 7.68429 9.60054 7.83497 9.3198C7.98565 9.03906 9.16153 7.60314 9.30692 7.30785C9.45232 7.01256 9.15359 6.6787 9.13307 5.97435Z" fill={dark ? '#9875c1' : '#7659a0'}/>
+              <path d="M8.00883 18.0928C5.32942 19.6789 3.54237 20.5984 1.2981 21.2277L0 24C1.2981 23.9064 5.74874 21.7424 9.23739 19.169L8.00883 18.0928Z" fill={dark ? '#9875c1' : '#7659a0'}/>
+            </svg>
+            <span className="lp-mobile-brand-name">Carcino Vantage</span>
+          </div>
 
           <div className={`lp-card${ready ? ' rdy' : ''}`}>
             <div className="lp-panel">
