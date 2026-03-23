@@ -57,6 +57,35 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-startup-image" href="/splash-1242x2688.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)" />
       </head>
       <body>
+        <div id="pwa-splash">
+          <div className="splash-content">
+            <img src="/logo.png" className="splash-logo" alt="logo" />
+            <div className="splash-text">Vantage</div>
+          </div>
+          <div className="splash-loader-container">
+            <div className="splash-loader-bar"></div>
+          </div>
+        </div>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                var splash = document.getElementById('pwa-splash');
+                if (splash) {
+                  window.addEventListener('load', function() {
+                    // Match the animation duration to feel natural
+                    setTimeout(function() {
+                      splash.style.opacity = '0';
+                      setTimeout(function() {
+                        splash.style.display = 'none';
+                      }, 700);
+                    }, 1800);
+                  });
+                }
+              })();
+            `,
+          }}
+        />
         <ThemeInitializer />
         {children}
       </body>
