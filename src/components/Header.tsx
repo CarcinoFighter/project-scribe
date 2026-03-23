@@ -129,8 +129,8 @@ export default function Header(props: HeaderProps) {
           boxShadow: 'inset 0 -1px 0 var(--border), 0 1px 12px rgba(0,0,0,0.06)',
         }}
       >
-        {/* ── LEFT: sidebar toggle + breadcrumb + filename ── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, marginRight: 8 }}>
+        {/* ── LEFT: sidebar toggle + breadcrumb + filename + status ── */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 1, minWidth: 0, marginRight: 8 }}>
           {/* Sidebar toggle */}
           <button
             className="tb-btn"
