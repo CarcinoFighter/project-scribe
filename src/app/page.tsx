@@ -630,7 +630,7 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    (async()=>{ try { const r=await fetch('/api/work'); if(r.ok){const d=await r.json();setTasks(d.assignments||[]);} } catch {} finally { setTasksLoading(false); } })();
+    (async()=>{ try { const r=await fetch('/api/tasks'); if(r.ok){const d=await r.json();setTasks(d.assignments||[]); } } catch {} finally { setTasksLoading(false); } })();
   }, []);
 
   useEffect(() => {
@@ -649,7 +649,7 @@ export default function Dashboard() {
 
   const deleteDoc = useCallback(async(id:string)=>{ const all=lsDoc?[lsDoc,...docs]:docs; const doc=all.find(d=>d.id===id); if(!doc)return; if(id==='ls-active'){setLsDoc(null);localStorage.removeItem('cs-content');localStorage.removeItem('cs-name');localStorage.removeItem('cs-tabs');}else{setDocs(ds=>ds.filter(d=>d.id!==id));try{await fetch(`/api/documents?id=${id}&type=${doc.type}`,{method:'DELETE'});}catch{}} setToast(`Deleted "${doc.title.slice(0,28)}…"`); },[docs,lsDoc]);
 
-  const handleCompleteTask = useCallback(async(taskId:string)=>{ try { const r=await fetch('/api/work',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:taskId,status:'done'})}); if(r.ok){setTasks(ts=>ts.map(t=>t.id===taskId?{...t,status:'done'}:t));setToast('Task completed ✓');}else{setToast('Failed to update task');} }catch{setToast('Error updating task');} },[]);
+  const handleCompleteTask = useCallback(async(taskId:string)=>{ try { const r=await fetch('/api/tasks',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:taskId,status:'done'})}); if(r.ok){setTasks(ts=>ts.map(t=>t.id===taskId?{...t,status:'done'}:t));setToast('Task completed ✓');}else{setToast('Failed to update task');} }catch{setToast('Error updating task');} },[]);
 
   const toggleTheme = useCallback(()=>{ const cur=appSettingsRef.current; const d2l:Record<string,string>={'default-dark':'default-light','catppuccin-mocha':'catppuccin-latte','solarized-dark':'solarized-light'}; const l2d=Object.fromEntries(Object.entries(d2l).map(([k,v])=>[v,k])); const curDark=THEMES[cur.theme]?.dark??isDark; const next={...cur,theme:curDark?(d2l[cur.theme]??'default-light'):(l2d[cur.theme]??'default-dark')}; setAppSettings(next);saveSettings(next);setIsDark(applySettings(next)); },[isDark]);
 
@@ -784,7 +784,7 @@ export default function Dashboard() {
             { id:'home',     label:'Overview',    icon:Home,     count:null,           href:null },
             { id:'articles', label:'Articles',    icon:FileText, count:articles.length, href:null },
             { id:'blogs',    label:'Blog Posts',  icon:BookOpen, count:blogs.length,    href:null },
-            { id:'work',     label:'Assignments', icon:Briefcase,count:pendingTasks.length||null, href:'/work' },
+            { id:'tasks',    label:'Assignments', icon:Briefcase,count:pendingTasks.length||null, href:'/tasks' },
             { id:'team',     label:'Team',        icon:Users,    count:null,           href:'/team' },
           ] as const).map((item,i) => {
             const isActive = activeNav===(item.id as string);
@@ -913,7 +913,7 @@ export default function Dashboard() {
                     <span style={{ fontSize:14, fontWeight:700, color:'var(--text)', letterSpacing:'-0.01em' }}>Pending Assignments</span>
                     <span style={{ fontSize:10.5, fontWeight:700, borderRadius:99, padding:'2px 9px', background:'var(--accent)', color:'#fff' }}>{pendingTasks.length}</span>
                     <div style={{ flex:1 }}/>
-                    <Link href="/work" style={{ textDecoration:'none' }}>
+                    <Link href="/tasks" style={{ textDecoration:'none' }}>
                       <button className="tb-btn" style={{ fontSize:11.5, gap:3, color:'var(--accent)' }}>View all <ChevronRight size={11}/></button>
                     </Link>
                   </div>
@@ -1063,7 +1063,7 @@ export default function Dashboard() {
             { id:'home',     label:'Home',    href:null,    icon:'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z' },
             { id:'articles', label:'Articles', href:null,   icon:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8' },
             { id:'blogs',    label:'Blogs',   href:null,    icon:'M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z' },
-            { id:'work',     label:'Work',    href:'/work', icon:'M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16' },
+            { id:'tasks',    label:'Tasks',   href:'/tasks', icon:'M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16' },
             { id:'team',     label:'Team',    href:'/team', icon:'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75' },
           ] as const).map(item => {
             const isActive = activeNav === item.id;
@@ -1073,7 +1073,7 @@ export default function Dashboard() {
                   {item.icon.split(' M').map((d, i) => <path key={i} d={i === 0 ? d : 'M' + d} />)}
                 </svg>
                 <span>{item.label}</span>
-                {item.id === 'work' && pendingTasks.length > 0 && (
+                {item.id === 'tasks' && pendingTasks.length > 0 && (
                   <span style={{ position:'absolute', top:6, left:'50%', transform:'translateX(4px)', width:14, height:14, borderRadius:99, background:'var(--accent)', color:'#fff', fontSize:8, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center' }}>
                     {pendingTasks.length > 9 ? '9+' : pendingTasks.length}
                   </span>

@@ -91,7 +91,7 @@ export default function AssignTaskModal({ member, onClose, onSuccess, defaultCat
         return;
       }
       
-      const res = await fetch('/api/work/assign', {
+      const res = await fetch('/api/tasks/assign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

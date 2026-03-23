@@ -665,6 +665,14 @@ main { overflow-x: visible; }
 }
 .toolbar-row::-webkit-scrollbar { display: none; }
 
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Dashboard sidebar hidden on mobile; main padding tightened */
 @media (max-width: 767px) {
   .dash-sidebar { display: none !important; }

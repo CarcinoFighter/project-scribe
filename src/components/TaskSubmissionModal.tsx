@@ -51,7 +51,7 @@ export default function TaskSubmissionModal({ taskId, taskTitle, onClose, onSucc
       const { url } = await uploadRes.json();
 
       // 2. Patch the task to in_review status
-      const patchRes = await fetch('/api/work', {
+      const patchRes = await fetch('/api/tasks', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
