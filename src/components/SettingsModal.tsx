@@ -53,7 +53,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
 /* ─────────────────────────────────────────────────────────── */
 export const THEMES: Record<string, { label: string; dark: boolean; vars: Record<string, string> }> = {
   'default-light': {
-    label: 'Scribe Light', dark: false,
+    label: 'Vantage Light', dark: false,
     vars: {
       '--bg': '#ffffff', '--bg-alt': '#f7f7f7', '--bg-deep': '#f0f0f0',
       '--text': '#0a0a0a', '--text-2': '#2a2a2a', '--text-3': '#3a3a3a', '--text-4': '#636363',
@@ -65,7 +65,7 @@ export const THEMES: Record<string, { label: string; dark: boolean; vars: Record
     },
   },
   'default-dark': {
-    label: 'Scribe Dark', dark: true,
+    label: 'Vantage Dark', dark: true,
     vars: {
       '--bg': '#0a0a0a', '--bg-alt': '#111111', '--bg-deep': '#181818',
       '--text': '#f0f0f0', '--text-2': '#d0d0d0', '--text-3': '#b8b8b8', '--text-4': '#787878',
@@ -640,7 +640,7 @@ export default function SettingsModal({ settings, onClose, onChange }: {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--border-med)', flexShrink: 0 }}>
           <div>
             <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>Settings</div>
-            <div style={{ fontSize: 11, color: 'var(--text-4)', marginTop: 3 }}>Customise your Scribe experience</div>
+            <div style={{ fontSize: 11, color: 'var(--text-4)', marginTop: 3 }}>Customise your Vantage experience</div>
           </div>
           <button type="button" onClick={onClose} style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--r-sm)', border: 'none', background: 'transparent', color: 'var(--text-4)', cursor: 'pointer', outline: 'none' }}>
             <X size={15} />

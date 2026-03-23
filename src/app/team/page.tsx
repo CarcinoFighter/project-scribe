@@ -117,9 +117,9 @@ export default function TeamPage() {
       {/* Unified Header */}
       <header className="app-header anim-slide-down flex items-center px-4 h-[52px] sticky top-0 z-50 glass glass-rim">
         <div className="flex items-center gap-2 select-none mr-4">
-          <Image src="/logo.svg" alt="Scribe" width={18} height={22} priority />
+          <Image src="/logo.svg" alt="Vantage" width={18} height={22} priority />
           <span className="font-bold text-[13.5px] text-[var(--text)] tracking-tight">
-            Scribe <span className="opacity-40 font-medium mx-1">/</span> <span className="text-[var(--text-4)]">Team</span>
+            Vantage <span className="opacity-40 font-medium mx-1">/</span> <span className="text-[var(--text-4)]">Team</span>
           </span>
         </div>
         

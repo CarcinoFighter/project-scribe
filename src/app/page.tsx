@@ -697,7 +697,7 @@ export default function Dashboard() {
         <div style={{ display:'flex', alignItems:'center', gap:7, marginRight:4, flexShrink:0, userSelect:'none' }}>
           <Image src="/logo.svg" alt="Carcino" width={18} height={22} priority/>
           <span style={{ fontWeight:700, fontSize:14, color:'var(--text)', letterSpacing:'-0.02em' }}>
-            Carcino <span style={{ color:'var(--accent)' }}>Scribe</span>
+            Carcino <span style={{ color:'var(--accent)' }}>Vantage</span>
           </span>
         </div>
 

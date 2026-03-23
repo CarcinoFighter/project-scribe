@@ -4,7 +4,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 export async function GET(req: NextRequest) {
   const { data: docs, error } = await supabaseAdmin
     .from('cancer_docs')
-    .select('id, title, slug, content, created_at, updated_at, author_id, status')
+    .select('id, title, slug, content, created_at, updated_at, author_id, status, color')
     .eq('status', 'published')
     .order('created_at', { ascending: false });
 

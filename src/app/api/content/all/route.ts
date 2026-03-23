@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
           .eq('status', 'published'),
         supabaseAdmin
           .from('cancer_docs')
-          .select('id, title, slug, content, created_at, updated_at, author_id')
+          .select('id, title, slug, content, created_at, updated_at, author_id, color')
           .eq('status', 'published'),
       ]);
 
