@@ -2,23 +2,23 @@
   "name": "Carcino Vantage",
   "short_name": "Vantage",
   "description": "A Beautiful Markdown Editor for Writers Block of The Carcino Foundation.",
-  "theme_color": "#ffffff",
-  "background_color": "#ffffff",
+  "theme_color": "#0c0b0f",
+  "background_color": "#0c0b0f",
   "display": "standalone",
   "orientation": "portrait",
   "scope": "/",
   "start_url": "/",
   "icons": [
     {
-      "src": "/logo.svg",
+      "src": "/logo.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/logo.svg",
+      "src": "/logo.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "maskable"
     }
   ]
