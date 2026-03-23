@@ -337,6 +337,11 @@ export default function Header(props: HeaderProps) {
 
         {/* ── RIGHT: compact mobile toolbar ── */}
         <div className="editor-header-mobile" style={{ alignItems: 'center', gap: 2, flexShrink: 0 }}>
+          {/* Search commands */}
+          <button className="tb-btn" onClick={onOpenCmd} title="Search commands (Ctrl+K)" style={{ padding:'5px 7px' }}>
+            <Search size={15} strokeWidth={1.8} />
+          </button>
+
           {/* Compact view mode switcher — icons only */}
           <div style={{ display:'flex', alignItems:'center', gap:1, background:'var(--bg-deep)', border:'1px solid var(--border)', borderRadius:8, padding:2 }}>
             {VIEW_MODES.map(({ id, icon: Icon }) => (
@@ -347,10 +352,25 @@ export default function Header(props: HeaderProps) {
             ))}
           </div>
 
-          {/* Dark mode toggle */}
-          <button className="tb-btn" onClick={onToggleDark} title={isDark ? 'Light mode' : 'Dark mode'} style={{ padding:'5px 7px' }}>
-            {isDark ? <Sun size={15} strokeWidth={1.8} /> : <Moon size={15} strokeWidth={1.8} />}
-          </button>
+          {/* Export dropdown */}
+          <div style={{ position: 'relative' }}>
+            <button
+              ref={exportBtnRef}
+              className="tb-btn"
+              onClick={() => {
+                const btn = exportBtnRef.current;
+                if (btn) {
+                  const r = btn.getBoundingClientRect();
+                  setExportPos({ top: r.bottom + 6, right: window.innerWidth - r.right });
+                }
+                setExportOpen(o => !o);
+              }}
+              title="Export"
+              style={{ padding:'5px 7px' }}
+            >
+              <Download size={14} strokeWidth={1.8} />
+            </button>
+          </div>
 
           {/* Account avatar */}
           <button

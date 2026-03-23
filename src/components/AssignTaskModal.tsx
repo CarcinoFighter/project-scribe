@@ -131,9 +131,9 @@ export default function AssignTaskModal({ member, onClose, onSuccess, defaultCat
   if (!mounted) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[9500] flex items-start justify-center p-4 bg-black/80 backdrop-blur-xl anim-fade-in pt-[10vh]">
-      <div className="glass-raised w-full max-w-lg rounded-[var(--r-xl)] overflow-hidden shadow-2xl anim-slide-down border-[var(--border-strong)] relative sm:max-h-[80vh] flex flex-col">
-        <div className="p-6 border-b border-[var(--border-med)] flex items-center justify-between bg-[var(--bg-deep)]">
+    <div className="fixed inset-0 z-[9500] flex items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-xl anim-fade-in">
+      <div className="glass-raised w-full max-w-lg rounded-none sm:rounded-[var(--r-xl)] overflow-hidden shadow-2xl anim-slide-down border-[var(--border-strong)] relative h-full sm:h-auto sm:max-h-[90vh] flex flex-col">
+        <div className="p-4 sm:p-6 border-b border-[var(--border-med)] flex items-center justify-between bg-[var(--bg-deep)]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-[var(--accent-subtle2)] flex items-center justify-center text-[var(--accent)]">
               <Layers size={20} />
@@ -148,7 +148,7 @@ export default function AssignTaskModal({ member, onClose, onSuccess, defaultCat
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[70vh] overflow-y-auto custom-scrollbar">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-5 flex-1 overflow-y-auto custom-scrollbar">
           {error && (
             <div className="p-3 rounded-[var(--r-md)] bg-red-500/10 border border-red-500/20 text-red-500 text-xs flex items-center gap-2">
               <AlertTriangle size={14} />
@@ -191,7 +191,7 @@ export default function AssignTaskModal({ member, onClose, onSuccess, defaultCat
           {/* Category Selector */}
           <div className="space-y-2">
             <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-4)]">Category</label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {CATEGORIES.map((cat) => (
                 <button
                   key={cat.id}
@@ -242,7 +242,7 @@ export default function AssignTaskModal({ member, onClose, onSuccess, defaultCat
           )}
 
           {/* Date & Priority */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-4)] flex items-center gap-1.5">
                 <Calendar size={10} />
@@ -285,7 +285,7 @@ export default function AssignTaskModal({ member, onClose, onSuccess, defaultCat
           </div>
         </form>
 
-        <div className="p-6 border-t border-[var(--border-med)] bg-[var(--bg-deep)] flex items-center justify-end gap-3">
+        <div className="p-4 sm:p-6 border-t border-[var(--border-med)] bg-[var(--bg-deep)] flex items-center justify-end gap-3">
           <button 
             type="button" 
             onClick={onClose}
@@ -314,6 +314,7 @@ export default function AssignTaskModal({ member, onClose, onSuccess, defaultCat
         </div>
       </div>
     </div>,
+
     document.body
   );
 }

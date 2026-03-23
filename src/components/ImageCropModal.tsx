@@ -99,7 +99,7 @@ export default function ImageCropModal({ image, onCrop, onCancel }: ImageCropMod
         </div>
 
         {/* Footer / Controls */}
-        <div className="p-6 bg-[var(--bg-deep)] border-t border-white/10 flex flex-col gap-6">
+        <div className="p-6 bg-[var(--bg-deep)] border-t border-white/10 flex flex-col gap-6 crop-modal-footer">
           <div className="flex items-center gap-4">
             <ZoomOut size={16} className="text-[var(--text-4)]" />
             <input
@@ -115,7 +115,7 @@ export default function ImageCropModal({ image, onCrop, onCancel }: ImageCropMod
             <ZoomIn size={16} className="text-[var(--text-4)]" />
           </div>
 
-          <div className="flex items-center justify-end gap-3">
+          <div className="flex items-center justify-end gap-3 crop-modal-footer-buttons">
             <button 
               onClick={onCancel}
               className="px-6 py-2 rounded-[var(--r-md)] text-xs font-bold text-[var(--text-4)] hover:text-[var(--text)] transition-colors"

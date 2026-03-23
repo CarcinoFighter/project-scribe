@@ -126,75 +126,83 @@ function TaskRow({ task, onCompleteClick, completing, isAdmin, showEditor, onIni
   };
 
   return (
-    <div className={`flex items-center gap-4 px-4 py-3 border-b border-[var(--border)] last:border-b-0 hover:bg-[var(--bg-deep)] transition-colors group ${isDone ? 'opacity-55' : ''}`}>
-      <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${isDone ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>
-        {isDone ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
-      </div>
-      
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <PriorityDot priority={task.priority} />
-          {showEditor && task.document_id ? (
-            <button
-              onClick={handleTitleClick}
-              className={`text-sm font-semibold text-left hover:text-[var(--accent)] transition-colors truncate ${isDone ? 'line-through' : ''}`}
-            >
-              {task.title}
-            </button>
-          ) : (
-            <span className={`text-sm font-semibold text-[var(--text)] truncate ${isDone ? 'line-through' : ''}`}>{task.title}</span>
-          )}
-          <StatusBadge status={task.status} />
+    <div className={`flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3 border-b border-[var(--border)] last:border-b-0 hover:bg-[var(--bg-deep)] transition-colors group ${isDone ? 'opacity-55' : ''}`}>
+      <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${isDone ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>
+          {isDone ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
         </div>
-        {task.description && (
-          <p className="text-xs text-[var(--text-4)] truncate mt-0.5">{task.description}</p>
-        )}
-      </div>
-
-      {isAdmin && task.assignee && (
-        <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
-          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--accent-hover)] flex items-center justify-center text-white text-[8px] font-bold flex-shrink-0">
-            {task.assignee.name?.split(' ').map(n => n[0]).join('').slice(0,2)}
+        
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <PriorityDot priority={task.priority} />
+            {showEditor && task.document_id ? (
+              <button
+                onClick={handleTitleClick}
+                className={`text-sm font-semibold text-left hover:text-[var(--accent)] transition-colors truncate ${isDone ? 'line-through' : ''}`}
+              >
+                {task.title}
+              </button>
+            ) : (
+              <span className={`text-sm font-semibold text-[var(--text)] truncate ${isDone ? 'line-through' : ''}`}>{task.title}</span>
+            )}
+            <StatusBadge status={task.status} />
           </div>
-          <span className="text-xs text-[var(--text-4)] truncate max-w-[80px]">{task.assignee.name}</span>
+          {task.description && (
+            <p className="text-xs text-[var(--text-4)] truncate mt-0.5">{task.description}</p>
+          )}
         </div>
-      )}
-
-      <div className="flex items-center gap-1.5 text-[11px] text-[var(--text-4)] flex-shrink-0">
-        <Calendar size={10} />
-        {task.due_date ? new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
       </div>
 
-      {!isDone && (
-        <button
-          onClick={() => onCompleteClick(task)}
-          disabled={completing === task.id}
-          className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 text-[10px] font-bold uppercase tracking-wider rounded-[var(--r-md)] border border-emerald-500/20 transition-all disabled:opacity-50 flex-shrink-0"
-        >
-          {completing === task.id ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
-          Complete
-        </button>
-      )}
+      <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 pl-10 sm:pl-0">
+        <div className="flex items-center gap-3 sm:gap-4">
+          {isAdmin && task.assignee && (
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--accent-hover)] flex items-center justify-center text-white text-[8px] font-bold flex-shrink-0">
+                {task.assignee.name?.split(' ').map(n => n[0]).join('').slice(0,2)}
+              </div>
+              <span className="text-[10px] sm:text-xs text-[var(--text-4)] truncate max-w-[60px] sm:max-w-none">{task.assignee.name}</span>
+            </div>
+          )}
 
-      {showEditor && !isDone && (
-        task.document_id ? (
-          <button
-            onClick={handleTitleClick}
-            className="flex items-center gap-1 px-2.5 py-1 bg-[var(--accent-subtle2)] hover:bg-[var(--accent-subtle)] text-[var(--accent)] text-[10px] font-bold uppercase tracking-wider rounded-[var(--r-md)] border border-[var(--accent-subtle)] transition-all flex-shrink-0"
-          >
-            Edit
-            <ChevronR size={10} />
-          </button>
-        ) : (
-          <button
-            onClick={() => onInit(task.id)}
-            className="flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 text-[10px] font-bold uppercase tracking-wider rounded-[var(--r-md)] border border-amber-500/20 transition-all flex-shrink-0"
-            title="Create internal document for this assignment"
-          >
-            Initialize
-          </button>
-        )
-      )}
+          <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-[var(--text-4)] flex-shrink-0">
+            <Calendar size={10} />
+            {task.due_date ? new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5 ml-auto sm:ml-0">
+          {!isDone && (
+            <button
+              onClick={() => onCompleteClick(task)}
+              disabled={completing === task.id}
+              className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 text-[10px] font-bold uppercase tracking-wider rounded-[var(--r-md)] border border-emerald-500/20 transition-all disabled:opacity-50 flex-shrink-0"
+            >
+              {completing === task.id ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
+              <span>Done</span>
+            </button>
+          )}
+
+          {showEditor && !isDone && (
+            task.document_id ? (
+              <button
+                onClick={handleTitleClick}
+                className="flex items-center gap-1 px-2.5 py-1 bg-[var(--accent-subtle2)] hover:bg-[var(--accent-subtle)] text-[var(--accent)] text-[10px] font-bold uppercase tracking-wider rounded-[var(--r-md)] border border-[var(--accent-subtle)] transition-all flex-shrink-0"
+              >
+                Edit
+                <ChevronR size={10} />
+              </button>
+            ) : (
+              <button
+                onClick={() => onInit(task.id)}
+                className="flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 text-[10px] font-bold uppercase tracking-wider rounded-[var(--r-md)] border border-amber-500/20 transition-all flex-shrink-0"
+                title="Create internal document for this assignment"
+              >
+                Init
+              </button>
+            )
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -600,7 +608,6 @@ export default function WorkPage() {
   // Filter tasks for the active department
   const activeDeptTasks = assignments.filter(a => a.department === activeDeptKey);
   
-  // Special case for Writers' Block: categorization
   const activeDept = DEPARTMENTS.find(d => d.key === activeDeptKey) || DEPARTMENTS[0];
 
   return (
@@ -612,24 +619,65 @@ export default function WorkPage() {
             boxShadow: 'inset 0 -1px 0 var(--border), 0 1px 12px rgba(0,0,0,0.06)' 
           }}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <Image src="/logo.svg" alt="Carcino" width={16} height={20} priority />
               <span className="text-[12.5px] font-bold text-[var(--text-4)] uppercase tracking-tight">
                 <span className="hidden sm:inline">Carcino </span>Vantage
               </span>
             </Link>
-            <ChevronRight size={11} strokeWidth={2.2} className="text-[var(--border-strong)] mx-1" />
-            <Link href="/" className="text-[12.5px] font-bold text-[var(--text-3)] tracking-tight hover:text-[var(--accent)] transition-colors">Dashboard</Link>
-            <ChevronRight size={11} strokeWidth={2.2} className="text-[var(--border-strong)] mx-1" />
-            <span className="text-[12.5px] font-bold text-[var(--text)] tracking-tight">{activeDeptKey}</span>
+
+            <div className="w-[1px] h-4 bg-[var(--border-med)] mx-0.5" />
+
+            {/* Department Selector Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="flex items-center gap-1.5 p-1 px-2.5 hover:bg-[var(--bg-deep)] rounded-[var(--r-md)] border border-transparent hover:border-[var(--border-med)] text-[var(--text-3)] transition-all"
+                title="Switch Department"
+              >
+                <Layers size={13} strokeWidth={2.2} className="text-[var(--accent)]" />
+                <span className="text-[12px] font-bold tracking-tight">{activeDeptKey}</span>
+                <ChevronR size={10} className={`ml-1 opacity-40 transition-transform ${isMenuOpen ? 'rotate-90' : 'rotate-0'}`} />
+              </button>
+
+              {isMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-[250]" onClick={() => setIsMenuOpen(false)} />
+                  <div className="absolute top-full left-0 mt-2 w-52 p-1.5 bg-[var(--bg-alt)] border border-[var(--border-strong)] rounded-[var(--r-lg)] shadow-2xl z-[300] anim-scale-up">
+                    <div className="p-2 border-b border-[var(--border-med)] mb-1.5">
+                       <div className="flex items-center gap-2">
+                        <Layers size={11} strokeWidth={2.5} className="text-[var(--accent)]" />
+                        <span className="text-[9px] font-black uppercase tracking-widest text-[var(--text-4)]">Select Department</span>
+                      </div>
+                    </div>
+                    <div className="space-y-0.5">
+                      {DEPARTMENTS.map(dept => {
+                        const isActive = activeDeptKey === dept.key;
+                        const Icon = dept.icon;
+                        return (
+                          <button
+                            key={dept.key}
+                            onClick={() => { setActiveDeptKey(dept.key); setIsMenuOpen(false); }}
+                            className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-[var(--r-md)] text-[12.5px] font-bold text-left transition-all ${isActive ? 'text-[var(--accent)] bg-[var(--accent-subtle2)]' : 'text-[var(--text-4)] hover:text-[var(--text)] hover:bg-[var(--bg-deep)]'}`}
+                          >
+                            <Icon size={13} className={isActive ? dept.color : 'text-current'} />
+                            {dept.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
             {isAdmin && (
               <button 
                 onClick={() => setShowAssignModal({ department: activeDeptKey })}
-                className="p-1.5 rounded-lg hover:bg-[var(--accent-subtle)] text-[var(--text-4)] hover:text-[var(--accent)] transition-all"
+                className="hidden sm:flex p-1.5 rounded-lg hover:bg-[var(--accent-subtle)] text-[var(--text-4)] hover:text-[var(--accent)] transition-all"
                 title="Assign Task"
               >
                 <Plus size={16} strokeWidth={2} />
@@ -675,75 +723,13 @@ export default function WorkPage() {
           </div>
         )}
 
-      <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
-        {/* Mobile nav strip — visible only on small screens */}
-        <div className="md:hidden flex items-center gap-3 px-4 py-2 border-b border-[var(--border)] bg-[var(--bg-alt)] text-[10px] font-medium tracking-wide flex-shrink-0">
-          <Link href="/" className="text-[var(--text-4)] hover:text-[var(--accent)] flex items-center gap-1 transition-colors">
-            <ChevronRight size={12} className="rotate-180" /> Dashboard
-          </Link>
-          <span className="text-[var(--border-strong)]">/</span>
-          <span className="text-[var(--text-3)] font-semibold">Tasks</span>
-        </div>
-
-        {/* Sidebar */}
-        <aside className="sidebar-col w-52 p-4 space-y-1 hidden md:flex flex-col flex-shrink-0 min-w-0" style={{ position: 'sticky', top: 52, height: 'calc(100vh - 52px)', overflowY: 'auto' }}>
-          <Link href="/" className="flex items-center gap-3 px-3 py-2 text-sm text-[var(--text-4)] hover:text-[var(--text)] rounded-[var(--r-md)] transition-colors">
-            <ChevronRight size={14} className="rotate-180" />
-            Dashboard
-          </Link>
-
-          <div className="pt-4 pb-2 px-3 text-[10px] font-bold uppercase tracking-widest text-[var(--text-4)]">Views</div>
-
-          <button
-            onClick={() => setView('my')}
-            className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-[var(--r-md)] font-semibold text-left transition-all ${view === 'my' ? 'text-[var(--accent)] bg-[var(--accent-subtle2)]' : 'text-[var(--text-4)] hover:text-[var(--text)] hover:bg-[var(--bg-deep)]'}`}
-          >
-            <Briefcase size={14} />
-            My Assignments
-          </button>
-
-          {isAdmin && (
-            <button
-              onClick={() => setView('admin')}
-              className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-[var(--r-md)] font-semibold text-left transition-all ${view === 'admin' ? 'text-[var(--accent)] bg-[var(--accent-subtle2)]' : 'text-[var(--text-4)] hover:text-[var(--text)] hover:bg-[var(--bg-deep)]'}`}
-            >
-              <Users size={14} />
-              All Assignments
-            </button>
-          )}
-
-          <div className="flex-1" />
-
-          <div className="text-[10px] text-[var(--text-4)] px-3 py-2">
-            {myAssignments.filter(a => a.status !== 'done').length} pending tasks
-          </div>
-        </aside>
-
+        <div className="flex flex-col flex-1 overflow-hidden">
         {/* Main Content */}
         <main className="page-main-content flex-1 p-6 overflow-y-auto">
           <div className="max-w-5xl mx-auto">
-            {/* View Switcher (Mobile Only) - Only for Admins */}
-            {isAdmin && (
-              <div className="md:hidden flex p-1 bg-[var(--bg-deep)] rounded-[var(--r-xl)] border border-[var(--border-med)] mb-6 shadow-sm">
-                <button 
-                  onClick={() => setView('my')}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[var(--r-lg)] text-xs font-bold transition-all ${view === 'my' ? 'bg-[var(--surface-2)] text-[var(--accent)] shadow-sm border border-[var(--border-med)]' : 'text-[var(--text-4)]'}`}
-                >
-                  <Briefcase size={14} />
-                  My Assignments
-                </button>
-                <button 
-                  onClick={() => setView('admin')}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[var(--r-lg)] text-xs font-bold transition-all ${view === 'admin' ? 'bg-[var(--surface-2)] text-[var(--accent)] shadow-sm border border-[var(--border-med)]' : 'text-[var(--text-4)]'}`}
-                >
-                  <Users size={14} />
-                  All Assignments
-                </button>
-              </div>
-            )}
 
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
               <div>
                 <h1 className="text-xl font-bold text-[var(--text)] tracking-tight">
                   {isAdmin ? (view === 'admin' ? 'All Assignments' : 'My Assignments') : 'Assignments'}
@@ -754,46 +740,39 @@ export default function WorkPage() {
                     : 'Your active editorial tasks and content assignments'}
                 </p>
               </div>
-              {isAdmin && (
-                <button
-                  onClick={() => setShowAssignModal({ department: activeDeptKey })}
-                  className="hidden md:flex bg-[var(--accent)] text-white px-4 py-2 rounded-[var(--r-md)] text-sm font-semibold items-center gap-2 shadow-lg shadow-[var(--accent-glow)] hover:scale-[1.02] active:scale-[0.98] transition-all"
-                >
-                  <Plus size={14} />
-                  Assign Task
-                </button>
-              )}
+
+              <div className="flex items-center gap-2">
+                {isAdmin && (
+                  <div className="flex p-1 bg-[var(--bg-deep)] rounded-[var(--r-lg)] border border-[var(--border-med)] shadow-sm">
+                    <button 
+                      onClick={() => setView('my')}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-[var(--r-md)] text-xs font-bold transition-all ${view === 'my' ? 'bg-[var(--surface-2)] text-[var(--accent)] shadow-sm border border-[var(--border-med)]' : 'text-[var(--text-4)]'}`}
+                    >
+                      My
+                    </button>
+                    <button 
+                      onClick={() => setView('admin')}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-[var(--r-md)] text-xs font-bold transition-all ${view === 'admin' ? 'bg-[var(--surface-2)] text-[var(--accent)] shadow-sm border border-[var(--border-med)]' : 'text-[var(--text-4)]'}`}
+                    >
+                      All
+                    </button>
+                  </div>
+                )}
+                
+                {isAdmin && (
+                  <button
+                    onClick={() => setShowAssignModal({ department: activeDeptKey })}
+                    className="flex bg-[var(--accent)] text-white px-4 py-2 rounded-[var(--r-md)] text-sm font-semibold items-center gap-2 shadow-lg shadow-[var(--accent-glow)] hover:scale-[1.02] active:scale-[0.98] transition-all"
+                  >
+                    <Plus size={14} />
+                    <span className="hidden sm:inline">Assign Task</span>
+                    <span className="sm:hidden">Assign</span>
+                  </button>
+                )}
+              </div>
             </div>
 
-            {/* Department Menu Bar (Desktop) */}
-            <div className="mb-8 hidden md:block">
-              <div className="flex items-center gap-2 mb-3">
-                <Layers size={14} className="text-[var(--text-4)]" />
-                <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-4)]">Departments</span>
-              </div>
-              <div className="flex items-center gap-2 p-1 bg-[var(--bg-deep)] rounded-[var(--r-xl)] border border-[var(--border-med)] overflow-x-auto no-scrollbar scroll-smooth">
-                {DEPARTMENTS.map((dept) => {
-                  const isActive = activeDeptKey === dept.key;
-                  const Icon = dept.icon;
-                  return (
-                    <button
-                      key={dept.key}
-                      onClick={() => setActiveDeptKey(dept.key)}
-                      className={`flex items-center gap-2.5 px-4 py-2.5 rounded-[var(--r-lg)] text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
-                        isActive 
-                          ? 'bg-[var(--surface-2)] text-[var(--accent)] shadow-md shadow-black/5 border border-[var(--border-med)] translate-y-[-1px]' 
-                          : 'text-[var(--text-4)] hover:text-[var(--text-2)] hover:bg-[var(--bg-deep)]'
-                      }`}
-                    >
-                      <div className={`w-5 h-5 rounded-md flex items-center justify-center ${isActive ? dept.bg : 'bg-transparent text-current opacity-60'}`}>
-                        <Icon size={12} className={isActive ? dept.color : 'text-current'} />
-                      </div>
-                      {dept.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+
 
             {loading ? (
               <div className="py-20 flex flex-col items-center justify-center gap-4 text-[var(--text-4)]">
@@ -973,108 +952,7 @@ export default function WorkPage() {
       )}
       {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
 
-      {/* Floating Quick Menu (Mobile Only) */}
-      <div className="md:hidden">
-        {/* Backdrop overlay when menu is open */}
-        {isMenuOpen && (
-          <div 
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[350] anim-fade-in"
-            onClick={() => setIsMenuOpen(false)}
-          />
-        )}
 
-        {/* The Menu Panel */}
-        <div 
-          className={`fixed bottom-[160px] right-6 w-56 bg-[var(--surface-2)] backdrop-blur-2xl border border-[var(--border-strong)] rounded-[var(--r-xl)] shadow-2xl z-[9001] transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] ${
-            isMenuOpen 
-              ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto' 
-              : 'opacity-0 translate-y-4 scale-95 pointer-events-none'
-          }`}
-        >
-          <div className="p-4 border-b border-[var(--border-med)]">
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-4)]">Quick Menu</h3>
-          </div>
-          
-          <div className="py-2 max-h-[60vh] overflow-y-auto no-scrollbar">
-            <div className="px-3 pb-2 mb-1 border-b border-[var(--border-med)]">
-              <span className="text-[10px] font-bold text-[var(--text-4)] block mb-2 px-1">Departments</span>
-              <div className="space-y-1">
-                {DEPARTMENTS.map((dept) => {
-                  const isActive = activeDeptKey === dept.key;
-                  const Icon = dept.icon;
-                  return (
-                    <button
-                      key={dept.key}
-                      onClick={() => { setActiveDeptKey(dept.key); setIsMenuOpen(false); }}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[var(--r-lg)] text-xs font-bold transition-all ${
-                        isActive 
-                          ? 'bg-[var(--accent-subtle2)] text-[var(--accent)] border border-[var(--accent-subtle)]' 
-                          : 'text-[var(--text-3)] hover:bg-[var(--bg-deep)]'
-                      }`}
-                    >
-                      <div className={`w-6 h-6 rounded-md flex items-center justify-center ${isActive ? dept.bg : 'bg-[var(--bg-deep)] opacity-60'}`}>
-                        <Icon size={14} className={isActive ? dept.color : 'text-current'} />
-                      </div>
-                      {dept.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {isAdmin && (
-              <div className="px-3 py-1">
-                <button
-                  onClick={() => { setShowAssignModal({ department: activeDeptKey }); setIsMenuOpen(false); }}
-                  className="w-full flex items-center gap-3 px-3 py-3 rounded-[var(--r-lg)] text-xs font-bold text-white bg-[var(--accent)] shadow-lg shadow-[var(--accent-glow)] active:scale-95 transition-all"
-                >
-                  <div className="w-6 h-6 rounded-md flex items-center justify-center bg-white/20">
-                    <Plus size={14} />
-                  </div>
-                  Assign New Task
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Main Floating Trigger Button */}
-        <button
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className={`fixed bottom-[75px] right-6 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl z-[9002] transition-all transform active:scale-90 ${
-            isMenuOpen 
-              ? 'bg-[var(--surface-3)] text-[var(--accent)] rotate-90 scale-110' 
-              : 'bg-[var(--accent)] text-white rotate-0'
-          }`}
-          style={{ boxShadow: isMenuOpen ? '0 10px 25px rgba(0,0,0,0.3)' : '0 8px 20px var(--accent-glow)' }}
-        >
-          {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
-      </div>
-
-      {/* Mobile Bottom Navigation */}
-      <nav className="mobile-bottom-nav">
-        <div className="mobile-bottom-nav-inner">
-          {([
-            { id:'home',     label:'Home',    href:'/',    icon:'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z' },
-            { id:'articles', label:'Articles', href:'/',   icon:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8' },
-            { id:'blogs',    label:'Blogs',   href:'/',    icon:'M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z' },
-            { id:'tasks',    label:'Tasks',   href:'/tasks', icon:'M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16' },
-            { id:'team',     label:'Team',    href:'/team', icon:'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75' },
-          ] as const).map(item => {
-            const isActive = item.id === 'tasks';
-            const inner = (
-              <>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  {item.icon.split(' M').map((d, i) => <path key={i} d={i === 0 ? d : 'M' + d} />)}
-                </svg>
-                <span>{item.label}</span>
-              </>
-            );
-            return <Link key={item.id} href={item.href} className={`mobile-nav-item${isActive ? ' active' : ''}`} style={{ position:'relative' }}>{inner}</Link>;
-          })}
-        </div>
-      </nav>
     </div>
   );
 }

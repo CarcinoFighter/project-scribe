@@ -137,7 +137,7 @@ function StatusPill({ status }: { status: string }) {
 function NotifPanel({ notifs, onMarkAllRead, onClose }: { notifs:Notif[]; onMarkAllRead:()=>void; onClose:()=>void; }) {
   const unread = notifs.filter(n=>!n.read).length;
   return (
-    <div className="glass-overlay anim-drop-in" style={{ position:'absolute', right:0, top:'calc(100% + 8px)', borderRadius:'var(--r-lg)', width:300, overflow:'hidden', zIndex:200 }}>
+    <div className="glass-overlay anim-drop-in notification-panel" style={{ position:'absolute', right:0, top:'calc(100% + 8px)', borderRadius:'var(--r-lg)', width:'calc(100vw - 32px)', maxWidth:320, overflow:'hidden', zIndex:200 }}>
       <div style={{ padding:'12px 16px', borderBottom:'1px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
         <div style={{ display:'flex', alignItems:'center', gap:7 }}>
           <Bell size={13} strokeWidth={2} style={{ color:'var(--text-3)' }} />
@@ -756,7 +756,7 @@ export default function Dashboard() {
               onClick={()=>{ if(!showAccountMenu&&accountBtnRef.current){const r=accountBtnRef.current.getBoundingClientRect();setAccountMenuPos({top:r.bottom+8,right:window.innerWidth-r.right});} setShowAccountMenu(o=>!o);setShowNotifPanel(false); }}
               style={{ gap:6, padding:'3px 8px 3px 4px', borderRadius:8, background:showAccountMenu?'var(--accent-subtle2)':undefined }}>
               {user?.avatar_url ? (
-                <div style={{ width:24, height:24, borderRadius:'50%', overflow:'hidden' }}>
+                <div style={{ width:24, height:24, borderRadius:'50%', overflow:'hidden', border: '1px solid var(--border-med)' }}>
                   <Image src={user.avatar_url} alt="Profile" width={24} height={24}/>
                 </div>
               ) : (
@@ -765,7 +765,7 @@ export default function Dashboard() {
                 </div>
               )}
               <span className="hidden md:block" style={{ fontSize:12.5, fontWeight:600, color:'var(--text)' }}>{user?.name||''}</span>
-              <ChevronDown size={11} strokeWidth={2.5} style={{ color:'var(--text-4)' }}/>
+              <ChevronDown className="hidden sm:block" size={11} strokeWidth={2.5} style={{ color:'var(--text-4)' }}/>
             </button>
           </div>
         </div>

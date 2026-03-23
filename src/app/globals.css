@@ -772,3 +772,63 @@ main { overflow-x: visible; }
     overflow: hidden;
   }
 }
+/* ── Editor mobile optimizations ──────────────── */
+@media (max-width: 640px) {
+  .cm-content {
+    padding-top: 20px !important;
+    padding-bottom: 60px !important;
+  }
+  .cm-line {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+  .cm-gutters {
+    min-width: 32px !important;
+  }
+}
+
+/* ── Settings Modal Mobile ────────────────────── */
+@media (max-width: 640px) {
+  .settings-modal-inner {
+    flex-direction: column !important;
+  }
+  .settings-nav {
+    width: 100% !important;
+    height: auto !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    padding: 8px 12px !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border) !important;
+  }
+  .settings-nav button {
+    white-space: nowrap !important;
+    width: auto !important;
+    padding: 6px 12px !important;
+    font-size: 11px !important;
+  }
+}
+
+/* ── Profile Page Mobile ───────────────────────── */
+@media (max-width: 640px) {
+  .profile-avatar-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+}
+
+/* ── Image Crop Mobile ─────────────────────────── */
+@media (max-width: 480px) {
+  .crop-modal-footer {
+    padding: 16px !important;
+    gap: 16px !important;
+  }
+  .crop-modal-footer-buttons {
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+  .crop-modal-footer-buttons button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}

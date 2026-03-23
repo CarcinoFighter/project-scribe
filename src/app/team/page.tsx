@@ -40,7 +40,10 @@ export default function TeamPage() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
+  const [accountMenuPos, setAccountMenuPos] = useState<{ top: number; right: number } | null>(null);
+  const accountBtnRef = React.useRef<HTMLButtonElement>(null);
   const [showAssignModal, setShowAssignModal] = useState<TeamMember | null>(null);
+
   const [isDark, setIsDark] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>('all');
@@ -131,8 +134,15 @@ export default function TeamPage() {
 
         <div className="flex items-center gap-3">
           <button 
-            className="w-8 h-8 rounded-full overflow-hidden border border-[var(--border-med)] hover:border-[var(--accent)] transition-all"
-            onClick={() => setShowAccountMenu(!showAccountMenu)}
+            ref={accountBtnRef}
+            className="w-8 h-8 rounded-full overflow-hidden border border-[var(--border-med)] hover:border-[var(--accent)] transition-all flex-shrink-0"
+            onClick={() => {
+              if (!showAccountMenu && accountBtnRef.current) {
+                const r = accountBtnRef.current.getBoundingClientRect();
+                setAccountMenuPos({ top: r.bottom + 8, right: window.innerWidth - r.right });
+              }
+              setShowAccountMenu(!showAccountMenu);
+            }}
           >
             {currentUser?.avatar_url ? (
               <Image src={currentUser.avatar_url} alt="Profile" width={32} height={32} className="object-cover" />
@@ -142,11 +152,24 @@ export default function TeamPage() {
               </div>
             )}
           </button>
-          {showAccountMenu && (
-            <AccountMenu user={currentUser} onClose={() => setShowAccountMenu(false)} onToast={(m) => setToast(m)} />
-          )}
         </div>
       </header>
+
+      {/* Account Menu Portal */}
+      {showAccountMenu && accountMenuPos && createPortal(
+        <div 
+          className="fixed z-[9999]" 
+          style={{ top: accountMenuPos.top, right: accountMenuPos.right }}
+          onMouseLeave={() => setShowAccountMenu(false)}
+        >
+          <AccountMenu 
+            user={currentUser} 
+            onClose={() => setShowAccountMenu(false)} 
+            onToast={(m) => setToast(m)} 
+          />
+        </div>,
+        document.body
+      )}
 
       <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
         {/* Mobile nav strip — visible only on small screens */}

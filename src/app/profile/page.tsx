@@ -269,7 +269,7 @@ export default function ProfilePage() {
                     <Camera size={10} />
                     Avatar Settings
                   </label>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 profile-avatar-row">
                     <input 
                       type="text" 
                       value={avatarUrl}

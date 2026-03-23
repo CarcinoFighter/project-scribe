@@ -648,10 +648,10 @@ export default function SettingsModal({ settings, onClose, onChange }: {
         </div>
 
         {/* ── Body ── */}
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        <div className="settings-modal-inner" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
           {/* Nav sidebar */}
-          <nav style={{ width: 156, flexShrink: 0, borderRight: '1px solid var(--border)', padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: 2, background: 'var(--surface-sidebar)', overflowY: 'auto' }}>
+          <nav className="settings-nav" style={{ width: 156, flexShrink: 0, borderRight: '1px solid var(--border)', padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: 2, background: 'var(--surface-sidebar)', overflowY: 'auto' }}>
             {NAV_SECTIONS.map(({ id, label, Icon }) => (
               <button
                 key={id}
