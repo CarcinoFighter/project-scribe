@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { ThemeInitializer } from '@/components/ThemeInitializer';
+import PushSubscriber from '@/components/PushSubscriber';
 
 export const metadata: Metadata = {
   title: 'Vantage',
@@ -67,6 +68,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </div>
         <ThemeInitializer />
+        <PushSubscriber />
         {children}
       </body>
     </html>

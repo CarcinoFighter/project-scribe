@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { sendPushToUser } from '@/lib/pushNotify';
 
 function slugify(text: string): string {
   return text
@@ -159,6 +160,14 @@ export async function POST(req: NextRequest) {
       }
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    // Fire push notification to assignee (non-blocking)
+    sendPushToUser(assigned_to, {
+      title: '📋 New task assigned to you',
+      body: title,
+      tag: `task-${data.id}`,
+      url: '/tasks',
+    }).catch(() => {});
 
     return NextResponse.json({ success: true, assignment: data, document_id });
   } catch (err: any) {

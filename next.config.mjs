@@ -21,4 +21,5 @@ export default isDev ? nextConfig : withPWAInit({
   dest: "public",
   register: true,
   skipWaiting: true,
+  customWorkers: "worker/push-handler.js",
 })(nextConfig);
