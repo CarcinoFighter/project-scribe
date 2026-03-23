@@ -4,7 +4,7 @@ import * as jose from 'jose';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-change-me';
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Public paths that don't require authentication
@@ -42,6 +42,9 @@ export async function middleware(request: NextRequest) {
 
   return NextResponse.next();
 }
+
+// Rename this for the proxy entry point if needed
+export const middleware = proxy;
 
 export const config = {
   matcher: [

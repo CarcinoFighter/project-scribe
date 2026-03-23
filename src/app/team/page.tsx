@@ -119,7 +119,11 @@ export default function TeamPage() {
         <div className="flex items-center gap-2 select-none mr-4">
           <Image src="/logo.svg" alt="Vantage" width={18} height={22} priority />
           <span className="font-bold text-[13.5px] text-[var(--text)] tracking-tight">
-            Vantage <span className="opacity-40 font-medium mx-1">/</span> <span className="text-[var(--text-4)]">Team</span>
+            <Link href="/" className="hover:text-[var(--accent)] transition-colors">
+              <span className="hidden sm:inline">Carcino </span>Vantage
+            </Link>
+            <span className="opacity-40 font-medium mx-1">/</span>
+            <span className="text-[var(--text-4)]">Team</span>
           </span>
         </div>
         
@@ -144,7 +148,15 @@ export default function TeamPage() {
         </div>
       </header>
 
-      <div className="flex flex-1">
+      <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+        {/* Mobile nav strip — visible only on small screens */}
+        <div className="md:hidden flex items-center gap-3 px-4 py-2 border-b border-[var(--border)] bg-[var(--bg-alt)] text-[10px] font-medium tracking-wide flex-shrink-0">
+          <Link href="/" className="text-[var(--text-4)] hover:text-[var(--accent)] flex items-center gap-1 transition-colors">
+            <ChevronRight size={12} className="rotate-180" /> Dashboard
+          </Link>
+          <span className="text-[var(--border-strong)]">/</span>
+          <span className="text-[var(--text-3)] font-semibold">Team</span>
+        </div>
         {/* Sidebar */}
         <aside className="sidebar-col w-52 p-4 space-y-1 hidden md:block" style={{ position: 'sticky', top: 52, height: 'calc(100vh - 52px)', overflowY: 'auto' }}>
           <Link href="/" className="flex items-center gap-3 px-3 py-2 text-sm text-[var(--text-4)] hover:text-[var(--text)] rounded-[var(--r-md)] transition-colors">
@@ -306,6 +318,30 @@ export default function TeamPage() {
         />
       )}
       {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="mobile-bottom-nav">
+        <div className="mobile-bottom-nav-inner">
+          {([
+            { id:'home',     label:'Home',    href:'/',    icon:'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z' },
+            { id:'articles', label:'Articles', href:'/',   icon:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8' },
+            { id:'blogs',    label:'Blogs',   href:'/',    icon:'M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z' },
+            { id:'tasks',    label:'Tasks',   href:'/tasks', icon:'M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16' },
+            { id:'team',     label:'Team',    href:'/team', icon:'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75' },
+          ] as const).map(item => {
+            const isActive = item.id === 'team';
+            const inner = (
+              <>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  {item.icon.split(' M').map((d, i) => <path key={i} d={i === 0 ? d : 'M' + d} />)}
+                </svg>
+                <span>{item.label}</span>
+              </>
+            );
+            return <Link key={item.id} href={item.href} className={`mobile-nav-item${isActive ? ' active' : ''}`} style={{ position:'relative' }}>{inner}</Link>;
+          })}
+        </div>
+      </nav>
     </div>
   );
 }

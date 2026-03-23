@@ -3,8 +3,8 @@ import './globals.css';
 import { ThemeInitializer } from '@/components/ThemeInitializer';
 
 export const metadata: Metadata = {
-  title: 'Carcino Vantage',
-  description: 'A Beautiful Markdown Editor for Writers Block of The Carcino Foundation.',
+  title: 'Vantage',
+  description: 'A Beautiful Markdown Editor for Writers.',
   icons: { icon: '/logo.svg', apple: '/logo.svg' },
   manifest: '/manifest.json',
 };

@@ -701,20 +701,20 @@ export default function Dashboard() {
         <div style={{ display:'flex', alignItems:'center', gap:7, marginRight:4, flexShrink:0, userSelect:'none' }}>
           <Image src="/logo.svg" alt="Carcino" width={18} height={22} priority/>
           <span style={{ fontWeight:700, fontSize:14, color:'var(--text)', letterSpacing:'-0.02em' }}>
-            Carcino <span style={{ color:'var(--accent)' }}>Vantage</span>
+            <span className="hidden sm:inline">Carcino </span>Vantage
           </span>
         </div>
 
-        <span style={sep}/>
+        <span className="hidden sm:inline-block" style={sep}/>
 
         {/* Command search */}
         <button className="tb-btn" onClick={()=>setShowCmd(true)} title="Search (Ctrl+K)"
           style={{ gap:7, padding:'5px 10px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-deep)' }}>
-          <Search size={12} strokeWidth={1.8} style={{ opacity:0.6 }}/>
+          <Search size={14} strokeWidth={2.2} style={{ opacity:0.8 }}/>
           <span className="hidden sm:inline" style={{ fontSize:12, color:'var(--text-4)', fontWeight:400, whiteSpace:'nowrap' }}>
             Search or command…
           </span>
-          <kbd style={{ fontSize:9, padding:'1px 5px', borderRadius:4, background:'var(--bg-alt)', border:'1px solid var(--border-strong)', color:'var(--text-4)', lineHeight:1.7 }}>⌘K</kbd>
+          <kbd className="hidden md:inline-block" style={{ fontSize:9, padding:'1px 5px', borderRadius:4, background:'var(--bg-alt)', border:'1px solid var(--border-strong)', color:'var(--text-4)', lineHeight:1.7 }}>⌘K</kbd>
         </button>
 
         <div style={{ flex:1 }}/>
@@ -738,7 +738,7 @@ export default function Dashboard() {
             {isDark?<Sun size={15} strokeWidth={1.8}/>:<Moon size={15} strokeWidth={1.8}/>}
           </button>
 
-          <span style={sep}/>
+          <span className="hidden sm:inline-block" style={sep}/>
 
           {/* New */}
           <Link href="/editor">
@@ -748,7 +748,7 @@ export default function Dashboard() {
             </button>
           </Link>
 
-          <span style={sep}/>
+          <span className="hidden sm:inline-block" style={sep}/>
 
           {/* Account */}
           <div ref={accountRef} style={{ position:'relative' }}>
