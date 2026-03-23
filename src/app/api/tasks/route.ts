@@ -14,14 +14,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
   }
 
-  // Fetch assignments where current user is the assignee
+  // Fetch assignments where current user is in assigned_to_ids
   const { data: assignments, error } = await supabaseAdmin
     .from('work_assignments')
     .select('*')
-    .eq('assigned_to', payload.userId)
+    .or(`assigned_to.eq.${payload.userId},assigned_to_ids.cs.{${payload.userId}}`)
     .order('due_date', { ascending: true });
 
   if (error) {
+    console.error('Fetch assignments error:', error);
     return NextResponse.json({ error: 'Failed to fetch assignments' }, { status: 500 });
   }
 
@@ -63,7 +64,7 @@ export async function PATCH(req: NextRequest) {
       .eq('id', id);
 
     if (!payload.adminAccess) {
-      query = query.eq('assigned_to', payload.userId); // Ensure user can only update their own assignments
+      query = query.or(`assigned_to.eq.${payload.userId},assigned_to_ids.cs.{${payload.userId}}`); // Ensure user can only update their own assignments
     }
 
     const { data, error } = await query.select().single();

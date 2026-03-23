@@ -5,13 +5,13 @@ import ReactCodeMirror from '@uiw/react-codemirror';
 import type { ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
-import { EditorView, keymap } from '@codemirror/view';
+import { EditorView, keymap, Decoration, DecorationSet, WidgetType } from '@codemirror/view';
 import type { ViewUpdate } from '@codemirror/view';
 import { defaultKeymap, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { searchKeymap, openSearchPanel } from '@codemirror/search';
 import { createTheme } from '@uiw/codemirror-themes';
 import { tags as t } from '@lezer/highlight';
-import type { EditorAPI } from '@/types';
+import type { EditorAPI, Collaborator } from '@/types';
 
 const makeTheme = (dark: boolean, fontFamily?: string) =>
   createTheme({
@@ -65,16 +65,87 @@ const baseTheme = EditorView.theme({
   '.cm-activeLineGutter': { background: 'transparent' },
 });
 
+// --- Remote Cursor Widget ---
+class CursorWidget extends WidgetType {
+  constructor(readonly name: string, readonly color: string, readonly avatar: string | null) { super(); }
+  toDOM() {
+    const wrap = document.createElement("span");
+    wrap.className = "cm-remote-cursor-wrap";
+    
+    const cursor = document.createElement("span");
+    cursor.className = "cm-remote-cursor";
+    cursor.style.borderLeftColor = this.color;
+    
+    const label = document.createElement("div");
+    label.className = "cm-remote-cursor-label";
+    label.style.backgroundColor = this.color;
+    
+    if (this.avatar) {
+      const img = document.createElement("img");
+      img.src = this.avatar;
+      img.className = "cm-remote-cursor-avatar";
+      label.appendChild(img);
+    }
+    
+    const nameSpan = document.createElement("span");
+    nameSpan.innerText = this.name;
+    label.appendChild(nameSpan);
+    
+    wrap.appendChild(cursor);
+    wrap.appendChild(label);
+    return wrap;
+  }
+}
+
+const remoteCursorStyle = EditorView.baseTheme({
+  ".cm-remote-cursor-wrap": { position: "relative" },
+  ".cm-remote-cursor": {
+    position: "absolute",
+    height: "1.2em",
+    borderLeft: "2px solid",
+    marginLeft: "-1px",
+    pointerEvents: "none",
+    zIndex: "10"
+  },
+  ".cm-remote-cursor-label": {
+    position: "absolute",
+    top: "-1.4em",
+    left: "0",
+    whiteSpace: "nowrap",
+    fontSize: "10px",
+    fontWeight: "600",
+    color: "white",
+    padding: "1px 4px",
+    borderRadius: "2px 2px 2px 0",
+    pointerEvents: "none",
+    zIndex: "11",
+    display: "flex",
+    alignItems: "center",
+    gap: "3px",
+    boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+    opacity: "0",
+    transition: "opacity 0.2s"
+  },
+  ".cm-remote-cursor-wrap:hover .cm-remote-cursor-label": { opacity: "1" },
+  ".cm-remote-cursor-avatar": {
+    width: "12px",
+    height: "12px",
+    borderRadius: "50%",
+    objectFit: "cover"
+  }
+});
+
 interface Props {
   content: string;
   onChange: (v: string) => void;
   isDark: boolean;
   focusMode: boolean;
+  collaborators: Collaborator[];
   onCursorChange: (line: number, col: number) => void;
   onReady: (api: EditorAPI) => void;
 }
 
-export default function EditorPane({ content, onChange, isDark, focusMode, onCursorChange, onReady }: Props) {
+export default function EditorPane({ content, onChange, isDark, focusMode, collaborators, onCursorChange, onReady }: Props) {
   const cmRef       = useRef<ReactCodeMirrorRef>(null);
   const readyCalled = useRef(false);
 
@@ -148,6 +219,26 @@ export default function EditorPane({ content, onChange, isDark, focusMode, onCur
     markdown({ base: markdownLanguage, codeLanguages: languages }),
     EditorView.lineWrapping,
     baseTheme,
+    remoteCursorStyle,
+    EditorView.decorations.of((view) => {
+      const deco = [];
+      for (const collab of collaborators) {
+        if (!collab.cursor) continue;
+        try {
+          const pos = view.state.doc.line(Math.min(collab.cursor.line, view.state.doc.lines)).from + 
+                     Math.min(collab.cursor.col - 1, view.state.doc.line(Math.min(collab.cursor.line, view.state.doc.lines)).length);
+          
+          const colors = ['#f87171', '#fb923c', '#fbbf24', '#a3e635', '#4ade80', '#2dd4bf', '#22d3ee', '#60a5fa', '#818cf8', '#a78bfa', '#c084fc', '#f472b6'];
+          const color = colors[collab.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) % colors.length];
+          
+          deco.push(Decoration.widget({
+            widget: new CursorWidget(collab.name, color, collab.avatar_url),
+            side: 1
+          }).range(pos));
+        } catch (e) {}
+      }
+      return Decoration.set(deco, true);
+    }),
     keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap, indentWithTab]),
   ];
 

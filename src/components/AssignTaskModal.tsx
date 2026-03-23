@@ -15,6 +15,7 @@ import {
   CheckCircle,
   Loader2
 } from 'lucide-react';
+import MultiPersonSelect from './MultiPersonSelect';
 
 interface TeamMember {
   id: string;
@@ -38,7 +39,7 @@ export default function AssignTaskModal({ member, onClose, onSuccess, defaultCat
   const [error, setError] = useState<string | null>(null);
 
   // Form state
-  const [assigneeId, setAssigneeId] = useState(member?.id || '');
+  const [assigneeIds, setAssigneeIds] = useState<string[]>(member?.id ? [member.id] : []);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<string>(defaultCategory || 'task');
@@ -76,7 +77,7 @@ export default function AssignTaskModal({ member, onClose, onSuccess, defaultCat
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!assigneeId || !title || !category || !dueDate) {
+    if (assigneeIds.length === 0 || !title || !category || !dueDate) {
       setError('Please fill in all required fields');
       return;
     }
@@ -95,7 +96,7 @@ export default function AssignTaskModal({ member, onClose, onSuccess, defaultCat
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          assigned_to: assigneeId,
+          assigned_to: assigneeIds, // Now an array
           title,
           description,
           category: finalCategory,
@@ -163,16 +164,17 @@ export default function AssignTaskModal({ member, onClose, onSuccess, defaultCat
                 <User size={10} />
                 Assign To
               </label>
-              <select
-                value={assigneeId}
-                onChange={(e) => setAssigneeId(e.target.value)}
-                className="w-full bg-[var(--bg-deep)] border border-[var(--border-med)] rounded-[var(--r-md)] py-2.5 px-3 text-sm text-[var(--text)] focus:outline-none focus:border-[var(--accent)] transition-colors appearance-none cursor-pointer"
-              >
-                <option value="">Select a team member...</option>
-                {members.map(m => (
-                  <option key={m.id} value={m.id}>{m.name} ({m.department})</option>
-                ))}
-              </select>
+              <MultiPersonSelect 
+                selectedIds={assigneeIds}
+                onChange={setAssigneeIds}
+                maxSelections={(category === 'blog' || category === 'survivor_story') ? 1 : undefined}
+                placeholder={(category === 'blog' || category === 'survivor_story') ? "Assign one person..." : "Search team members..."}
+              />
+              {(category === 'blog' || category === 'survivor_story') && assigneeIds.length > 1 && (
+                <p className="text-[10px] text-amber-500 font-medium anim-fade-in">
+                  Only one person can be assigned to {category === 'blog' ? 'blogs' : 'survivor stories'}.
+                </p>
+              )}
             </div>
           )}
 

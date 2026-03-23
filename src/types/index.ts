@@ -32,3 +32,11 @@ export interface TourStep {
   target: string;
   position: 'bottom' | 'top' | 'left' | 'right';
 }
+
+export interface Collaborator {
+  id: string;
+  name: string;
+  avatar_url: string | null;
+  cursor: { line: number; col: number } | null;
+  lastSeen: number;
+}

@@ -15,7 +15,10 @@ import ConfirmModal from '@/components/ConfirmModal';
 import MetadataPanel from '@/components/MetadataPanel';
 import SettingsModal, { loadSettings, saveSettings, applySettings, DEFAULT_SETTINGS, THEMES } from '@/components/SettingsModal';
 import type { AppSettings } from '@/components/SettingsModal';
-import { X, Plus, FileText, BookOpen, Heart, Loader2 } from 'lucide-react';
+import { X, Plus, FileText, BookOpen, Heart, Loader2, Users } from 'lucide-react';
+import { useUser } from '@/lib/useUser';
+import { supabase } from '@/lib/supabase';
+import type { Collaborator } from '@/types';
 
 const EditorPane = dynamic(() => import('@/components/EditorPane'), {
   ssr: false,
@@ -145,6 +148,72 @@ function EditorContent() {
   const [splitPct, setSplitPct] = useState(50);
   const [dragging, setDragging] = useState(false);
   const [sidebarDragging, setSidebarDragging] = useState(false);
+
+  // Collaboration State
+  const { user } = useUser();
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
+  const presenceChannelRef = useRef<any>(null);
+
+  // ---- Presence Logic ----
+  useEffect(() => {
+    if (!user || !activeTabId || activeTabId === 'ls-active' || activeTabId.startsWith('new-')) {
+      setCollaborators([]);
+      return;
+    }
+
+    const channel = supabase.channel(`editor:${activeTabId}`, {
+      config: { presence: { key: user.id } }
+    });
+    presenceChannelRef.current = channel;
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        const otherUsers: Collaborator[] = [];
+        for (const key in state) {
+          const presences = state[key] as any[];
+          presences.forEach(presence => {
+            if (presence.id !== user.id) {
+              otherUsers.push({
+                id: presence.id,
+                name: presence.name,
+                avatar_url: presence.avatar_url,
+                cursor: presence.cursor,
+                lastSeen: Date.now()
+              });
+            }
+          });
+        }
+        setCollaborators(otherUsers);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({
+            id: user.id,
+            name: user.name,
+            avatar_url: user.avatar_url,
+            cursor: { line: cursorLine, col: cursorCol }
+          });
+        }
+      });
+
+    return () => {
+      channel.unsubscribe();
+      presenceChannelRef.current = null;
+    };
+  }, [activeTabId, user]);
+
+  // Update presence on cursor move
+  useEffect(() => {
+    if (presenceChannelRef.current && user) {
+      presenceChannelRef.current.track({
+        id: user.id,
+        name: user.name,
+        avatar_url: user.avatar_url,
+        cursor: { line: cursorLine, col: cursorCol }
+      });
+    }
+  }, [cursorLine, cursorCol, user]);
 
   // Set default view on mobile + Keyboard resize observer
   const [viewportHeight, setViewportHeight] = useState<string | number>('100dvh');
@@ -544,6 +613,7 @@ function EditorContent() {
         onOpenSettings={() => setShowSettings(true)}
         onToggleDark={() => handleCommand('theme')}
         onOpenMetadata={() => setShowMetadata(true)}
+        collaborators={collaborators}
       />
 
       <div className={`zen-tabbar${zenMode ? ' zen-hidden' : ''} hidden md:block`}>
@@ -606,6 +676,7 @@ function EditorContent() {
                 onChange={(c) => updateActiveTab({ content: c })}
                 isDark={isDark}
                 focusMode={focusMode}
+                collaborators={collaborators}
                 onCursorChange={(l, c) => { setCursorLine(l); setCursorCol(c); setActiveLine(l); }}
                 onReady={(api) => { editorRef.current = api; }}
               />

@@ -11,7 +11,7 @@ import {
   Maximize2, Minimize2, HelpCircle, ScanLine, Save,
 } from 'lucide-react';
 import clsx from 'clsx';
-import type { ViewMode } from '@/types';
+import type { ViewMode, Collaborator } from '@/types';
 import { useUser } from '@/lib/useUser';
 import AccountMenu from '@/components/AccountMenu';
 
@@ -27,6 +27,7 @@ interface HeaderProps {
   onToggleZen: () => void; onToggleFocus: () => void;
   onOpenSettings: () => void; onToggleDark: () => void;
   onOpenMetadata: () => void;
+  collaborators: Collaborator[];
 }
 
 const VIEW_MODES = [
@@ -47,6 +48,7 @@ export default function Header(props: HeaderProps) {
     onNew, onOpenFile, onExportMd, onExportHtml,
     onOpenSearch, onOpenTour, onOpenCmd,
     onToggleZen, onToggleFocus, onOpenSettings, onToggleDark, onOpenMetadata,
+    collaborators,
   } = props;
 
   const [editingName,     setEditingName]     = useState(false);
@@ -208,6 +210,30 @@ export default function Header(props: HeaderProps) {
           <SEP />
 
           <SEP />
+
+          <SEP />
+          <SEP />
+
+          {/* Collaborators Avatar Stack */}
+          {collaborators.length > 0 && (
+            <div className="flex items-center -space-x-2 mr-2">
+              {collaborators.map((c) => (
+                <div 
+                  key={c.id}
+                  className="w-6 h-6 rounded-full border-2 border-[var(--surface-0)] overflow-hidden shadow-sm transition-transform hover:-translate-y-0.5"
+                  title={c.name}
+                >
+                  {c.avatar_url ? (
+                    <Image src={c.avatar_url} alt={c.name} width={24} height={24} />
+                  ) : (
+                    <div className="w-full h-full bg-[var(--accent)] flex items-center justify-center text-[8px] font-bold text-white uppercase">
+                      {c.name[0]}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Status / Metadata Button (Icon Only) */}
           <button
