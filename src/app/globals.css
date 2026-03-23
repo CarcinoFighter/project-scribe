@@ -653,3 +653,114 @@ main { overflow-x: visible; }
 .stats-grid {
   display: grid;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE — ≤ 767px
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Toolbar horizontal scroll, no scrollbar visible */
+.toolbar-row {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.toolbar-row::-webkit-scrollbar { display: none; }
+
+/* Dashboard sidebar hidden on mobile; main padding tightened */
+@media (max-width: 767px) {
+  .dash-sidebar { display: none !important; }
+  .dash-main    { padding: 20px 16px 96px 16px !important; }
+}
+
+/* Editor content padding tightened on mobile */
+@media (max-width: 767px) {
+  .cm-content { padding: 20px 0 80px !important; }
+  .cm-line    { padding: 0 18px !important; }
+  .prose-carcino { padding: 20px 18px 80px; }
+}
+
+/* Mobile bottom navigation bar */
+.mobile-bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 200;
+  background: var(--surface-2);
+  backdrop-filter: blur(22px) saturate(170%);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  border-top: 1px solid var(--border-med);
+  box-shadow: 0 -1px 12px rgba(0,0,0,0.08);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (max-width: 767px) { .mobile-bottom-nav { display: flex; } }
+
+.mobile-bottom-nav-inner {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  height: 56px;
+}
+.mobile-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--text-4);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  padding: 6px 4px;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.12s;
+}
+.mobile-nav-item.active   { color: var(--accent); }
+.mobile-nav-item:active   { opacity: 0.65; }
+
+/* Editor header right toolbar hidden on mobile; mobile version shown */
+@media (max-width: 767px) {
+  .editor-header-desktop { display: none !important; }
+  .editor-header-mobile  { display: flex !important; }
+  /* Hide search/cmd button next to filename on mobile too */
+  .editor-cmd-btn        { display: none !important; }
+}
+.editor-header-mobile { display: none; }
+
+/* Work / team pages: tighter padding on mobile, clear bottom nav */
+@media (max-width: 767px) {
+  .page-main-content { padding: 16px 16px 80px 16px !important; }
+}
+
+/* ── Quick actions: stack vertically on mobile ────────────────── */
+@media (max-width: 600px) {
+  .dash-quick-actions {
+    flex-direction: column !important;
+  }
+  .dash-quick-actions > * {
+    flex: none !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* Activity chart header: wrap so badge drops below title */
+  .dash-chart-header {
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+    align-items: flex-start !important;
+  }
+  .dash-chart-header > div:first-child {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  /* Stat card: prevent sub-text overflow */
+  .stats-grid .glass-raised,
+  .stats-grid > div > div {
+    overflow: hidden;
+  }
+}

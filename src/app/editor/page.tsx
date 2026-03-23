@@ -497,7 +497,7 @@ function EditorContent() {
   if (!activeTab) return null;
 
   return (
-    <div className={`h-screen overflow-hidden flex flex-col app-bg ${zenMode ? 'zen-mode' : ''}`}>
+    <div className={`overflow-hidden flex flex-col app-bg ${zenMode ? 'zen-mode' : ''}`} style={{ height: '100dvh' }}>
       <Header
         fileName={activeTab.title}
         setFileName={(n) => updateActiveTab({ title: n, slug: n.toLowerCase().replace(/\s+/g, '-') })}

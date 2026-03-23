@@ -715,7 +715,7 @@ export default function WorkPage() {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className="page-main-content flex-1 p-6 overflow-y-auto">
           <div className="max-w-5xl mx-auto">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">

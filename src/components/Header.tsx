@@ -206,15 +206,15 @@ export default function Header(props: HeaderProps) {
         </div>
 
           <SEP />
-          <button className="tb-btn" onClick={onOpenCmd} title="Search commands (Ctrl+K)">
+          <button className="tb-btn editor-cmd-btn" onClick={onOpenCmd} title="Search commands (Ctrl+K)">
             <Search size={15} strokeWidth={1.8} />
           </button>
 
         {/* ── Flex spacer ── */}
         <div style={{ flex: 1 }} />
 
-        {/* ── RIGHT: view mode + toolbar ── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0 }}>
+        {/* ── RIGHT: view mode + toolbar (desktop) ── */}
+        <div className="editor-header-desktop" style={{ display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0 }}>
 
           {/* View mode switcher */}
           <div
@@ -329,6 +329,48 @@ export default function Header(props: HeaderProps) {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 color: '#fff', fontSize: 9.5, fontWeight: 700,
               }}>
+                {user?.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || 'S'}
+              </div>
+            )}
+          </button>
+        </div>
+
+        {/* ── RIGHT: compact mobile toolbar ── */}
+        <div className="editor-header-mobile" style={{ alignItems: 'center', gap: 2, flexShrink: 0 }}>
+          {/* Compact view mode switcher — icons only */}
+          <div style={{ display:'flex', alignItems:'center', gap:1, background:'var(--bg-deep)', border:'1px solid var(--border)', borderRadius:8, padding:2 }}>
+            {VIEW_MODES.map(({ id, icon: Icon }) => (
+              <button key={id} onClick={() => setViewMode(id)} title={id}
+                style={{ display:'flex', alignItems:'center', justifyContent:'center', width:28, height:24, borderRadius:6, border:'none', cursor:'pointer', background:viewMode===id?'var(--accent)':'transparent', color:viewMode===id?'#fff':'var(--text-3)', transition:'all 0.12s' }}>
+                <Icon size={13} strokeWidth={1.8} />
+              </button>
+            ))}
+          </div>
+
+          {/* Dark mode toggle */}
+          <button className="tb-btn" onClick={onToggleDark} title={isDark ? 'Light mode' : 'Dark mode'} style={{ padding:'5px 7px' }}>
+            {isDark ? <Sun size={15} strokeWidth={1.8} /> : <Moon size={15} strokeWidth={1.8} />}
+          </button>
+
+          {/* Account avatar */}
+          <button
+            ref={accountBtnRef}
+            className="tb-btn"
+            onClick={() => {
+              if (!showAccountMenu && accountBtnRef.current) {
+                const r = accountBtnRef.current.getBoundingClientRect();
+                setAccountMenuPos({ top: r.bottom + 6, right: window.innerWidth - r.right });
+              }
+              setShowAccountMenu(v => !v);
+            }}
+            style={{ padding: '2px 3px', borderRadius: 99 }}
+          >
+            {user?.avatar_url ? (
+              <div style={{ width: 26, height: 26, borderRadius: '50%', overflow: 'hidden' }}>
+                <Image src={user.avatar_url} alt="Profile" width={26} height={26} />
+              </div>
+            ) : (
+              <div style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, background: 'linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 9.5, fontWeight: 700 }}>
                 {user?.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || 'S'}
               </div>
             )}

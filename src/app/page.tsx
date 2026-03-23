@@ -372,7 +372,7 @@ function ActivityChart({ docs, weekWords }: { docs:Doc[]; weekWords:number }) {
   const max  = Math.max(...bars.map(b=>b.words), 1);
   return (
     <div className="glass-raised" style={{ borderRadius:'var(--r-lg)', padding:'18px 20px', marginBottom:20 }}>
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:18 }}>
+      <div className="dash-chart-header" style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:18 }}>
         <div>
           <div style={{ fontSize:14, fontWeight:700, color:'var(--text)', letterSpacing:'-0.01em' }}>Writing Activity</div>
           <div style={{ fontSize:12, color:'var(--text-4)', marginTop:2 }}>Words written per day this week</div>
@@ -771,7 +771,7 @@ export default function Dashboard() {
       <div style={{ display:'flex', flex:1, minHeight:0 }}>
 
         {/* ── SIDEBAR ────────────────────────────────────────────────────── */}
-        <aside className="sidebar-col anim-slide-left"
+        <aside className="sidebar-col anim-slide-left dash-sidebar"
           style={{ width:216, flexShrink:0, borderRight:'1px solid var(--border)', padding:'16px 10px', display:'flex', flexDirection:'column', gap:2, position:'sticky', top:52, height:'calc(100vh - 52px)', overflowY:'auto', animationDelay:'0.06s' }}>
 
           <div style={{ fontSize:9.5, fontWeight:700, color:'var(--text-4)', letterSpacing:'0.12em', textTransform:'uppercase', padding:'0 8px 8px' }}>Workspace</div>
@@ -860,7 +860,7 @@ export default function Dashboard() {
         </aside>
 
         {/* ── MAIN CONTENT ───────────────────────────────────────────────── */}
-        <main style={{ flex:1, padding:'28px 30px', overflowY:'auto', minWidth:0 }}>
+        <main className="dash-main" style={{ flex:1, padding:'28px 30px', overflowY:'auto', minWidth:0 }}>
 
           {/* ── Overview ─────────────────────────────────────────────────── */}
           {activeNav==='home' && (
@@ -874,7 +874,7 @@ export default function Dashboard() {
               </div>
 
               {/* Quick actions */}
-              <div className="anim-fade-up" style={{ display:'flex', gap:10, marginBottom:20, animationDelay:'0.04s', flexWrap:'wrap' }}>
+              <div className="anim-fade-up dash-quick-actions" style={{ display:'flex', gap:10, marginBottom:20, animationDelay:'0.04s', flexWrap:'wrap' }}>
                 <QuickAction icon={FileText}  label="New Article"       sublabel="Research or cancer doc" color="#3b82f6"         bg="rgba(59,130,246,0.08)"  onClick={()=>router.push('/editor')}/>
                 <QuickAction icon={BookOpen}  label="New Blog Post"     sublabel="Share your perspective" color="var(--accent)"   bg="var(--accent-subtle)"   onClick={()=>router.push('/editor')}/>
                 <QuickAction icon={Heart}     label="Survivor Story"    sublabel="Community & support"    color="#10b981"         bg="rgba(16,185,129,0.08)"  onClick={()=>router.push('/editor')}/>
@@ -1051,6 +1051,43 @@ export default function Dashboard() {
           )}
         </main>
       </div>
+
+      {/* ══ MOBILE BOTTOM NAV ════════════════════════════════════════════ */}
+      <nav className="mobile-bottom-nav">
+        <div className="mobile-bottom-nav-inner">
+          {([
+            { id:'home',     label:'Home',    href:null,    icon:'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z' },
+            { id:'articles', label:'Articles', href:null,   icon:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8' },
+            { id:'blogs',    label:'Blogs',   href:null,    icon:'M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z' },
+            { id:'work',     label:'Work',    href:'/work', icon:'M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16' },
+            { id:'team',     label:'Team',    href:'/team', icon:'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75' },
+          ] as const).map(item => {
+            const isActive = activeNav === item.id;
+            const inner = (
+              <>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  {item.icon.split(' M').map((d, i) => <path key={i} d={i === 0 ? d : 'M' + d} />)}
+                </svg>
+                <span>{item.label}</span>
+                {item.id === 'work' && pendingTasks.length > 0 && (
+                  <span style={{ position:'absolute', top:6, left:'50%', transform:'translateX(4px)', width:14, height:14, borderRadius:99, background:'var(--accent)', color:'#fff', fontSize:8, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    {pendingTasks.length > 9 ? '9+' : pendingTasks.length}
+                  </span>
+                )}
+              </>
+            );
+            if (item.href) {
+              return <Link key={item.id} href={item.href} className={`mobile-nav-item${isActive ? ' active' : ''}`} style={{ position:'relative' }}>{inner}</Link>;
+            }
+            return (
+              <button key={item.id} className={`mobile-nav-item${isActive ? ' active' : ''}`}
+                onClick={() => setActiveNav(item.id as 'home'|'articles'|'blogs')} style={{ position:'relative' }}>
+                {inner}
+              </button>
+            );
+          })}
+        </div>
+      </nav>
 
       {/* ══ OVERLAYS ════════════════════════════════════════════════════════ */}
       {showCmd && <CommandPalette docs={allDocs} onClose={()=>setShowCmd(false)} onCommand={handleCommand}/>}
