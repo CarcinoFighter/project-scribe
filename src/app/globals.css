@@ -686,18 +686,23 @@ main { overflow-x: visible; }
   .prose-carcino { padding: 20px 18px 80px; }
 }
 
-/* Mobile bottom navigation bar */
+/* Mobile bottom navigation bar (Dock style) */
 .mobile-bottom-nav {
   display: none;
   position: fixed;
-  bottom: 0; left: 0; right: 0;
+  bottom: 16px; 
+  left: 12px; 
+  right: 12px;
   z-index: 200;
   background: var(--surface-2);
-  backdrop-filter: blur(22px) saturate(170%);
-  -webkit-backdrop-filter: blur(22px) saturate(170%);
-  border-top: 1px solid var(--border-med);
-  box-shadow: 0 -1px 12px rgba(0,0,0,0.08);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-xl);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.22), 0 2px 10px rgba(0,0,0,0.10);
+  overflow: hidden;
+  padding-bottom: 0; /* Reset since it's floating */
+  animation: slideUp 0.6s cubic-bezier(0.23, 1, 0.32, 1) both;
 }
 @media (max-width: 767px) { .mobile-bottom-nav { display: flex; } }
 
