@@ -2,7 +2,22 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Mail, Lock, Loader2, ArrowRight, Eye, EyeOff, Sun, Moon } from 'lucide-react';
+import { Mail, Lock, Loader2, ArrowRight, Eye, EyeOff, Sun, Moon,
+         PenTool, Palette, Code2, Megaphone, Users } from 'lucide-react';
+
+/* ─── Department data ───────────────────────────────────────────── */
+const DEPTS = [
+  { name: "Writers' Block", Icon: PenTool,   color: '#f59e0b', glow: 'rgba(245,158,11,0.40)',  angle: -68 },
+  { name: 'Design Lab',     Icon: Palette,   color: '#3b82f6', glow: 'rgba(59,130,246,0.40)',  angle:   4 },
+  { name: 'Development',    Icon: Code2,     color: '#10b981', glow: 'rgba(16,185,129,0.40)',  angle:  76 },
+  { name: 'Public Relations',Icon: Megaphone,color: '#ec4899', glow: 'rgba(236,72,153,0.40)', angle: 148 },
+  { name: 'Leadership',     Icon: Users,     color: '#8b5cf6', glow: 'rgba(139,92,246,0.40)', angle: 220 },
+];
+
+function nodePos(angleDeg: number, r = 174) {
+  const rad = (angleDeg * Math.PI) / 180;
+  return { x: 250 + r * Math.cos(rad), y: 250 + r * Math.sin(rad) };
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,15 +28,24 @@ export default function LoginPage() {
   const [error,    setError]    = useState<string | null>(null);
   const [ready,    setReady]    = useState(false);
   const [dark,     setDark]     = useState(true);
+  const [tick,     setTick]     = useState(0);
 
   useEffect(() => {
-    const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    setDark(mq.matches);
+    const saved = localStorage.getItem('theme');
+    const isDark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    setDark(isDark);
+    document.documentElement.classList.toggle('dark', isDark);
     setReady(true);
-    const fn = (e: MediaQueryListEvent) => setDark(e.matches);
-    mq.addEventListener('change', fn);
-    return () => mq.removeEventListener('change', fn);
+    const id = setInterval(() => setTick(t => (t + 1) % DEPTS.length), 1400);
+    return () => clearInterval(id);
   }, []);
+
+  const toggleDark = () => {
+    const next = !dark;
+    setDark(next);
+    document.documentElement.classList.toggle('dark', next);
+    localStorage.setItem('theme', next ? 'dark' : 'light');
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,309 +65,285 @@ export default function LoginPage() {
     }
   };
 
-  const d = dark;
+  const activeDept = DEPTS[tick];
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Space+Grotesk:wght@300;400;500;600&display=swap');
-
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+        /* ── Root layout ─────────────────────────────────────────── */
         .lp-root {
           min-height: 100dvh;
           display: grid;
-          grid-template-columns: 1.05fr 0.95fr;
-          font-family: 'Space Grotesk', system-ui, sans-serif;
-          background: ${d ? '#08080d' : '#f5f3ef'};
-          transition: background 0.3s;
+          grid-template-columns: 1.15fr 0.85fr;
+          font-family: 'Google Sans Flex','Google Sans','DM Sans',system-ui,sans-serif;
+          -webkit-font-smoothing: antialiased;
+          background: ${dark ? '#06060c' : '#f5f4f2'};
+          position: relative; overflow: hidden;
         }
-        @media (max-width: 760px) {
+        @media (max-width: 860px) {
           .lp-root { grid-template-columns: 1fr; }
-          .lp-left { display: none; }
+          .lp-left { display: none !important; }
         }
 
-        /* ── Grid lines overlay ── */
-        .lp-root::after {
-          content: '';
-          position: fixed; inset: 0; z-index: 0; pointer-events: none;
-          background-image:
-            linear-gradient(${d ? 'rgba(255,255,255,0.022)' : 'rgba(0,0,0,0.035)'} 1px, transparent 1px),
-            linear-gradient(90deg, ${d ? 'rgba(255,255,255,0.022)' : 'rgba(0,0,0,0.035)'} 1px, transparent 1px);
-          background-size: 64px 64px;
+        /* Grain */
+        .lp-root::before {
+          content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+          background-image: var(--noise); background-size: 240px;
+          opacity: ${dark ? 0.032 : 0.022};
+          mix-blend-mode: ${dark ? 'screen' : 'multiply'};
         }
 
-        /* ═══════════════════════════ LEFT ═══════════════════════════ */
+        /* ════ LEFT PANEL ══════════════════════════════════════════ */
         .lp-left {
-          position: relative; overflow: hidden; z-index: 1;
-          background: ${d ? '#0d0c12' : '#ede9e0'};
-          display: flex; flex-direction: column;
-          justify-content: space-between;
-          padding: clamp(32px, 4.5vw, 60px);
-          border-right: 1px solid ${d ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.08)'};
-          transition: background 0.3s, border-color 0.3s;
+          position: relative; z-index: 1; overflow: hidden;
+          background: ${dark ? '#09080f' : '#eceaf0'};
+          border-right: 1px solid ${dark ? 'rgba(143,107,187,0.12)' : 'rgba(143,107,187,0.16)'};
+          display: flex; flex-direction: column; justify-content: space-between;
+          padding: 36px 44px;
         }
 
-        /* Diagonal gold accent stripe */
-        .lp-left::before {
-          content: '';
-          position: absolute;
-          top: -120px; right: -60px;
-          width: 2px; height: 140%;
-          background: linear-gradient(to bottom,
-            transparent 0%,
-            ${d ? 'rgba(212,165,75,0.25)' : 'rgba(180,130,40,0.18)'} 25%,
-            ${d ? 'rgba(212,165,75,0.10)' : 'rgba(180,130,40,0.08)'} 60%,
-            transparent 100%);
-          transform: rotate(-15deg);
-          transform-origin: top right;
-          pointer-events: none;
+        /* Corner reticles */
+        .lp-reticle {
+          position: absolute; width: 20px; height: 20px; z-index: 0; pointer-events: none;
+          border-color: ${dark ? 'rgba(143,107,187,0.24)' : 'rgba(143,107,187,0.30)'};
+          border-style: solid;
         }
+        .lp-tl { top:18px; left:18px; border-width:1px 0 0 1px; }
+        .lp-tr { top:18px; right:18px; border-width:1px 1px 0 0; }
+        .lp-bl { bottom:18px; left:18px; border-width:0 0 1px 1px; }
+        .lp-br { bottom:18px; right:18px; border-width:0 1px 1px 0; }
 
-        /* Radial glow top-left */
-        .lp-left::after {
-          content: '';
-          position: absolute; top: -80px; left: -80px;
-          width: 420px; height: 420px; border-radius: 50%;
-          background: radial-gradient(circle,
-            ${d ? 'rgba(212,165,75,0.07)' : 'rgba(212,165,75,0.09)'} 0%, transparent 65%);
-          pointer-events: none;
+        /* Horizontal scan line */
+        .lp-scan {
+          position: absolute; left: 0; right: 0; height: 1px;
+          background: linear-gradient(90deg, transparent 0%, rgba(143,107,187,0.7) 30%,
+            rgba(180,148,220,0.9) 50%, rgba(143,107,187,0.7) 70%, transparent 100%);
+          box-shadow: 0 0 16px rgba(143,107,187,0.5);
+          animation: lp-scan-anim 9s ease-in-out infinite;
+          pointer-events: none; z-index: 0;
+        }
+        @keyframes lp-scan-anim {
+          0%    { top: 18%; opacity: 0; }
+          6%    { opacity: 1; }
+          46%   { top: 80%; opacity: 1; }
+          54%   { opacity: 0; top: 80%; }
+          100%  { top: 80%; opacity: 0; }
         }
 
         /* Brand */
         .lp-brand {
           position: relative; z-index: 2;
-          display: flex; align-items: center; gap: 12px;
-        }
-        .lp-mark {
-          width: 36px; height: 36px; border-radius: 10px;
-          display: flex; align-items: center; justify-content: center;
-          background: ${d ? 'rgba(212,165,75,0.1)' : 'rgba(180,130,40,0.1)'};
-          border: 1px solid ${d ? 'rgba(212,165,75,0.22)' : 'rgba(180,130,40,0.22)'};
+          display: flex; align-items: center; gap: 10px;
         }
         .lp-brand-name {
-          font-family: 'Cormorant Garamond', Georgia, serif;
-          font-size: 18px; font-weight: 500; letter-spacing: 0.01em;
-          color: ${d ? 'rgba(245,240,230,0.85)' : 'rgba(15,12,8,0.82)'};
+          font-size: 12.5px; font-weight: 700; letter-spacing: 0.06em;
+          text-transform: uppercase;
+          color: ${dark ? 'rgba(237,233,228,0.45)' : 'rgba(15,12,8,0.45)'};
         }
 
-        /* Hero section */
+        /* Orbital container */
+        .lp-orbital {
+          position: absolute;
+          top: 50%; left: 50%;
+          transform: translate(-50%, -52%);
+          width: min(500px, 86%);
+          z-index: 1; pointer-events: none;
+        }
+        .lp-orbital svg { width: 100%; height: 100%; overflow: visible; }
+
+        /* Ring CSS animations */
+        @keyframes spin-cw  { to { transform: rotate(360deg);  } }
+        @keyframes spin-ccw { to { transform: rotate(-360deg); } }
+        .r1 { transform-origin:250px 250px; animation: spin-cw  90s linear infinite; }
+        .r2 { transform-origin:250px 250px; animation: spin-ccw 58s linear infinite; }
+        .r3 { transform-origin:250px 250px; animation: spin-cw  38s linear infinite; }
+        .r4 { transform-origin:250px 250px; animation: spin-ccw 25s linear infinite; }
+
+        /* Node ping */
+        @keyframes node-ping {
+          0%   { r: 7;  opacity: 0.8; }
+          100% { r: 30; opacity: 0;   }
+        }
+
+        /* Hero text */
         .lp-hero { position: relative; z-index: 2; }
         .lp-eyebrow {
-          display: inline-flex; align-items: center; gap: 9px;
-          font-size: 10px; font-weight: 500; letter-spacing: 0.18em;
-          text-transform: uppercase;
-          color: ${d ? 'rgba(212,165,75,0.75)' : 'rgba(160,110,20,0.82)'};
-          margin-bottom: 24px;
+          display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+          font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+          color: ${dark ? 'rgba(143,107,187,0.72)' : 'rgba(100,60,160,0.72)'};
         }
-        .lp-eyebrow-line {
-          width: 28px; height: 1px;
-          background: ${d ? 'rgba(212,165,75,0.45)' : 'rgba(160,110,20,0.45)'};
+        .lp-eyebrow::before {
+          content: ''; display: inline-block; width: 22px; height: 1px; flex-shrink: 0;
+          background: ${dark ? 'rgba(143,107,187,0.55)' : 'rgba(100,60,160,0.50)'};
         }
-
-        .lp-title {
-          font-family: 'Cormorant Garamond', Georgia, serif;
-          font-size: clamp(38px, 4.2vw, 62px);
-          font-weight: 300;
-          line-height: 1.08;
-          letter-spacing: -0.01em;
-          color: ${d ? 'rgba(245,240,230,0.90)' : 'rgba(15,12,8,0.88)'};
-          margin-bottom: 22px;
+        .lp-headline {
+          font-size: clamp(26px, 3.2vw, 42px); font-weight: 700;
+          letter-spacing: -0.03em; line-height: 1.09;
+          color: ${dark ? 'rgba(237,233,228,0.93)' : 'rgba(15,12,8,0.90)'};
+          margin-bottom: 14px;
         }
-        .lp-title em {
-          font-style: italic;
-          font-weight: 300;
-          color: ${d ? '#d4a54b' : '#b07820'};
-        }
-        .lp-title strong {
-          font-weight: 600;
+        .lp-headline em {
+          font-style: italic; font-weight: 400;
+          color: ${dark ? 'rgba(180,148,220,0.88)' : 'rgba(100,60,160,0.80)'};
         }
         .lp-sub {
-          font-size: 13.5px; font-weight: 300; line-height: 1.80;
-          max-width: 340px;
-          color: ${d ? 'rgba(245,240,230,0.30)' : 'rgba(15,12,8,0.42)'};
-          letter-spacing: 0.01em;
+          font-size: 13px; line-height: 1.72; font-weight: 400;
+          color: ${dark ? 'rgba(237,233,228,0.30)' : 'rgba(15,12,8,0.38)'};
+          max-width: 310px; margin-bottom: 22px;
         }
 
-        /* Corner ornament */
-        .lp-ornament {
-          position: absolute; z-index: 2;
-          top: 0; right: 0;
-          width: 80px; height: 80px;
-          border-top: 1px solid ${d ? 'rgba(212,165,75,0.14)' : 'rgba(160,110,20,0.12)'};
-          border-right: 1px solid ${d ? 'rgba(212,165,75,0.14)' : 'rgba(160,110,20,0.12)'};
-          pointer-events: none;
+        /* Dept chips */
+        .lp-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .lp-chip {
+          display: inline-flex; align-items: center; gap: 5px;
+          padding: 4px 10px 4px 7px; border-radius: 99px;
+          font-size: 10px; font-weight: 600; border: 1px solid; letter-spacing: 0.01em;
+          transition: opacity 0.3s, box-shadow 0.3s;
         }
+        .lp-chip-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 
-        /* Stats */
-        .lp-stats {
-          position: relative; z-index: 2;
-          display: flex; gap: 0;
-          border-top: 1px solid ${d ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'};
-          padding-top: 28px;
-        }
-        .lp-stat {
-          flex: 1;
-          padding-right: 28px;
-        }
-        .lp-stat + .lp-stat {
-          padding-left: 28px; padding-right: 28px;
-          border-left: 1px solid ${d ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'};
-        }
-        .lp-stat:last-child { padding-right: 0; }
-        .lp-stat-n {
-          font-family: 'Cormorant Garamond', serif;
-          font-size: 30px; font-weight: 300; line-height: 1;
-          color: ${d ? '#d4a54b' : '#a07020'};
-          margin-bottom: 4px;
-        }
-        .lp-stat-l {
-          font-size: 10px; font-weight: 400; letter-spacing: 0.08em;
-          color: ${d ? 'rgba(245,240,230,0.28)' : 'rgba(15,12,8,0.38)'};
-          text-transform: uppercase;
-        }
-
-        /* ═══════════════════════════ RIGHT ═══════════════════════════ */
+        /* ════ RIGHT PANEL ═════════════════════════════════════════ */
         .lp-right {
-          position: relative; z-index: 1;
-          background: ${d ? '#07070c' : '#f9f8f5'};
+          position: relative; z-index: 1; overflow: hidden;
+          background: ${dark ? '#06060c' : '#f9f8f6'};
           display: flex; align-items: center; justify-content: center;
-          padding: 48px clamp(24px, 5vw, 60px);
-          overflow: hidden;
-          transition: background 0.3s;
+          padding: 48px clamp(24px, 5vw, 56px);
         }
-
-        /* Subtle arc */
         .lp-right::before {
-          content: '';
-          position: absolute;
-          bottom: -120px; right: -120px;
-          width: 400px; height: 400px; border-radius: 50%;
-          border: 1px solid ${d ? 'rgba(212,165,75,0.08)' : 'rgba(180,130,40,0.07)'};
-          pointer-events: none;
-        }
-        .lp-right::after {
-          content: '';
-          position: absolute;
-          bottom: -60px; right: -60px;
-          width: 260px; height: 260px; border-radius: 50%;
-          border: 1px solid ${d ? 'rgba(212,165,75,0.05)' : 'rgba(180,130,40,0.05)'};
-          pointer-events: none;
+          content: ''; position: absolute; top: -80px; right: -80px;
+          width: 300px; height: 300px; border-radius: 50%; pointer-events: none;
+          background: radial-gradient(circle,
+            ${dark ? 'rgba(143,107,187,0.08)' : 'rgba(143,107,187,0.06)'} 0%, transparent 70%);
         }
 
         /* Theme toggle */
         .lp-toggle {
           position: absolute; top: 20px; right: 20px; z-index: 10;
-          width: 36px; height: 36px; border-radius: 50%;
-          border: 1px solid ${d ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.10)'};
-          background: ${d ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'};
-          color: ${d ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.38)'};
+          width: 34px; height: 34px; border-radius: 8px;
+          border: 1px solid ${dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.10)'};
+          background: ${dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'};
+          color: ${dark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.32)'};
           cursor: pointer; display: flex; align-items: center; justify-content: center;
-          transition: all 0.16s;
+          transition: all 0.14s;
         }
         .lp-toggle:hover {
-          background: ${d ? 'rgba(212,165,75,0.10)' : 'rgba(180,130,40,0.08)'};
-          border-color: ${d ? 'rgba(212,165,75,0.25)' : 'rgba(180,130,40,0.22)'};
-          color: ${d ? '#d4a54b' : '#9a6810'};
+          background: rgba(143,107,187,0.12); border-color: rgba(143,107,187,0.28);
+          color: #8f6bbb;
         }
 
         /* Card */
         .lp-card {
-          position: relative; z-index: 2;
-          width: 100%; max-width: 370px;
+          width: 100%; max-width: 380px;
           opacity: 0; transform: translateY(20px);
-          transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+          transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.22,1,0.36,1);
+          position: relative; z-index: 2;
         }
-        .lp-card.lp-ready { opacity: 1; transform: translateY(0); }
+        .lp-card.rdy { opacity: 1; transform: translateY(0); }
 
-        /* Form panel */
         .lp-panel {
-          background: ${d ? 'rgba(255,255,255,0.025)' : 'rgba(255,255,255,0.88)'};
-          border: 1px solid ${d ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)'};
-          border-radius: 4px;
-          padding: 38px 34px 34px;
-          box-shadow: ${d
-            ? '0 0 0 1px rgba(255,255,255,0.02), 0 24px 64px rgba(0,0,0,0.6)'
-            : '0 1px 2px rgba(0,0,0,0.04), 0 8px 40px rgba(0,0,0,0.07)'};
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
-          transition: background 0.3s, border-color 0.3s;
+          background: ${dark ? 'rgba(14,12,24,0.88)' : 'rgba(255,255,255,0.92)'};
+          border: 1px solid ${dark ? 'rgba(143,107,187,0.16)' : 'rgba(143,107,187,0.20)'};
+          border-radius: 16px; padding: 34px 30px 28px;
+          backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
+          box-shadow: ${dark
+            ? '0 0 0 1px rgba(143,107,187,0.06) inset, 0 24px 64px rgba(0,0,0,0.70)'
+            : '0 8px 40px rgba(0,0,0,0.09), 0 1px 3px rgba(0,0,0,0.04)'};
+          position: relative; overflow: hidden;
         }
 
-        /* Gold top bar on panel */
+        /* Animated shimmer rim */
         .lp-panel::before {
-          content: '';
-          position: absolute; top: -1px; left: 32px; right: 32px; height: 2px;
+          content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
           background: linear-gradient(90deg,
-            transparent 0%,
-            ${d ? 'rgba(212,165,75,0.55)' : 'rgba(180,130,40,0.45)'} 30%,
-            ${d ? 'rgba(212,165,75,0.55)' : 'rgba(180,130,40,0.45)'} 70%,
-            transparent 100%);
-          border-radius: 0 0 2px 2px;
+            transparent 0%, rgba(143,107,187,0.55) 35%,
+            rgba(200,168,235,0.85) 50%, rgba(143,107,187,0.55) 65%, transparent 100%);
+          background-size: 200% 100%;
+          animation: lp-shim 3.5s ease-in-out infinite;
+        }
+        @keyframes lp-shim {
+          0%   { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
         }
 
-        .lp-panel { position: relative; }
+        /* Soft inner glow */
+        .lp-panel::after {
+          content: ''; position: absolute; inset: 0; pointer-events: none;
+          background: radial-gradient(ellipse 80% 38% at 50% 0%,
+            ${dark ? 'rgba(143,107,187,0.06)' : 'rgba(143,107,187,0.04)'} 0%, transparent 70%);
+        }
 
-        .lp-card-h { margin-bottom: 30px; }
+        .lp-card-hd { margin-bottom: 24px; position: relative; z-index: 1; }
+        .lp-badge {
+          display: inline-flex; align-items: center; gap: 5px;
+          padding: 3px 9px; border-radius: 99px; margin-bottom: 10px;
+          font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+          background: rgba(143,107,187,0.10); border: 1px solid rgba(143,107,187,0.22);
+          color: ${dark ? 'rgba(180,148,220,0.80)' : 'rgba(100,60,160,0.78)'};
+        }
+        .lp-badge-dot {
+          width: 5px; height: 5px; border-radius: 50%;
+          background: ${dark ? 'rgba(180,148,220,0.80)' : 'rgba(100,60,160,0.78)'};
+          animation: lp-blink 2s ease-in-out infinite;
+        }
+        @keyframes lp-blink {
+          0%,100% { opacity: 1; } 50% { opacity: 0.3; }
+        }
         .lp-card-title {
-          font-family: 'Cormorant Garamond', Georgia, serif;
-          font-size: 28px; font-weight: 400; line-height: 1.1;
-          letter-spacing: -0.01em; margin-bottom: 7px;
-          color: ${d ? 'rgba(245,240,230,0.90)' : 'rgba(15,12,8,0.88)'};
+          font-size: 22px; font-weight: 700; letter-spacing: -0.022em;
+          color: ${dark ? 'rgba(237,233,228,0.92)' : 'rgba(15,12,8,0.90)'};
+          margin-bottom: 5px;
         }
         .lp-card-sub {
-          font-size: 12.5px; font-weight: 300; letter-spacing: 0.01em;
-          color: ${d ? 'rgba(245,240,230,0.28)' : 'rgba(15,12,8,0.38)'};
+          font-size: 12.5px; color: ${dark ? 'rgba(237,233,228,0.28)' : 'rgba(15,12,8,0.36)'};
         }
 
         /* Fields */
-        .lp-field { margin-bottom: 14px; }
-        .lp-label {
-          display: block; font-size: 10px; font-weight: 500;
-          letter-spacing: 0.13em; text-transform: uppercase; margin-bottom: 8px;
-          color: ${d ? 'rgba(245,240,230,0.35)' : 'rgba(15,12,8,0.40)'};
+        .lp-field { margin-bottom: 11px; position: relative; z-index: 1; }
+        .lp-lbl {
+          display: block; font-size: 10px; font-weight: 600;
+          letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 7px;
+          color: ${dark ? 'rgba(237,233,228,0.35)' : 'rgba(15,12,8,0.38)'};
         }
-        .lp-wrap { position: relative; }
+        .lp-fw { position: relative; }
         .lp-ico {
-          position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
-          color: ${d ? 'rgba(245,240,230,0.18)' : 'rgba(15,12,8,0.22)'};
-          pointer-events: none; transition: color 0.14s;
+          position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+          color: ${dark ? 'rgba(237,233,228,0.20)' : 'rgba(15,12,8,0.22)'};
+          pointer-events: none; transition: color 0.13s;
         }
-        .lp-wrap:focus-within .lp-ico {
-          color: ${d ? 'rgba(212,165,75,0.55)' : 'rgba(160,110,20,0.55)'};
-        }
+        .lp-fw:focus-within .lp-ico { color: rgba(143,107,187,0.65); }
         .lp-inp {
           width: 100%;
-          background: ${d ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)'};
-          border: 1px solid ${d ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.10)'};
-          border-radius: 4px;
-          padding: 12px 13px 12px 40px;
-          font-family: 'Space Grotesk', inherit; font-size: 13.5px; font-weight: 400;
-          color: ${d ? 'rgba(245,240,230,0.88)' : 'rgba(15,12,8,0.88)'};
+          background: ${dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'};
+          border: 1px solid ${dark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.09)'};
+          border-radius: 10px; padding: 11px 12px 11px 38px;
+          font-family: inherit; font-size: 13.5px;
+          color: ${dark ? 'rgba(237,233,228,0.88)' : 'rgba(15,12,8,0.88)'};
           outline: none;
-          transition: border-color 0.14s, background 0.14s, box-shadow 0.14s;
+          transition: border-color 0.13s, background 0.13s, box-shadow 0.13s;
         }
-        .lp-inp.lp-with-eye { padding-right: 42px; }
-        .lp-inp::placeholder { color: ${d ? 'rgba(245,240,230,0.14)' : 'rgba(15,12,8,0.20)'}; }
+        .lp-inp.ey { padding-right: 40px; }
+        .lp-inp::placeholder { color: ${dark ? 'rgba(237,233,228,0.16)' : 'rgba(15,12,8,0.20)'}; }
         .lp-inp:focus {
-          border-color: ${d ? 'rgba(212,165,75,0.40)' : 'rgba(160,110,20,0.40)'};
-          background: ${d ? 'rgba(212,165,75,0.04)' : 'rgba(160,110,20,0.025)'};
-          box-shadow: 0 0 0 3px ${d ? 'rgba(212,165,75,0.08)' : 'rgba(160,110,20,0.07)'};
+          border-color: rgba(143,107,187,0.55);
+          background: ${dark ? 'rgba(143,107,187,0.05)' : 'rgba(143,107,187,0.02)'};
+          box-shadow: 0 0 0 3px rgba(143,107,187,0.10);
         }
         .lp-eye {
-          position: absolute; right: 11px; top: 50%; transform: translateY(-50%);
+          position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
           background: none; border: none; cursor: pointer; padding: 4px; border-radius: 4px;
-          color: ${d ? 'rgba(245,240,230,0.20)' : 'rgba(15,12,8,0.25)'};
+          color: ${dark ? 'rgba(237,233,228,0.22)' : 'rgba(15,12,8,0.28)'};
           display: flex; align-items: center; transition: color 0.12s;
         }
-        .lp-eye:hover { color: ${d ? 'rgba(212,165,75,0.65)' : 'rgba(160,110,20,0.65)'}; }
+        .lp-eye:hover { color: rgba(143,107,187,0.70); }
 
         /* Error */
-        .lp-error {
-          background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.16);
-          border-radius: 4px; padding: 10px 14px; font-size: 12px; color: #f87171;
-          margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
-          animation: lp-shake 0.35s ease;
+        .lp-err {
+          background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.18);
+          border-radius: 8px; padding: 9px 13px; font-size: 12px; color: #f87171;
+          margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+          position: relative; z-index: 1; animation: lp-shake 0.34s ease;
         }
         @keyframes lp-shake {
           0%,100% { transform: translateX(0); }
@@ -351,36 +351,50 @@ export default function LoginPage() {
           75%      { transform: translateX(5px); }
         }
 
-        /* Button */
+        /* CTA */
         .lp-btn {
-          width: 100%; margin-top: 18px; padding: 13px 16px;
-          background: ${d ? '#d4a54b' : '#b07820'};
-          border: none; border-radius: 4px;
-          color: ${d ? '#0a0806' : '#ffffff'};
-          font-family: 'Space Grotesk', inherit; font-size: 13px; font-weight: 600;
-          letter-spacing: 0.04em; text-transform: uppercase;
-          cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
-          position: relative; overflow: hidden;
-          box-shadow: ${d ? '0 4px 20px rgba(212,165,75,0.28)' : '0 4px 20px rgba(140,90,10,0.22)'};
-          transition: transform 0.1s, box-shadow 0.12s, opacity 0.12s;
+          width: 100%; margin-top: 18px; padding: 12px 16px;
+          background: linear-gradient(135deg, #9875c1 0%, #7659a0 100%);
+          border: none; border-radius: 10px; color: #fff;
+          font-family: inherit; font-size: 13.5px; font-weight: 700; letter-spacing: -0.01em;
+          cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px;
+          position: relative; z-index: 1; overflow: hidden;
+          box-shadow: 0 4px 20px rgba(130,85,180,0.38), 0 1px 4px rgba(130,85,180,0.20);
+          transition: transform 0.10s, box-shadow 0.12s, opacity 0.12s;
         }
         .lp-btn::before {
           content: ''; position: absolute; inset: 0;
-          background: linear-gradient(135deg, rgba(255,255,255,0.18) 0%, transparent 60%);
+          background: linear-gradient(135deg, rgba(255,255,255,0.16) 0%, transparent 60%);
           opacity: 0; transition: opacity 0.14s;
         }
         .lp-btn:hover:not(:disabled) {
           transform: translateY(-1px);
-          box-shadow: ${d ? '0 8px 30px rgba(212,165,75,0.38)' : '0 8px 28px rgba(140,90,10,0.30)'};
+          box-shadow: 0 6px 28px rgba(130,85,180,0.48), 0 2px 8px rgba(130,85,180,0.22);
         }
         .lp-btn:hover:not(:disabled)::before { opacity: 1; }
         .lp-btn:active:not(:disabled) { transform: translateY(0); }
         .lp-btn:disabled { opacity: 0.48; cursor: not-allowed; }
 
-        .lp-footer {
-          margin-top: 18px; text-align: center; font-size: 10.5px; font-weight: 300;
-          letter-spacing: 0.03em;
-          color: ${d ? 'rgba(245,240,230,0.16)' : 'rgba(15,12,8,0.26)'};
+        /* Active dept ticker */
+        .lp-ticker {
+          position: relative; z-index: 1;
+          margin-top: 18px; padding-top: 16px;
+          border-top: 1px solid ${dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)'};
+          display: flex; align-items: center; gap: 8px;
+          font-size: 11px; color: ${dark ? 'rgba(237,233,228,0.28)' : 'rgba(15,12,8,0.35)'};
+          overflow: hidden;
+        }
+        .lp-ticker-dot {
+          width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+          transition: background 0.4s ease, box-shadow 0.4s ease;
+        }
+        .lp-ticker-name {
+          font-weight: 600; transition: color 0.4s ease;
+        }
+
+        .lp-foot {
+          margin-top: 14px; text-align: center; font-size: 10.5px;
+          color: ${dark ? 'rgba(237,233,228,0.14)' : 'rgba(15,12,8,0.24)'};
         }
 
         @keyframes lp-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -388,103 +402,266 @@ export default function LoginPage() {
 
       <div className="lp-root">
 
-        {/* ── Left panel ── */}
+        {/* ════ LEFT ══════════════════════════════════════════════ */}
         <div className="lp-left">
-          <div className="lp-ornament" aria-hidden />
+          <div className="lp-reticle lp-tl" aria-hidden />
+          <div className="lp-reticle lp-tr" aria-hidden />
+          <div className="lp-reticle lp-bl" aria-hidden />
+          <div className="lp-reticle lp-br" aria-hidden />
+          <div className="lp-scan" aria-hidden />
 
-          <div className="lp-brand" aria-label="Carcino Vantage">
-            <div className="lp-mark">
-              <svg width="18" height="22" viewBox="0 0 20 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M9.13307 5.97435C9.21934 5.23291 9.33279 4.80925 9.89802 4.0092C10.9029 2.80263 11.6709 2.67501 12.9912 2.4556L13.0042 2.45344C14.8586 2.34816 15.7395 3.26056 16.1799 4.26653C16.6203 5.27251 16.5553 7.03881 16.4233 7.9863C16.2913 8.93378 15.7627 11.4166 12.7608 13.8614C13.5837 14.1538 13.6573 14.1074 14.65 14.2561C15.6004 13.2384 16.1436 12.4864 17.5128 10.8405C18.882 9.19453 19.661 6.91014 19.8772 5.50646C20.0934 4.10278 20.1438 2.45344 18.9963 1.26031C17.8489 0.0671784 15.5888 -0.131673 14.198 0.067179C12.8072 0.266031 10.3732 1.26031 8.68105 2.6289C6.98888 3.9975 6.20076 5.50646 5.57488 7.5418C4.949 9.57714 5.30938 11.2467 6.08485 13.332C7.40174 16.0707 9.01717 17.9291 10.4196 18.8415C11.822 19.7539 12.8072 20.2451 14.3487 22.842C16.2495 19.8123 16.9991 18.6706 18.4632 16.9465C17.5128 15.7767 16.2842 15.1142 13.8735 14.7825C11.4627 14.4508 10.6865 13.6665 10.2341 13.6478C9.78183 13.6291 9.26057 13.6244 9.09831 13.5776C8.93605 13.5309 8.89093 13.5242 8.76218 13.2384C8.62326 12.7331 8.76218 11.9985 8.76218 11.8932C8.76218 11.7879 8.54197 11.6476 8.54197 11.5072C8.54197 11.3668 8.61607 11.2835 8.77377 11.2031C8.77377 11.2031 8.41448 11.0042 8.41448 10.8405C8.41448 10.6767 8.57673 10.0567 8.54197 9.91637C8.50721 9.776 7.68429 9.60054 7.83497 9.3198C7.98565 9.03906 9.16153 7.60314 9.30692 7.30785C9.45232 7.01256 9.15359 6.6787 9.13307 5.97435Z" fill="${d ? '#d4a54b' : '#b07820'}"/>
-                <path d="M8.00883 18.0928C5.32942 19.6789 3.54237 20.5984 1.2981 21.2277L0 24C1.2981 23.9064 5.74874 21.7424 9.23739 19.169L8.00883 18.0928Z" fill="${d ? '#d4a54b' : '#b07820'}"/>
-              </svg>
-            </div>
+          {/* Brand */}
+          <div className="lp-brand">
+            <svg width="16" height="20" viewBox="0 0 20 24" fill="none" aria-hidden>
+              <path d="M9.13307 5.97435C9.21934 5.23291 9.33279 4.80925 9.89802 4.0092C10.9029 2.80263 11.6709 2.67501 12.9912 2.4556L13.0042 2.45344C14.8586 2.34816 15.7395 3.26056 16.1799 4.26653C16.6203 5.27251 16.5553 7.03881 16.4233 7.9863C16.2913 8.93378 15.7627 11.4166 12.7608 13.8614C13.5837 14.1538 13.6573 14.1074 14.65 14.2561C15.6004 13.2384 16.1436 12.4864 17.5128 10.8405C18.882 9.19453 19.661 6.91014 19.8772 5.50646C20.0934 4.10278 20.1438 2.45344 18.9963 1.26031C17.8489 0.0671784 15.5888 -0.131673 14.198 0.067179C12.8072 0.266031 10.3732 1.26031 8.68105 2.6289C6.98888 3.9975 6.20076 5.50646 5.57488 7.5418C4.949 9.57714 5.30938 11.2467 6.08485 13.332C7.40174 16.0707 9.01717 17.9291 10.4196 18.8415C11.822 19.7539 12.8072 20.2451 14.3487 22.842C16.2495 19.8123 16.9991 18.6706 18.4632 16.9465C17.5128 15.7767 16.2842 15.1142 13.8735 14.7825C11.4627 14.4508 10.6865 13.6665 10.2341 13.6478C9.78183 13.6291 9.26057 13.6244 9.09831 13.5776C8.93605 13.5309 8.89093 13.5242 8.76218 13.2384C8.62326 12.7331 8.76218 11.9985 8.76218 11.8932C8.76218 11.7879 8.54197 11.6476 8.54197 11.5072C8.54197 11.3668 8.61607 11.2835 8.77377 11.2031C8.77377 11.2031 8.41448 11.0042 8.41448 10.8405C8.41448 10.6767 8.57673 10.0567 8.54197 9.91637C8.50721 9.776 7.68429 9.60054 7.83497 9.3198C7.98565 9.03906 9.16153 7.60314 9.30692 7.30785C9.45232 7.01256 9.15359 6.6787 9.13307 5.97435Z" fill={dark ? '#9875c1' : '#7659a0'}/>
+              <path d="M8.00883 18.0928C5.32942 19.6789 3.54237 20.5984 1.2981 21.2277L0 24C1.2981 23.9064 5.74874 21.7424 9.23739 19.169L8.00883 18.0928Z" fill={dark ? '#9875c1' : '#7659a0'}/>
+            </svg>
             <span className="lp-brand-name">Carcino Vantage</span>
           </div>
 
-          <div className="lp-hero">
-            <div className="lp-eyebrow">
-              <span className="lp-eyebrow-line" />
-              The Carcino Foundation
-            </div>
-            <h1 className="lp-title">
-              Work that<br />
-              <em>moves</em> the<br />
-              <strong>world forward.</strong>
-            </h1>
-            <p className="lp-sub">
-              A distraction-free, fluid and intuitive workspace for the members of The Carcino Foundation.
-            </p>
+          {/* ── Orbital ─────────────────────────────────────────── */}
+          <div className="lp-orbital" aria-hidden>
+            <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <radialGradient id="core-glow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%"   stopColor="#9875c1" stopOpacity="0.9" />
+                  <stop offset="45%"  stopColor="#7659a0" stopOpacity="0.4" />
+                  <stop offset="100%" stopColor="#7659a0" stopOpacity="0"   />
+                </radialGradient>
+                <radialGradient id="core-fill" cx="38%" cy="38%" r="60%">
+                  <stop offset="0%"   stopColor="#d4b8f0" />
+                  <stop offset="60%"  stopColor="#9875c1" />
+                  <stop offset="100%" stopColor="#6040a0" />
+                </radialGradient>
+                {DEPTS.map((d, i) => (
+                  <radialGradient key={i} id={`dg${i}`} cx="50%" cy="50%" r="50%">
+                    <stop offset="0%"   stopColor={d.color} stopOpacity="0.55" />
+                    <stop offset="100%" stopColor={d.color} stopOpacity="0"    />
+                  </radialGradient>
+                ))}
+                <filter id="f-blur-md"><feGaussianBlur stdDeviation="6" /></filter>
+                <filter id="f-blur-lg"><feGaussianBlur stdDeviation="18" /></filter>
+                <filter id="f-glow">
+                  <feGaussianBlur stdDeviation="2.5" result="b"/>
+                  <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+              </defs>
+
+              {/* Ambient core bloom */}
+              <circle cx="250" cy="250" r="220" fill="url(#core-glow)"
+                filter="url(#f-blur-lg)" opacity={dark ? 0.28 : 0.18} />
+
+              {/* Ring 1 — outermost, very slow */}
+              <g className="r1">
+                <circle cx="250" cy="250" r="228" fill="none"
+                  stroke={dark ? 'rgba(143,107,187,0.13)' : 'rgba(143,107,187,0.18)'}
+                  strokeWidth="1" strokeDasharray="3 15" />
+              </g>
+
+              {/* Ring 2 — department orbit */}
+              <g className="r2">
+                <circle cx="250" cy="250" r="174" fill="none"
+                  stroke={dark ? 'rgba(143,107,187,0.30)' : 'rgba(143,107,187,0.38)'}
+                  strokeWidth="1.2" strokeDasharray="6 16" />
+              </g>
+
+              {/* Ring 3 */}
+              <g className="r3">
+                <circle cx="250" cy="250" r="120" fill="none"
+                  stroke={dark ? 'rgba(143,107,187,0.22)' : 'rgba(143,107,187,0.28)'}
+                  strokeWidth="1" strokeDasharray="4 10" />
+              </g>
+
+              {/* Ring 4 — innermost */}
+              <g className="r4">
+                <circle cx="250" cy="250" r="70" fill="none"
+                  stroke={dark ? 'rgba(143,107,187,0.38)' : 'rgba(143,107,187,0.42)'}
+                  strokeWidth="1" strokeDasharray="2 8" />
+              </g>
+
+              {/* ── Department nodes (static — rings pass around them) ── */}
+              {DEPTS.map((dept, i) => {
+                const { x, y } = nodePos(dept.angle);
+                const active = tick === i;
+                const dx = x - 250, dy = y - 250;
+                const len = Math.sqrt(dx * dx + dy * dy);
+                const nx = dx / len, ny = dy / len;
+                const lx = x + nx * 30, ly = y + ny * 28;
+                const anchor = nx > 0.35 ? 'start' : nx < -0.35 ? 'end' : 'middle';
+
+                return (
+                  <g key={i} filter="url(#f-glow)">
+                    {/* Dept glow disc */}
+                    <circle cx={x} cy={y} r="30"
+                      fill={`url(#dg${i})`} filter="url(#f-blur-md)"
+                      opacity={active ? 1 : 0.45}
+                      style={{ transition: 'opacity 0.4s' }} />
+
+                    {/* Ping ring (active) */}
+                    {active && (
+                      <circle cx={x} cy={y} r="7" fill="none"
+                        stroke={dept.color} strokeWidth="1.2"
+                        style={{ animation: 'node-ping 1.3s ease-out forwards' }} />
+                    )}
+
+                    {/* Node dot */}
+                    <circle cx={x} cy={y}
+                      r={active ? 7 : 5}
+                      fill={dept.color}
+                      style={{
+                        transition: 'r 0.35s cubic-bezier(0.34,1.6,0.64,1)',
+                        filter: `drop-shadow(0 0 ${active ? 9 : 4}px ${dept.color})`,
+                      }} />
+
+                    {/* Connector */}
+                    <line
+                      x1={x + nx * 9} y1={y + ny * 9}
+                      x2={lx - nx * 8} y2={ly - ny * 8}
+                      stroke={dept.color} strokeWidth="0.7"
+                      opacity={active ? 0.75 : 0.30}
+                      style={{ transition: 'opacity 0.4s' }} />
+
+                    {/* Label bg */}
+                    <rect
+                      x={anchor === 'start' ? lx : anchor === 'end' ? lx - 96 : lx - 48}
+                      y={ly - 10} width="96" height="18" rx="5"
+                      fill={dark ? 'rgba(9,8,15,0.80)' : 'rgba(245,244,242,0.88)'}
+                      stroke={dept.color} strokeWidth="0.5"
+                      opacity={active ? 1 : 0.50}
+                      style={{ transition: 'opacity 0.4s' }} />
+
+                    {/* Label text */}
+                    <text x={lx} y={ly + 1}
+                      textAnchor={anchor} dominantBaseline="middle"
+                      fontSize="8.5" fontWeight="600"
+                      fontFamily="'Google Sans Flex','DM Sans',system-ui"
+                      fill={active ? dept.color : (dark ? 'rgba(237,233,228,0.55)' : 'rgba(15,12,8,0.52)')}
+                      style={{ transition: 'fill 0.4s' }}>
+                      {dept.name}
+                    </text>
+                  </g>
+                );
+              })}
+
+              {/* ── Core ── */}
+              <circle cx="250" cy="250" r="46"
+                fill="url(#core-glow)" filter="url(#f-blur-md)" opacity="0.85" />
+              <circle cx="250" cy="250" r="22" fill="url(#core-fill)"
+                style={{ filter: 'drop-shadow(0 0 12px rgba(152,117,193,0.85))' }} />
+              {/* Logo inside core */}
+              <g transform="translate(239.5, 238.5) scale(0.5)" opacity="0.92">
+                <path d="M9.13307 5.97435C9.21934 5.23291 9.33279 4.80925 9.89802 4.0092C10.9029 2.80263 11.6709 2.67501 12.9912 2.4556L13.0042 2.45344C14.8586 2.34816 15.7395 3.26056 16.1799 4.26653C16.6203 5.27251 16.5553 7.03881 16.4233 7.9863C16.2913 8.93378 15.7627 11.4166 12.7608 13.8614C13.5837 14.1538 13.6573 14.1074 14.65 14.2561C15.6004 13.2384 16.1436 12.4864 17.5128 10.8405C18.882 9.19453 19.661 6.91014 19.8772 5.50646C20.0934 4.10278 20.1438 2.45344 18.9963 1.26031C17.8489 0.0671784 15.5888 -0.131673 14.198 0.067179C12.8072 0.266031 10.3732 1.26031 8.68105 2.6289C6.98888 3.9975 6.20076 5.50646 5.57488 7.5418C4.949 9.57714 5.30938 11.2467 6.08485 13.332C7.40174 16.0707 9.01717 17.9291 10.4196 18.8415C11.822 19.7539 12.8072 20.2451 14.3487 22.842C16.2495 19.8123 16.9991 18.6706 18.4632 16.9465C17.5128 15.7767 16.2842 15.1142 13.8735 14.7825C11.4627 14.4508 10.6865 13.6665 10.2341 13.6478C9.78183 13.6291 9.26057 13.6244 9.09831 13.5776C8.93605 13.5309 8.89093 13.5242 8.76218 13.2384C8.62326 12.7331 8.76218 11.9985 8.76218 11.8932C8.76218 11.7879 8.54197 11.6476 8.54197 11.5072C8.54197 11.3668 8.61607 11.2835 8.77377 11.2031C8.77377 11.2031 8.41448 11.0042 8.41448 10.8405C8.41448 10.6767 8.57673 10.0567 8.54197 9.91637C8.50721 9.776 7.68429 9.60054 7.83497 9.3198C7.98565 9.03906 9.16153 7.60314 9.30692 7.30785C9.45232 7.01256 9.15359 6.6787 9.13307 5.97435Z" fill="white"/>
+                <path d="M8.00883 18.0928C5.32942 19.6789 3.54237 20.5984 1.2981 21.2277L0 24C1.2981 23.9064 5.74874 21.7424 9.23739 19.169L8.00883 18.0928Z" fill="white"/>
+              </g>
+            </svg>
           </div>
 
-          <div className="lp-stats" aria-label="Platform stats">
-            {[['200+','Stories published'],['48','Active writers'],['12','Departments']].map(([n,l]) => (
-              <div key={l} className="lp-stat">
-                <div className="lp-stat-n">{n}</div>
-                <div className="lp-stat-l">{l}</div>
-              </div>
-            ))}
+          {/* ── Hero text ── */}
+          <div className="lp-hero">
+            <div className="lp-eyebrow">The Carcino Foundation</div>
+            <h1 className="lp-headline">
+              One workspace.<br />
+              <em>Every department.</em>
+            </h1>
+            <p className="lp-sub">
+              Writers, designers, developers, PR, and leadership — unified in one platform, built for work that matters.
+            </p>
+            <div className="lp-chips">
+              {DEPTS.map((dept, i) => (
+                <span key={dept.name} className="lp-chip"
+                  style={{
+                    background: dark ? `${dept.color}12` : `${dept.color}0e`,
+                    borderColor: dark ? `${dept.color}28` : `${dept.color}22`,
+                    color: dept.color,
+                    opacity: tick === i ? 1 : 0.52,
+                    boxShadow: tick === i ? `0 0 10px ${dept.glow}` : 'none',
+                  }}>
+                  <span className="lp-chip-dot" style={{ background: dept.color }} />
+                  {dept.name}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* ── Right panel ── */}
+        {/* ════ RIGHT ═════════════════════════════════════════════ */}
         <div className="lp-right">
-          <button className="lp-toggle" onClick={() => setDark(v => !v)} aria-label={d ? 'Switch to light mode' : 'Switch to dark mode'}>
-            {d ? <Sun size={14} strokeWidth={1.6} /> : <Moon size={14} strokeWidth={1.6} />}
+          <button className="lp-toggle" onClick={toggleDark}
+            aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>
+            {dark ? <Sun size={14} strokeWidth={1.8} /> : <Moon size={14} strokeWidth={1.8} />}
           </button>
 
-          <main className={`lp-card${ready ? ' lp-ready' : ''}`}>
+          <div className={`lp-card${ready ? ' rdy' : ''}`}>
             <div className="lp-panel">
-              <div className="lp-card-h">
-                <h2 className="lp-card-title">Welcome back</h2>
-                <p className="lp-card-sub">Sign in to your Carcino Vantage workspace.</p>
+              <div className="lp-card-hd">
+                <div className="lp-badge">
+                  <span className="lp-badge-dot" />
+                  Workspace Access
+                </div>
+                <h2 className="lp-card-title">Sign in to Vantage</h2>
+                <p className="lp-card-sub">Welcome back — your team is waiting.</p>
               </div>
 
               {error && (
-                <div className="lp-error" role="alert" aria-live="assertive">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <div className="lp-err" role="alert" aria-live="assertive">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
                   {error}
                 </div>
               )}
 
               <form onSubmit={handleLogin} noValidate>
                 <div className="lp-field">
-                  <label className="lp-label" htmlFor="lp-email">Email address</label>
-                  <div className="lp-wrap">
+                  <label className="lp-lbl" htmlFor="lp-email">Email address</label>
+                  <div className="lp-fw">
                     <Mail size={14} className="lp-ico" aria-hidden />
-                    <input id="lp-email" type="email" className="lp-inp" placeholder="username@carcino.work"
+                    <input id="lp-email" type="email" className="lp-inp"
+                      placeholder="you@carcino.work"
                       value={email} onChange={e => setEmail(e.target.value)}
                       autoComplete="email" required aria-required="true" aria-invalid={!!error} />
                   </div>
                 </div>
-
                 <div className="lp-field">
-                  <label className="lp-label" htmlFor="lp-pw">Password</label>
-                  <div className="lp-wrap">
+                  <label className="lp-lbl" htmlFor="lp-pw">Password</label>
+                  <div className="lp-fw">
                     <Lock size={14} className="lp-ico" aria-hidden />
-                    <input id="lp-pw" type={showPw ? 'text' : 'password'} className="lp-inp lp-with-eye"
-                      placeholder="••••••••••" value={password} onChange={e => setPassword(e.target.value)}
+                    <input id="lp-pw" type={showPw ? 'text' : 'password'} className="lp-inp ey"
+                      placeholder="••••••••••"
+                      value={password} onChange={e => setPassword(e.target.value)}
                       autoComplete="current-password" required aria-required="true" aria-invalid={!!error} />
-                    <button type="button" className="lp-eye" onClick={() => setShowPw(v => !v)}
+                    <button type="button" className="lp-eye"
+                      onClick={() => setShowPw(v => !v)}
                       aria-label={showPw ? 'Hide password' : 'Show password'} aria-pressed={showPw}>
                       {showPw ? <EyeOff size={14} aria-hidden /> : <Eye size={14} aria-hidden />}
                     </button>
                   </div>
                 </div>
-
-                <button type="submit" className="lp-btn" disabled={loading || !email || !password} aria-busy={loading}>
+                <button type="submit" className="lp-btn"
+                  disabled={loading || !email || !password} aria-busy={loading}>
                   {loading
                     ? <><Loader2 size={15} style={{ animation: 'lp-spin 0.75s linear infinite' }} aria-hidden /><span>Signing in…</span></>
                     : <><span>Sign in</span><ArrowRight size={14} aria-hidden /></>}
                 </button>
               </form>
+
+              {/* Live dept ticker */}
+              <div className="lp-ticker">
+                <span className="lp-ticker-dot"
+                  style={{ background: activeDept.color, boxShadow: `0 0 8px ${activeDept.glow}` }} />
+                <span>
+                  <span className="lp-ticker-name" style={{ color: activeDept.color }}>
+                    {activeDept.name}
+                  </span>
+                  {' '}is active on Vantage
+                </span>
+              </div>
             </div>
 
-            <footer className="lp-footer">
-              <p>© 2026 The Carcino Foundation · All rights reserved</p>
-            </footer>
-          </main>
+            <footer className="lp-foot">© 2026 The Carcino Foundation · All rights reserved</footer>
+          </div>
         </div>
+
       </div>
     </>
   );
