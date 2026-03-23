@@ -38,6 +38,7 @@ import AssignTaskModal from '@/components/AssignTaskModal';
 import Toast from '@/components/Toast';
 import TaskSubmissionModal from '@/components/TaskSubmissionModal';
 import MediaViewerModal from '@/components/MediaViewerModal';
+import TaskDetailsModal from '@/components/TaskDetailsModal';
 
 interface Assignment {
   id: string;
@@ -109,13 +110,14 @@ function PriorityDot({ priority }: { priority: string }) {
   return <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${colors[priority] || 'bg-gray-400'}`} title={priority} />;
 }
 
-function TaskRow({ task, onCompleteClick, completing, isAdmin, showEditor, onInit }: {
+function TaskRow({ task, onCompleteClick, completing, isAdmin, showEditor, onInit, onTaskClick }: {
   task: Assignment;
   onCompleteClick: (task: Assignment) => void;
   completing: string | null;
   isAdmin: boolean;
   showEditor: boolean;
   onInit: (id: string) => void;
+  onTaskClick: (task: Assignment) => void;
 }) {
   const router = useRouter();
   const isDone = task.status === 'done';
@@ -133,18 +135,21 @@ function TaskRow({ task, onCompleteClick, completing, isAdmin, showEditor, onIni
           {isDone ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
         </div>
         
-        <div className="flex-1 min-w-0">
+        <div 
+          className="flex-1 min-w-0 cursor-pointer" 
+          onClick={() => onTaskClick(task)}
+        >
           <div className="flex items-center gap-2 flex-wrap">
             <PriorityDot priority={task.priority} />
             {showEditor && task.document_id ? (
               <button
-                onClick={handleTitleClick}
+                onClick={(e) => { e.stopPropagation(); handleTitleClick(); }}
                 className={`text-sm font-semibold text-left hover:text-[var(--accent)] transition-colors truncate ${isDone ? 'line-through' : ''}`}
               >
                 {task.title}
               </button>
             ) : (
-              <span className={`text-sm font-semibold text-[var(--text)] truncate ${isDone ? 'line-through' : ''}`}>{task.title}</span>
+              <span className={`text-sm font-semibold text-[var(--text)] truncate hover:text-[var(--accent)] transition-colors ${isDone ? 'line-through' : ''}`}>{task.title}</span>
             )}
             <StatusBadge status={task.status} />
           </div>
@@ -333,7 +338,7 @@ function ReviewQueue({
 }
 
 function SectionTable({ 
-  section, tasks, onCompleteClick, completing, isAdmin, onAssign, onToast, onInit
+  section, tasks, onCompleteClick, completing, isAdmin, onAssign, onToast, onInit, onTaskClick
 }: {
   section: typeof WRITERS_BLOCK_SECTIONS[0];
   tasks: Assignment[];
@@ -343,6 +348,7 @@ function SectionTable({
   onAssign: (category: string) => void;
   onToast: (m: string) => void;
   onInit: (id: string) => void;
+  onTaskClick: (task: Assignment) => void;
 }) {
   const [expanded, setExpanded] = useState(true);
   const Icon = section.icon;
@@ -405,6 +411,7 @@ function SectionTable({
                   isAdmin={isAdmin}
                   showEditor={section.hasEditor}
                   onInit={onInit}
+                  onTaskClick={onTaskClick}
                 />
               ))}
               {done.length > 0 && (
@@ -422,6 +429,7 @@ function SectionTable({
                       isAdmin={isAdmin}
                       showEditor={section.hasEditor}
                       onInit={onInit}
+                      onTaskClick={onTaskClick}
                     />
                   ))}
                 </details>
@@ -480,6 +488,7 @@ export default function WorkPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [submittingTask, setSubmittingTask] = useState<{ id: string; title: string } | null>(null);
   const [viewingMedia, setViewingMedia] = useState<{ url: string; title: string } | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Assignment | null>(null);
 
   useEffect(() => {
     try {
@@ -624,10 +633,18 @@ export default function WorkPage() {
   const isAdmin = !!user?.admin_access;
   const assignments = isAdmin && view === 'admin' ? allAssignments : myAssignments;
 
+  const handleTaskClick = (task: Assignment) => {
+    setSelectedTask(task);
+  };
+
   // Filter tasks for the active department
   const activeDeptTasks = assignments.filter(a => a.department === activeDeptKey);
   
   const activeDept = DEPARTMENTS.find(d => d.key === activeDeptKey) || DEPARTMENTS[0];
+
+  useEffect(() => {
+    (window as any).openTaskDetails = (task: Assignment) => setSelectedTask(task);
+  }, []);
 
   return (
     <div className={`app-bg min-h-screen flex flex-col ${isDark ? 'dark' : ''}`}>
@@ -866,6 +883,7 @@ export default function WorkPage() {
                             onAssign={(category: string) => setShowAssignModal({ category, department: activeDeptKey })}
                             onToast={(m: string) => setToast(m)}
                             onInit={handleInitDoc}
+                            onTaskClick={handleTaskClick}
                           />
                         );
                       });
@@ -905,6 +923,7 @@ export default function WorkPage() {
                             onAssign={() => setShowAssignModal({ category: 'task', department: activeDeptKey })}
                             onToast={(m: string) => setToast(m)}
                             onInit={handleInitDoc}
+                            onTaskClick={handleTaskClick}
                           />
                         );
                       }
@@ -930,6 +949,7 @@ export default function WorkPage() {
                             onAssign={(category: string) => setShowAssignModal({ category, department: activeDeptKey })}
                             onToast={(m: string) => setToast(m)}
                             onInit={handleInitDoc}
+                            onTaskClick={handleTaskClick}
                           />
                         );
                       });
@@ -969,6 +989,15 @@ export default function WorkPage() {
           onClose={() => setViewingMedia(null)}
         />
       )}
+      {selectedTask && (
+        <TaskDetailsModal
+          task={selectedTask}
+          isAdmin={isAdmin}
+          onClose={() => setSelectedTask(null)}
+          onUpdate={fetchWork}
+        />
+      )}
+
       {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
 
 

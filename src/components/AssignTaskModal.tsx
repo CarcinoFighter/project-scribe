@@ -9,13 +9,15 @@ import {
   BookOpen, 
   Heart, 
   User, 
-  Calendar, 
+  Calendar as CalendarIcon, 
   AlertTriangle,
   Layers,
   CheckCircle,
-  Loader2
+  Loader2,
+  ChevronDown
 } from 'lucide-react';
 import MultiPersonSelect from './MultiPersonSelect';
+import MiniCalendar from './MiniCalendar';
 
 interface TeamMember {
   id: string;
@@ -47,6 +49,7 @@ export default function AssignTaskModal({ member, onClose, onSuccess, defaultCat
   const [department, setDepartment] = useState(defaultDepartment || member?.department || "Writers' Block");
   const [priority, setPriority] = useState<'low' | 'normal' | 'high'>('normal');
   const [dueDate, setDueDate] = useState('');
+  const [showCalendar, setShowCalendar] = useState(false);
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => { 
@@ -245,17 +248,31 @@ export default function AssignTaskModal({ member, onClose, onSuccess, defaultCat
 
           {/* Date & Priority */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
+            <div className="space-y-2 relative">
               <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-4)] flex items-center gap-1.5">
-                <Calendar size={10} />
+                <CalendarIcon size={10} />
                 Due Date
               </label>
-              <input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="w-full bg-[var(--bg-deep)] border border-[var(--border-med)] rounded-[var(--r-md)] py-2.5 px-3 text-sm text-[var(--text)] focus:outline-none focus:border-[var(--accent)] transition-colors"
-              />
+              <button
+                type="button"
+                onClick={() => setShowCalendar(!showCalendar)}
+                className="w-full bg-[var(--bg-deep)] border border-[var(--border-med)] rounded-[var(--r-md)] py-2.5 px-3 text-sm text-[var(--text)] text-left flex items-center justify-between hover:border-[var(--accent-subtle)] transition-colors"
+              >
+                <span>{dueDate ? new Date(dueDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Select date...'}</span>
+                <CalendarIcon size={14} className="text-[var(--text-4)]" />
+              </button>
+              
+              {showCalendar && (
+                <>
+                  <div className="fixed inset-0 z-[50]" onClick={() => setShowCalendar(false)} />
+                  <div className="absolute top-full left-0 mt-2 z-[60] anim-scale-up">
+                    <MiniCalendar 
+                      value={dueDate} 
+                      onChange={(date) => { setDueDate(date); setShowCalendar(false); }} 
+                    />
+                  </div>
+                </>
+              )}
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-4)] flex items-center gap-1.5">

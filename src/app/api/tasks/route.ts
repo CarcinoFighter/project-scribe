@@ -42,16 +42,29 @@ export async function PATCH(req: NextRequest) {
   }
 
   try {
-    const { id, status, submission_media_url } = await req.json();
+    const { 
+      id, status, submission_media_url, 
+      assigned_to_ids, priority, due_date, title, description 
+    } = await req.json();
 
-    if (!id || !status) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    if (!id) {
+      return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
     const updateData: any = {
-      status, 
       updated_at: new Date().toISOString() 
     };
+
+    if (status !== undefined) updateData.status = status;
+    if (priority !== undefined) updateData.priority = priority;
+    if (due_date !== undefined) updateData.due_date = due_date;
+    if (title !== undefined) updateData.title = title;
+    if (description !== undefined) updateData.description = description;
+
+    // Only admins can reassign generally
+    if (payload.adminAccess && assigned_to_ids !== undefined) {
+      updateData.assigned_to_ids = assigned_to_ids;
+    }
 
     if (submission_media_url !== undefined) {
       updateData.submission_media_url = submission_media_url;
