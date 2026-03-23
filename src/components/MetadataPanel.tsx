@@ -27,6 +27,7 @@ interface MetadataPanelProps {
   author_id?: string;
   setContentType: (t: 'blogs' | 'survivor_stories' | 'cancer_docs') => void;
   onAutoGenerateSlug: () => void;
+  onClose?: () => void;
 }
 
 export default function MetadataPanel(props: MetadataPanelProps) {
@@ -34,37 +35,25 @@ export default function MetadataPanel(props: MetadataPanelProps) {
     title, slug, setSlug, 
     status, setStatus, 
     contentType, setContentType,
-    onAutoGenerateSlug, author_id
+    onAutoGenerateSlug, author_id, onClose
   } = props;
   const { user } = useUser();
 
-  const [isOpen, setIsOpen] = useState(true);
-
-  if (!isOpen) {
-    return (
-      <button 
-        onClick={() => setIsOpen(true)}
-        className="fixed right-6 bottom-20 bg-[var(--accent)] text-white p-3 rounded-full shadow-lg hover:scale-105 transition-transform z-30"
-        title="Open Metadata"
-      >
-        <Info size={20} />
-      </button>
-    );
-  }
-
   return (
-    <div className="glass-raised w-72 flex flex-col h-full border-l border-[var(--border-med)] anim-slide-left overflow-y-auto">
+    <div className="glass flex flex-col h-full w-full bg-[var(--surface-0)]/95 shadow-2xl rounded-xl overflow-hidden anim-pop border border-[var(--border-med)] text-left">
       <div className="p-4 border-b border-[var(--border-med)] flex items-center justify-between bg-[var(--bg-deep)]">
         <div className="flex items-center gap-2">
-          <Tag size={14} className="text-[var(--accent)]" />
-          <span className="text-sm font-bold text-[var(--text)]">Document Metadata</span>
+          <Tag size={16} className="text-[var(--accent)]" />
+          <span className="text-sm font-bold text-[var(--text)]">Document Setup</span>
         </div>
-        <button 
-          onClick={() => setIsOpen(false)}
-          className="text-[var(--text-4)] hover:text-[var(--text)] transition-colors"
-        >
-          <ChevronDown size={14} className="rotate-[-90deg]" />
-        </button>
+        {onClose && (
+          <button 
+            onClick={onClose}
+            className="text-[var(--text-4)] hover:text-[var(--text)] transition-colors p-1"
+          >
+            <ChevronDown size={18} className="rotate-[-90deg]" />
+          </button>
+        )}
       </div>
 
       <div className="p-5 space-y-6">

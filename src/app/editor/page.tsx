@@ -131,7 +131,7 @@ function EditorContent() {
   // View State (Shared)
   const [viewMode, setViewMode] = useState<ViewMode>('split');
   const [isDark, setIsDark] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(228);
   const [cursorLine, setCursorLine] = useState(1);
   const [cursorCol, setCursorCol] = useState(1);
@@ -141,9 +141,17 @@ function EditorContent() {
   const [wordGoal, setWordGoal] = useState(0);
   const [showTour, setShowTour] = useState(false);
   const [showCmd, setShowCmd] = useState(false);
+  const [showMetadata, setShowMetadata] = useState(false);
   const [splitPct, setSplitPct] = useState(50);
   const [dragging, setDragging] = useState(false);
   const [sidebarDragging, setSidebarDragging] = useState(false);
+
+  // Set default view on mobile
+  useEffect(() => {
+    if (window.matchMedia('(max-width: 767px)').matches) {
+      setViewMode('editor');
+    }
+  }, []);
 
   const [confirm, setConfirm] = useState<{ title: string; message: string; confirmLabel?: string; danger?: boolean; onConfirm: () => void; } | null>(null);
   const [goalCelebrated, setGoalCelebrated] = useState(false);
@@ -510,6 +518,7 @@ function EditorContent() {
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
         isSaved={activeTab.isSaved}
+        status={activeTab.status}
         zenMode={zenMode}
         focusMode={focusMode}
         onNew={handleAddNew}
@@ -523,9 +532,10 @@ function EditorContent() {
         onToggleFocus={() => setFocusMode(!focusMode)}
         onOpenSettings={() => setShowSettings(true)}
         onToggleDark={() => handleCommand('theme')}
+        onOpenMetadata={() => setShowMetadata(true)}
       />
 
-      <div className={`zen-tabbar${zenMode ? ' zen-hidden' : ''}`}>
+      <div className={`zen-tabbar${zenMode ? ' zen-hidden' : ''} hidden md:block`}>
         <TabBar 
           tabs={tabs} 
           activeTabId={activeTabId} 
@@ -540,12 +550,14 @@ function EditorContent() {
           content={activeTab.content}
           isOpen={sidebarOpen}
           activeLineNumber={activeLine}
-          onHeadingClick={(line) => editorRef.current?.scrollToLine(line)}
+          onHeadingClick={(line) => { editorRef.current?.scrollToLine(line); setSidebarOpen(false); }}
+          onClose={() => setSidebarOpen(false)}
           width={sidebarWidth}
         />
         {/* Sidebar resize handle */}
         {sidebarOpen && (
           <div
+            className="hidden md:block"
             style={{
               width: 5, flexShrink: 0, cursor: 'col-resize', position: 'relative',
               background: sidebarDragging ? 'var(--accent-subtle)' : 'transparent',
@@ -573,10 +585,10 @@ function EditorContent() {
           />
         )}
 
-        <div className="flex flex-col flex-1 overflow-hidden">
-          <Toolbar onAction={handleCommand} focusMode={focusMode} />
+        <div className="flex flex-col-reverse md:flex-col flex-1 overflow-hidden bg-[var(--bg)]">
+          <Toolbar onAction={handleCommand} focusMode={focusMode} viewMode={viewMode} />
 
-          <div className="flex flex-1 overflow-hidden">
+          <div className="flex flex-1 overflow-hidden relative">
             <div style={{ width: viewMode === 'split' ? `${splitPct}%` : (viewMode === 'editor' ? '100%' : '0%'), overflow: 'hidden' }}>
               <EditorPane
                 content={activeTab.content}
@@ -610,19 +622,24 @@ function EditorContent() {
           </div>
         </div>
 
-        {/* Metadata Panel */}
-        {!zenMode && (
-          <MetadataPanel
-            title={activeTab.title}
-            slug={activeTab.slug}
-            setSlug={(s) => updateActiveTab({ slug: s })}
-            status={activeTab.status}
-            setStatus={(s) => updateActiveTab({ status: s })}
-            contentType={activeTab.type}
-            author_id={activeTab.author_id}
-            setContentType={(t) => updateActiveTab({ type: t })}
-            onAutoGenerateSlug={handleAutoSlug}
-          />
+        {/* Metadata Modal */}
+        {showMetadata && (
+          <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
+            <div className="relative w-full max-w-sm max-h-full" onClick={e => e.stopPropagation()}>
+              <MetadataPanel
+                title={activeTab.title}
+                slug={activeTab.slug}
+                setSlug={(s) => updateActiveTab({ slug: s })}
+                status={activeTab.status}
+                setStatus={(s) => updateActiveTab({ status: s })}
+                contentType={activeTab.type}
+                author_id={activeTab.author_id}
+                setContentType={(t) => updateActiveTab({ type: t })}
+                onAutoGenerateSlug={handleAutoSlug}
+                onClose={() => setShowMetadata(false)}
+              />
+            </div>
+          </div>
         )}
       </div>
 

@@ -12,7 +12,7 @@ interface Step {
   emoji: string;
 }
 
-const STEPS: Step[] = [
+const DESKTOP_STEPS: Step[] = [
   {
     id: 'welcome',
     title: 'Welcome to Carcino Vantage',
@@ -75,6 +75,39 @@ const STEPS: Step[] = [
   },
 ];
 
+const MOBILE_STEPS: Step[] = [
+  {
+    id: 'welcome',
+    title: 'Welcome to Carcino Vantage',
+    body: 'A beautiful, distraction-free markdown editor made for mobile writers. This is a quick mobile tour!',
+    emoji: '✦',
+  },
+  {
+    id: 'toolbar',
+    title: 'Bottom Dock',
+    body: 'Your formatting tools and Preview toggle are conveniently docked at the bottom of the screen.',
+    emoji: '✎',
+  },
+  {
+    id: 'outline',
+    title: 'Document Outline',
+    body: 'Tap the outline icon in the top left to open a sliding drawer with your document headings.',
+    emoji: '≡',
+  },
+  {
+    id: 'metadata',
+    title: 'Document Status',
+    body: 'Tap the status badge (e.g., Draft) in the header to open metadata settings and submit for review.',
+    emoji: '📋',
+  },
+  {
+    id: 'cmdpalette',
+    title: 'Command Palette',
+    body: 'Tap the search icon to open the command palette. Search and run any action quickly.',
+    emoji: '>_',
+  },
+];
+
 interface TourProps {
   onClose: () => void;
 }
@@ -82,7 +115,14 @@ interface TourProps {
 export default function GuidedTour({ onClose }: TourProps) {
   const [step, setStep] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
-  const current = STEPS[step];
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    setIsMobile(window.matchMedia('(max-width: 767px)').matches);
+  }, []);
+
+  const currentSteps = isMobile ? MOBILE_STEPS : DESKTOP_STEPS;
+  const current = currentSteps[step];
 
   const measureTarget = useCallback(() => {
     if (!current.targetId) { setRect(null); return; }
@@ -97,7 +137,7 @@ export default function GuidedTour({ onClose }: TourProps) {
     return () => window.removeEventListener('resize', measureTarget);
   }, [measureTarget]);
 
-  const next = () => { if (step < STEPS.length - 1) setStep(s => s + 1); else onClose(); };
+  const next = () => { if (step < currentSteps.length - 1) setStep(s => s + 1); else onClose(); };
   const prev = () => { if (step > 0) setStep(s => s - 1); };
 
   const PAD = 6;
@@ -154,11 +194,12 @@ export default function GuidedTour({ onClose }: TourProps) {
         className="fixed z-[9999] glass-overlay scale-in"
         style={{
           borderRadius: 20,
-          width: 380,
+          width: '90%',
+          maxWidth: 380,
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          padding: '28px 28px 28px',
+          padding: '24px 20px',
         }}
       >
         {/* Step emoji + counter */}
@@ -175,7 +216,7 @@ export default function GuidedTour({ onClose }: TourProps) {
           </div>
           <div className="flex items-center gap-2">
             <span style={{ fontSize: 12, color: 'var(--text-3)', fontVariantNumeric: 'tabular-nums' }}>
-              {step + 1} / {STEPS.length}
+              {step + 1} / {currentSteps.length}
             </span>
             <button
               onClick={onClose}
@@ -190,7 +231,7 @@ export default function GuidedTour({ onClose }: TourProps) {
 
         {/* Progress dots */}
         <div className="flex gap-1.5 mb-4">
-          {STEPS.map((_, i) => (
+          {currentSteps.map((_, i) => (
             <button
               key={i}
               onClick={() => setStep(i)}
@@ -270,7 +311,7 @@ export default function GuidedTour({ onClose }: TourProps) {
                 transition: 'background 0.13s, box-shadow 0.13s',
               }}
             >
-              {step === STEPS.length - 1 ? (
+              {step === currentSteps.length - 1 ? (
                 <><Sparkles size={14} /> Get writing</>
               ) : (
                 <>Next <ArrowRight size={14} /></>
