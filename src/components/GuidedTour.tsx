@@ -15,7 +15,7 @@ interface Step {
 const STEPS: Step[] = [
   {
     id: 'welcome',
-    title: 'Welcome to Carcino Scribe',
+    title: 'Welcome to Carcino Vantage',
     body: 'A beautiful, distraction-free markdown editor made for writers, bloggers, and researchers. This quick tour will show you everything in under a minute.',
     emoji: '✦',
   },

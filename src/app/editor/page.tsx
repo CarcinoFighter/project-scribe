@@ -44,7 +44,7 @@ interface Tab {
 // ---------------------------------------------------------------
 // Templates & Defaults
 // ---------------------------------------------------------------
-const DEFAULT_CONTENT = `# Welcome to Carcino Scribe\n\nA beautiful, distraction-free markdown editor built by The Carcino Foundation.\n`;
+const DEFAULT_CONTENT = `# Welcome to Carcino Vantage\n\nA beautiful, distraction-free markdown editor built by The Carcino Foundation.\n`;
 
 function makeTemplates() {
   const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -304,7 +304,7 @@ function EditorContent() {
   useEffect(() => {
     if (!activeTab) return;
     const unsaved = !activeTab.isSaved;
-    const base = `${activeTab.title} — Scribe`;
+    const base = `${activeTab.title} — Vantage`;
     document.title = unsaved ? `\u25CF ${base}` : base;
   }, [activeTab?.title, activeTab?.isSaved]);
 

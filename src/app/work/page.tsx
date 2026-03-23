@@ -612,7 +612,7 @@ export default function WorkPage() {
           <div className="flex items-center gap-2">
             <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <Image src="/logo.svg" alt="Carcino" width={16} height={20} priority />
-              <span className="text-[12.5px] font-bold text-[var(--text-4)] uppercase tracking-tight">Scribe</span>
+              <span className="text-[12.5px] font-bold text-[var(--text-4)] uppercase tracking-tight">Vantage</span>
             </Link>
             <ChevronRight size={11} strokeWidth={2.2} className="text-[var(--border-strong)] mx-1" />
             <span className="text-[12.5px] font-bold text-[var(--text-3)] tracking-tight">Dashboard</span>

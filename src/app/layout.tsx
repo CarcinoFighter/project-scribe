@@ -3,7 +3,7 @@ import './globals.css';
 import { ThemeInitializer } from '@/components/ThemeInitializer';
 
 export const metadata: Metadata = {
-  title: 'Carcino Scribe',
+  title: 'Carcino Vantage',
   description: 'A Beautiful Markdown Editor for Writers Block of The Carcino Foundation.',
   icons: { icon: '/logo.svg' },
 };

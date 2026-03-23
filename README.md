@@ -1,4 +1,4 @@
-# Carcino Scribe
+# Carcino Vantage
 
 A beautiful, minimal Markdown editor by **The Carcino Foundation**.
 
@@ -76,7 +76,7 @@ vercel
 ## Project Structure
 
 ```
-carcino-scribe/
+carcino-vantage/
 ├── public/
 │   └── logo.svg               # Carcino Foundation logo
 ├── src/

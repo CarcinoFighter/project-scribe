@@ -150,7 +150,7 @@ export default function Header(props: HeaderProps) {
           >
             <Image src="/logo.svg" alt="Carcino" width={16} height={20} priority />
             <span className="hidden sm:block" style={{ color: 'var(--text-4)', fontSize: 12.5, fontWeight: 600, letterSpacing: '-0.01em' }}>
-              Scribe
+              Vantage
             </span>
           </Link>
 
