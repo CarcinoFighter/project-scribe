@@ -132,6 +132,7 @@ function EditorContent() {
   const [viewMode, setViewMode] = useState<ViewMode>('split');
   const [isDark, setIsDark] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarWidth, setSidebarWidth] = useState(228);
   const [cursorLine, setCursorLine] = useState(1);
   const [cursorCol, setCursorCol] = useState(1);
   const [activeLine, setActiveLine] = useState(1);
@@ -142,6 +143,7 @@ function EditorContent() {
   const [showCmd, setShowCmd] = useState(false);
   const [splitPct, setSplitPct] = useState(50);
   const [dragging, setDragging] = useState(false);
+  const [sidebarDragging, setSidebarDragging] = useState(false);
 
   const [confirm, setConfirm] = useState<{ title: string; message: string; confirmLabel?: string; danger?: boolean; onConfirm: () => void; } | null>(null);
   const [goalCelebrated, setGoalCelebrated] = useState(false);
@@ -539,7 +541,37 @@ function EditorContent() {
           isOpen={sidebarOpen}
           activeLineNumber={activeLine}
           onHeadingClick={(line) => editorRef.current?.scrollToLine(line)}
+          width={sidebarWidth}
         />
+        {/* Sidebar resize handle */}
+        {sidebarOpen && (
+          <div
+            style={{
+              width: 5, flexShrink: 0, cursor: 'col-resize', position: 'relative',
+              background: sidebarDragging ? 'var(--accent-subtle)' : 'transparent',
+              borderRight: `1px solid ${sidebarDragging ? 'var(--accent)' : 'var(--border-med)'}`,
+              transition: 'background 0.14s, border-color 0.14s',
+              zIndex: 21,
+            }}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              setSidebarDragging(true);
+              const startX = e.clientX;
+              const startW = sidebarWidth;
+              const move = (m: MouseEvent) => {
+                const next = Math.min(Math.max(startW + (m.clientX - startX), 160), 420);
+                setSidebarWidth(next);
+              };
+              const up = () => {
+                setSidebarDragging(false);
+                window.removeEventListener('mousemove', move);
+                window.removeEventListener('mouseup', up);
+              };
+              window.addEventListener('mousemove', move);
+              window.addEventListener('mouseup', up);
+            }}
+          />
+        )}
 
         <div className="flex flex-col flex-1 overflow-hidden">
           <Toolbar onAction={handleCommand} focusMode={focusMode} />

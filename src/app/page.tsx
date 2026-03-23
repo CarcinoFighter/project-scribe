@@ -183,6 +183,10 @@ function CommandPalette({ docs, onClose, onCommand }: { docs:Doc[]; onClose:()=>
   const listRef  = useRef<HTMLDivElement>(null);
   const wrapRef  = useRef<HTMLDivElement>(null);
   const router   = useRouter();
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
   useEffect(() => { inputRef.current?.focus(); }, []);
   useEffect(() => { setSelected(0); }, [query]);
   const cmds = useMemo(() => buildCmds(), []);

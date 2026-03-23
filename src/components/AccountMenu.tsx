@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Settings, LayoutGrid, Edit3, LogOut } from 'lucide-react';
+import { User, Settings, Edit3, LogOut } from 'lucide-react';
 import Image from 'next/image';
 
 interface AccountMenuProps {
@@ -17,7 +17,6 @@ export default function AccountMenu({ user, onClose, onToast, onOpenSettings }: 
   const items = [
     { icon: User,       label: 'Profile',      active: false, action: () => { onClose(); router.push('/profile'); } },
     { icon: Settings,   label: 'Settings',     active: false, action: () => { onClose(); onOpenSettings?.(); } },
-    { icon: LayoutGrid, label: 'Dashboard',    active: false, action: () => { onClose(); router.push('/'); } },
     { icon: Edit3,      label: 'Open Editor',  active: false, action: () => { onClose(); router.push('/editor'); } },
   ];
 
@@ -30,8 +29,8 @@ export default function AccountMenu({ user, onClose, onToast, onOpenSettings }: 
   };
 
   return (
-    <div className="glass-overlay anim-drop-in" style={{ borderRadius: 'var(--r-lg)', minWidth: 210, overflow: 'hidden', zIndex: 200 }}>
-      <div style={{ padding: '144x 16px', borderBottom: '1px solid var(--border)' }} className="p-4">
+    <div className="glass-overlay anim-drop-in" style={{ borderRadius: 'var(--r-lg)', minWidth: 170, width: 'max-content', maxWidth: 230, overflow: 'hidden', zIndex: 200 }}>
+      <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)' }} className="p-4">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {user?.avatar_url ? (
             <div style={{ width: 34, height: 34, borderRadius: '50%', overflow: 'hidden' }}>
@@ -42,9 +41,9 @@ export default function AccountMenu({ user, onClose, onToast, onOpenSettings }: 
               {user?.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || 'S'}
             </div>
           )}
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{user?.name || 'User'}</div>
-            <div style={{ fontSize: 11, color: 'var(--text-4)' }}>{user?.email || ''}</div>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.2 }}>{user?.name || 'User'}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-4)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 2 }}>{user?.email || ''}</div>
           </div>
         </div>
       </div>

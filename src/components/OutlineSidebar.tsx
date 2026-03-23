@@ -35,11 +35,12 @@ const IND: Record<number, number> = { 1:0, 2:0, 3:12, 4:20, 5:26, 6:32 };
 const FS:  Record<number, number> = { 1:13, 2:12.5, 3:12, 4:11.5, 5:11, 6:11 };
 const FW:  Record<number, string> = { 1:'650', 2:'600', 3:'500', 4:'450', 5:'400', 6:'400' };
 
-export default function OutlineSidebar({ content, isOpen, activeLineNumber, onHeadingClick }: {
+export default function OutlineSidebar({ content, isOpen, activeLineNumber, onHeadingClick, width = 228 }: {
   content: string;
   isOpen: boolean;
   activeLineNumber: number;
   onHeadingClick: (n: number) => void;
+  width?: number;
 }) {
   const headings = useMemo(() => parse(content), [content]);
   const active   = useMemo(() => activeIdx(headings, activeLineNumber), [headings, activeLineNumber]);
@@ -49,8 +50,8 @@ export default function OutlineSidebar({ content, isOpen, activeLineNumber, onHe
       id="tour-sidebar"
       className="sidebar-col glass flex flex-col flex-shrink-0 overflow-hidden"
       style={{
-        width:         isOpen ? 228 : 0,
-        minWidth:      isOpen ? 228 : 0,
+        width:         isOpen ? width : 0,
+        minWidth:      isOpen ? width : 0,
         opacity:       isOpen ? 1 : 0,
         pointerEvents: isOpen ? 'auto' : 'none',
         borderRight:   isOpen ? '1px solid var(--border-med)' : 'none',
@@ -78,7 +79,7 @@ export default function OutlineSidebar({ content, isOpen, activeLineNumber, onHe
       </div>
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto py-2 px-2">
+      <div className="flex-1 overflow-y-auto py-2 px-2 flex flex-col gap-3">
         {headings.length === 0 ? (
           <div className="anim-fade-up" style={{ textAlign: 'center', marginTop: 32, color: 'var(--text-4)', fontSize: 12, lineHeight: 1.7, padding: '0 12px' }}>
             No headings yet.

@@ -85,6 +85,11 @@ export default function CommandPalette({ onClose, onCommand, isDark }: Props) {
 
   const flat = Object.values(groups).flat();
 
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
   useEffect(() => { setSelected(0); }, [query]);
   useEffect(() => { inputRef.current?.focus(); }, []);
 
