@@ -2,12 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { sendPushToUser } from '@/lib/pushNotify';
 
-// Called by a cron job / scheduled task to send due-date reminders.
-// Trigger: tasks due TODAY that haven't been completed.
-// Endpoint: GET /api/push/remind   (protected by SYNC_SECRET)
+// Called automatically by Vercel Cron (see vercel.json schedule).
+// Also callable manually: GET /api/push/remind   Header: x-sync-secret: <SYNC_SECRET>
 export async function GET(req: NextRequest) {
-  const secret = req.headers.get('x-sync-secret');
-  if (secret !== process.env.SYNC_SECRET) {
+  // Vercel Cron automatically sends: Authorization: Bearer <CRON_SECRET>
+  const authHeader = req.headers.get('authorization');
+  const manualSecret = req.headers.get('x-sync-secret');
+
+  const cronSecretValid =
+    authHeader === `Bearer ${process.env.CRON_SECRET}`;
+  const manualSecretValid =
+    manualSecret === process.env.SYNC_SECRET;
+
+  if (!cronSecretValid && !manualSecretValid) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
