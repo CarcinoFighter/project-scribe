@@ -27,6 +27,8 @@ interface TaskDetailsModalProps {
   onClose: () => void;
   onUpdate: () => void;
   isAdmin: boolean;
+  userId?: string;
+  onOpenSubmission?: (taskId: string, title: string) => void;
 }
 
 const CATEGORY_MAP: Record<string, any> = {
@@ -37,11 +39,12 @@ const CATEGORY_MAP: Record<string, any> = {
   task: { icon: Briefcase, color: '#6b7280', label: 'Task Assignment' },
 };
 
-export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin }: TaskDetailsModalProps) {
+export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin, userId, onOpenSubmission }: TaskDetailsModalProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [commentText, setCommentText] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [commentError, setCommentError] = useState<string | null>(null);
   const [isReassigning, setIsReassigning] = useState(false);
   const [newAssigneeIds, setNewAssigneeIds] = useState<string[]>(task.assigned_to_ids || []);
   const [reassignReason, setReassignReason] = useState('');
@@ -73,6 +76,7 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin }: T
     if (!commentText.trim()) return;
 
     setSubmitting(true);
+    setCommentError(null);
     try {
       const res = await fetch('/api/tasks/comments', {
         method: 'POST',
@@ -88,9 +92,13 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin }: T
         const data = await res.json();
         setComments(prev => [...prev, data.comment]);
         setCommentText('');
+      } else {
+        const err = await res.json();
+        setCommentError(err.error || 'Failed to post comment');
       }
     } catch (err) {
       console.error(err);
+      setCommentError('Connection error. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -230,6 +238,12 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin }: T
 
             {/* Comment Input */}
             <div className="p-4 sm:p-6 border-t border-[var(--border-med)] bg-[var(--bg-deep)]">
+              {commentError && (
+                <div className="mb-3 p-2 rounded bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] flex items-center gap-2">
+                  <AlertCircle size={12} />
+                  {commentError}
+                </div>
+              )}
               <form onSubmit={handleAddComment} className="relative">
                 <textarea
                   value={commentText}
@@ -279,6 +293,23 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin }: T
                   <RefreshCw size={12} />
                   Reassign Task
                 </button>
+              )}
+
+              {/* Submit Work Section for Assignees */}
+              {!isAdmin && task.status !== 'done' && task.status !== 'in_review' && (task.assigned_to_ids?.includes(userId) || task.assigned_to === userId) && (
+                <div className="pt-4 mt-4 border-t border-[var(--border-med)] anim-fade-up">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-4)] mb-3">Your Actions</p>
+                  <button 
+                    onClick={() => onOpenSubmission?.(task.id, task.title)}
+                    className="w-full py-2.5 px-3 flex items-center justify-center gap-2 text-xs font-bold text-white bg-[var(--accent)] rounded-[var(--r-md)] shadow-lg shadow-[var(--accent-glow)] hover:scale-[1.02] active:scale-[0.98] transition-all"
+                  >
+                    <Send size={14} />
+                    Submit Proof of Work
+                  </button>
+                  <p className="text-[10px] text-[var(--text-4)] mt-2 text-center">
+                    Upload media to complete task
+                  </p>
+                </div>
               )}
             </div>
 

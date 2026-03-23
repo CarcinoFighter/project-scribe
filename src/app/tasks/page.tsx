@@ -993,8 +993,13 @@ export default function WorkPage() {
         <TaskDetailsModal
           task={selectedTask}
           isAdmin={isAdmin}
+          userId={user?.id}
           onClose={() => setSelectedTask(null)}
           onUpdate={fetchWork}
+          onOpenSubmission={(id, title) => {
+            setSelectedTask(null);
+            setSubmittingTask({ id, title });
+          }}
         />
       )}
 
