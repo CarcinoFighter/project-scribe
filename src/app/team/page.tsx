@@ -181,7 +181,7 @@ export default function TeamPage() {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-8 overflow-y-auto">
+        <main className="page-main-content flex-1 p-8 overflow-y-auto">
           <div className="max-w-6xl mx-auto">
             <div className="flex items-center justify-between mb-8 anim-fade-up">
               <div>

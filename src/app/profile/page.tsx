@@ -142,7 +142,7 @@ export default function ProfilePage() {
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 -mt-24 relative z-10">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-24 relative z-10 pb-8">
         <Link 
           href="/work" 
           className="inline-flex items-center gap-2 text-xs font-bold text-white/80 hover:text-white mb-8 transition-colors bg-black/20 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10"
