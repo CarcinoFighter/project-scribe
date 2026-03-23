@@ -66,26 +66,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="splash-loader-bar"></div>
           </div>
         </div>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                var splash = document.getElementById('pwa-splash');
-                if (splash) {
-                  window.addEventListener('load', function() {
-                    // Match the animation duration to feel natural
-                    setTimeout(function() {
-                      splash.style.opacity = '0';
-                      setTimeout(function() {
-                        splash.style.display = 'none';
-                      }, 700);
-                    }, 1800);
-                  });
-                }
-              })();
-            `,
-          }}
-        />
         <ThemeInitializer />
         {children}
       </body>
