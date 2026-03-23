@@ -68,8 +68,8 @@ export default function Toolbar({ onAction, focusMode, viewMode = 'editor' }: Pr
     <div
       id="tour-toolbar"
       className={clsx(
-        "toolbar-row glass flex justify-center px-3 gap-1 flex-shrink-0 anim-slide-down border-t md:border-t-0 md:border-b border-[var(--border)] relative z-30 bg-[var(--surface-0)]/90 backdrop-blur-md transition-all",
-        showMore ? "flex-wrap py-1.5 h-auto items-start" : "items-center overflow-x-hidden md:overflow-x-auto"
+        "toolbar-row glass flex sm:justify-center px-1 sm:px-3 gap-0.5 sm:gap-1 flex-shrink-0 anim-slide-down border-t md:border-t-0 md:border-b border-[var(--border)] relative z-30 bg-[var(--surface-0)]/90 backdrop-blur-md transition-all",
+        showMore ? "flex-wrap py-1.5 h-auto items-start justify-start" : "items-center overflow-x-auto justify-start"
       )}
       style={{ minHeight: 44, borderRadius: 0, animationDelay: '0.08s' }}
     >

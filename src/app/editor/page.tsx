@@ -146,11 +146,22 @@ function EditorContent() {
   const [dragging, setDragging] = useState(false);
   const [sidebarDragging, setSidebarDragging] = useState(false);
 
-  // Set default view on mobile
+  // Set default view on mobile + Keyboard resize observer
+  const [viewportHeight, setViewportHeight] = useState<string | number>('100dvh');
+
   useEffect(() => {
     if (window.matchMedia('(max-width: 767px)').matches) {
       setViewMode('editor');
     }
+
+    const handler = () => {
+      if (window.visualViewport) setViewportHeight(window.visualViewport.height);
+    };
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handler);
+      handler();
+    }
+    return () => window.visualViewport?.removeEventListener('resize', handler);
   }, []);
 
   const [confirm, setConfirm] = useState<{ title: string; message: string; confirmLabel?: string; danger?: boolean; onConfirm: () => void; } | null>(null);
@@ -507,7 +518,7 @@ function EditorContent() {
   if (!activeTab) return null;
 
   return (
-    <div className={`overflow-hidden flex flex-col app-bg ${zenMode ? 'zen-mode' : ''}`} style={{ height: '100dvh' }}>
+    <div className={`overflow-hidden flex flex-col app-bg ${zenMode ? 'zen-mode' : ''}`} style={{ height: viewportHeight }}>
       <Header
         fileName={activeTab.title}
         setFileName={(n) => updateActiveTab({ title: n, slug: n.toLowerCase().replace(/\s+/g, '-') })}
