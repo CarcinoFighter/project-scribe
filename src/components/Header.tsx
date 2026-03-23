@@ -34,31 +34,9 @@ const VIEW_MODES = [
   { id: 'preview' as ViewMode, icon: Eye,            label: 'Preview' },
 ];
 
-/* Thin vertical rule */
 const SEP = () => (
-  <span style={{
-    width: 1, height: 14,
-    background: 'var(--border-med)',
-    flexShrink: 0, display: 'inline-block',
-    margin: '0 3px',
-    opacity: 0.6,
-  }} />
+  <span style={{ width: 1, height: 16, background: 'var(--border-med)', flexShrink: 0, display: 'inline-block' }} />
 );
-
-/* Icon button base */
-const iconBtnStyle = (active = false, accent = false): React.CSSProperties => ({
-  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-  padding: '5px 7px', borderRadius: 5, border: 'none', cursor: 'pointer',
-  background: active
-    ? accent ? 'var(--hdr-accent-subtle)' : 'var(--hdr-active-bg)'
-    : 'transparent',
-  color: active
-    ? accent ? 'var(--hdr-accent)' : 'var(--hdr-text)'
-    : 'var(--hdr-text-dim)',
-  fontFamily: 'inherit', fontSize: 12, fontWeight: 500,
-  transition: 'background 0.12s, color 0.12s',
-  whiteSpace: 'nowrap',
-});
 
 export default function Header(props: HeaderProps) {
   const {
@@ -120,176 +98,72 @@ export default function Header(props: HeaderProps) {
     setFileName(nameValue.trim() || 'Untitled Document');
   };
 
+  const active = (on: boolean): React.CSSProperties => ({
+    background: on ? 'var(--accent-subtle2)' : 'transparent',
+    color: on ? 'var(--accent)' : undefined,
+  });
+
   return (
     <>
-      {/* ── CSS vars injected once ── */}
-      <style>{`
-        :root {
-          --hdr-accent: ${isDark ? '#d4a54b' : '#9a6810'};
-          --hdr-accent-subtle: ${isDark ? 'rgba(212,165,75,0.10)' : 'rgba(154,104,16,0.09)'};
-          --hdr-active-bg: ${isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)'};
-          --hdr-text: ${isDark ? 'rgba(240,235,225,0.82)' : 'rgba(15,12,8,0.80)'};
-          --hdr-text-dim: ${isDark ? 'rgba(240,235,225,0.36)' : 'rgba(15,12,8,0.38)'};
-          --hdr-bg: ${isDark ? 'rgba(10,9,14,0.94)' : 'rgba(248,246,242,0.96)'};
-          --hdr-border: ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.09)'};
-        }
-
-        /* Toolbar icon button */
-        .hdr-btn {
-          display: flex; align-items: center; justify-content: center; gap: 5px;
-          padding: 5px 7px; border-radius: 5px; border: none; cursor: pointer;
-          background: transparent; color: var(--hdr-text-dim);
-          font-family: inherit; font-size: 12px; font-weight: 500;
-          transition: background 0.11s, color 0.11s;
-          white-space: nowrap;
-        }
-        .hdr-btn:hover { background: var(--hdr-active-bg); color: var(--hdr-text); }
-        .hdr-btn.hdr-active { background: var(--hdr-accent-subtle); color: var(--hdr-accent); }
-        .hdr-btn.hdr-accent-active {
-          background: var(--hdr-accent-subtle); color: var(--hdr-accent);
-        }
-
-        /* Filename button */
-        .hdr-fname {
-          background: none; border: none; cursor: pointer;
-          font-family: inherit; font-size: 12.5px; font-weight: 500;
-          color: var(--hdr-text); letter-spacing: -0.01em;
-          overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-          max-width: clamp(70px, 14vw, 190px);
-          padding: 3px 2px; border-radius: 4px;
-          transition: color 0.12s, background 0.12s;
-        }
-        .hdr-fname:hover { background: var(--hdr-active-bg); }
-
-        /* View mode pill */
-        .hdr-view-pill {
-          display: flex; align-items: center; gap: 1px;
-          background: ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'};
-          border: 1px solid var(--hdr-border);
-          border-radius: 7px; padding: 2px;
-        }
-        .hdr-view-btn {
-          display: flex; align-items: center; gap: 5px;
-          padding: 4px 9px; border-radius: 5px; border: none; cursor: pointer;
-          font-family: inherit; font-size: 11.5px; font-weight: 500;
-          transition: background 0.11s, color 0.11s, box-shadow 0.11s;
-          white-space: nowrap;
-        }
-        .hdr-view-btn.hdr-vm-off {
-          background: transparent; color: var(--hdr-text-dim);
-        }
-        .hdr-view-btn.hdr-vm-on {
-          background: var(--hdr-accent);
-          color: ${isDark ? '#0a0806' : '#fff'};
-          box-shadow: 0 1px 8px ${isDark ? 'rgba(212,165,75,0.28)' : 'rgba(154,104,16,0.22)'};
-        }
-
-        /* Avatar chip */
-        .hdr-avatar {
-          display: flex; align-items: center; gap: 7px;
-          padding: 3px 4px 3px 3px; border-radius: 20px; border: none; cursor: pointer;
-          background: transparent;
-          transition: background 0.11s;
-        }
-        .hdr-avatar:hover { background: var(--hdr-active-bg); }
-        .hdr-avatar-img {
-          width: 24px; height: 24px; border-radius: 50%;
-          border: 1.5px solid ${isDark ? 'rgba(212,165,75,0.28)' : 'rgba(154,104,16,0.25)'};
-          overflow: hidden; flex-shrink: 0;
-        }
-        .hdr-avatar-initials {
-          width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
-          background: linear-gradient(135deg, var(--hdr-accent) 0%, ${isDark ? '#a07830' : '#7a5010'} 100%);
-          border: 1.5px solid ${isDark ? 'rgba(212,165,75,0.3)' : 'rgba(154,104,16,0.28)'};
-          display: flex; align-items: center; justify-content: center;
-          color: ${isDark ? '#0a0806' : '#fff'}; font-size: 9px; font-weight: 700;
-          letter-spacing: 0.02em;
-        }
-
-        /* Breadcrumb brand text */
-        .hdr-brand-text {
-          font-size: 12px; font-weight: 600; letter-spacing: 0.04em;
-          text-transform: uppercase; color: var(--hdr-accent);
-          text-decoration: none;
-        }
-
-        /* Save status */
-        .hdr-save-icon {
-          display: flex; align-items: center;
-          color: ${isSaved ? 'var(--hdr-accent)' : 'var(--hdr-text-dim)'};
-          transition: color 0.2s;
-        }
-
-        /* Desktop / mobile show-hide */
-        @media (max-width: 680px) {
-          .hdr-desktop { display: none !important; }
-          .hdr-mobile  { display: flex !important; }
-        }
-        @media (min-width: 681px) {
-          .hdr-desktop { display: flex; }
-          .hdr-mobile  { display: none !important; }
-        }
-      `}</style>
-
-      {/* ══════════════════ HEADER BAR ══════════════════ */}
+      {/* ── Header bar ─────────────────────────────────────────────────── */}
       <header
         id="app-header"
         className="app-header flex-shrink-0 anim-slide-down"
         style={{
-          height: 50,
+          height: 52,
           display: 'flex',
           alignItems: 'center',
-          padding: '0 8px 0 10px',
           gap: 0,
+          padding: '0 10px',
+          borderRadius: 0,
+          borderBottom: '1px solid var(--border-med)',
           position: 'sticky',
           top: 0,
           zIndex: 50,
-          background: 'var(--hdr-bg)',
-          backdropFilter: 'blur(20px) saturate(160%)',
-          WebkitBackdropFilter: 'blur(20px) saturate(160%)',
-          borderBottom: '1px solid var(--hdr-border)',
-          /* Gold accent line at very top */
-          boxShadow: `inset 0 1px 0 ${isDark ? 'rgba(212,165,75,0.16)' : 'rgba(154,104,16,0.10)'}, 0 1px 14px rgba(0,0,0,0.07)`,
+          /* Glass */
+          background: 'var(--surface-0)',
+          backdropFilter: 'blur(20px) saturate(180%) brightness(1.02)',
+          WebkitBackdropFilter: 'blur(20px) saturate(180%) brightness(1.02)',
+          /* Rim highlight */
+          boxShadow: 'inset 0 -1px 0 var(--border), 0 1px 12px rgba(0,0,0,0.06)',
         }}
       >
-
-        {/* ── LEFT GROUP ── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
-
+        {/* ── LEFT: sidebar toggle + breadcrumb + filename ── */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, marginRight: 8 }}>
           {/* Sidebar toggle */}
           <button
-            className={clsx('hdr-btn', !sidebarOpen && 'hdr-active')}
+            className="tb-btn"
             onClick={() => setSidebarOpen(!sidebarOpen)}
             title="Toggle outline sidebar"
+            style={active(!sidebarOpen)}
           >
-            <PanelLeft size={15} strokeWidth={1.7} />
+            <PanelLeft size={16} strokeWidth={1.8} />
           </button>
 
           <SEP />
 
-          {/* Brand / breadcrumb */}
+          {/* Breadcrumb */}
           <Link
             href="/"
-            className="hdr-brand-text"
+            style={{ display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', flexShrink: 0 }}
             title="Back to Dashboard"
-            style={{ display: 'flex', alignItems: 'center', gap: 7, textDecoration: 'none', flexShrink: 0 }}
           >
-            <Image src="/logo.svg" alt="Carcino" width={14} height={18} priority />
-            <span className="hidden sm:block" style={{ color: 'var(--hdr-accent)', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            <Image src="/logo.svg" alt="Carcino" width={16} height={20} priority />
+            <span className="hidden sm:block" style={{ color: 'var(--text-4)', fontSize: 12.5, fontWeight: 600, letterSpacing: '-0.01em' }}>
               Vantage
             </span>
           </Link>
 
-          <ChevronRight size={10} strokeWidth={2.5} style={{ color: 'var(--hdr-border)', flexShrink: 0, margin: '0 3px', opacity: 0.7 }} />
+          <ChevronRight size={11} strokeWidth={2.2} style={{ color: 'var(--border-strong)', flexShrink: 0, margin: '0 1px' }} />
 
-          <span className="hidden sm:block" style={{ color: 'var(--hdr-text-dim)', fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', flexShrink: 0 }}>
+          <span className="hidden sm:block" style={{ color: 'var(--text-3)', fontSize: 12.5, fontWeight: 600, letterSpacing: '-0.01em', flexShrink: 0 }}>
             Editor
           </span>
 
           <SEP />
 
           {/* Filename */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0, maxWidth: 'clamp(70px, 14vw, 190px)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, maxWidth: 'clamp(80px, 16vw, 200px)' }}>
             {editingName ? (
               <input
                 ref={nameRef}
@@ -302,52 +176,73 @@ export default function Header(props: HeaderProps) {
                 }}
                 autoFocus
                 style={{
-                  fontFamily: 'inherit', fontSize: 12.5, fontWeight: 500,
+                  fontFamily: 'inherit', fontSize: 13, fontWeight: 500,
                   background: 'none', border: 'none', outline: 'none',
-                  color: 'var(--text)', borderBottom: '1.5px solid var(--hdr-accent)',
-                  paddingBottom: 1, minWidth: 70, maxWidth: 190,
+                  color: 'var(--text)', borderBottom: '1.5px solid var(--accent)',
+                  paddingBottom: 1, minWidth: 80, maxWidth: 200,
                 }}
               />
             ) : (
               <button
-                className="hdr-fname"
                 onClick={() => { setEditingName(true); setTimeout(() => nameRef.current?.select(), 10); }}
                 title="Click to rename"
+                style={{
+                  fontFamily: 'inherit', fontSize: 13, fontWeight: 500,
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: 'var(--text)', overflow: 'hidden',
+                  textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%',
+                  padding: '2px 0',
+                }}
               >
                 {fileName}
               </button>
             )}
-            <span className="hdr-save-icon">
+            <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center', color: isSaved ? 'var(--accent)' : 'var(--text-4)', transition: 'color 0.2s' }}>
               {isSaved
                 ? <span className="anim-check-pop" key="saved"><Check size={11} strokeWidth={2.5} /></span>
                 : <span key="saving"><Loader2 size={11} strokeWidth={2.5} className="animate-spin" /></span>}
             </span>
           </div>
-
-          <SEP />
-
-          {/* Command search */}
-          <button className="hdr-btn editor-cmd-btn" onClick={onOpenCmd} title="Search commands (Ctrl+K)">
-            <Search size={14} strokeWidth={1.7} />
-          </button>
         </div>
 
-        {/* ── FLEX SPACER ── */}
+          <SEP />
+          <button className="tb-btn editor-cmd-btn" onClick={onOpenCmd} title="Search commands (Ctrl+K)">
+            <Search size={15} strokeWidth={1.8} />
+          </button>
+
+        {/* ── Flex spacer ── */}
         <div style={{ flex: 1 }} />
 
-        {/* ── RIGHT GROUP — desktop ── */}
-        <div className="hdr-desktop editor-header-desktop" style={{ alignItems: 'center', gap: 2, flexShrink: 0 }}>
+        {/* ── RIGHT: view mode + toolbar (desktop) ── */}
+        <div className="editor-header-desktop" style={{ display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0 }}>
 
           {/* View mode switcher */}
-          <div id="tour-view-modes" className="hdr-view-pill">
+          <div
+            id="tour-view-modes"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 2,
+              background: 'var(--bg-deep)',
+              border: '1px solid var(--border)',
+              borderRadius: 10, padding: '2px 2px',
+            }}
+          >
             {VIEW_MODES.map(({ id, icon: Icon, label }) => (
               <button
                 key={id}
                 onClick={() => setViewMode(id)}
                 title={label}
-                className={clsx('hdr-view-btn', viewMode === id ? 'hdr-vm-on' : 'hdr-vm-off')}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  padding: '4px 9px', borderRadius: 8, border: 'none',
+                  cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 500,
+                  background: viewMode === id ? 'var(--accent)' : 'transparent',
+                  color:      viewMode === id ? '#fff' : 'var(--text-3)',
+                  boxShadow:  viewMode === id ? '0 1px 6px var(--accent-glow)' : 'none',
+                  transition: 'background 0.12s, color 0.12s',
+                  whiteSpace: 'nowrap',
+                }}
               >
-                <Icon size={12} strokeWidth={1.8} />
+                <Icon size={13} strokeWidth={1.8} />
                 <span className="hidden lg:inline">{label}</span>
               </button>
             ))}
@@ -355,22 +250,22 @@ export default function Header(props: HeaderProps) {
 
           <SEP />
 
-          {/* Icon actions */}
-          <button className="hdr-btn" onClick={onOpenSearch} title="Find & Replace (Ctrl+H)">
-            <Search size={13} strokeWidth={1.7} />
+          {/* Icon toolbar */}
+          <button className="tb-btn" onClick={onOpenSearch} title="Find & Replace (Ctrl+H)">
+            <Search size={14} strokeWidth={1.8} />
           </button>
-          <button className="hdr-btn" onClick={onNew} title="New document (Ctrl+N)">
-            <Plus size={14} strokeWidth={2} />
+          <button className="tb-btn" onClick={onNew} title="New document (Ctrl+N)">
+            <Plus size={15} strokeWidth={2} />
           </button>
-          <button className="hdr-btn" onClick={onOpenFile} title="Open file">
-            <FolderOpen size={13} strokeWidth={1.7} />
+          <button className="tb-btn" onClick={onOpenFile} title="Open file">
+            <FolderOpen size={14} strokeWidth={1.8} />
           </button>
 
           {/* Export dropdown */}
           <div id="tour-export" style={{ position: 'relative' }}>
             <button
               ref={exportBtnRef}
-              className="hdr-btn"
+              className="tb-btn"
               onClick={() => {
                 const btn = exportBtnRef.current;
                 if (btn) {
@@ -380,33 +275,32 @@ export default function Header(props: HeaderProps) {
                 setExportOpen(o => !o);
               }}
               title="Export"
-              style={{ gap: 3 }}
             >
-              <Download size={13} strokeWidth={1.7} />
-              <ChevronDown size={9} strokeWidth={2.5} />
+              <Download size={14} strokeWidth={1.8} />
+              <ChevronDown size={10} strokeWidth={2.5} />
             </button>
           </div>
 
           <SEP />
 
-          <button className={clsx('hdr-btn', focusMode && 'hdr-accent-active')} onClick={onToggleFocus}
-            title="Focus mode (Ctrl+Shift+F)">
-            <ScanLine size={13} strokeWidth={1.7} />
+          <button className={clsx('tb-btn', focusMode && 'active')} onClick={onToggleFocus}
+            title="Focus mode (Ctrl+Shift+F)" style={active(focusMode)}>
+            <ScanLine size={14} strokeWidth={1.8} />
           </button>
-          <button className={clsx('hdr-btn', zenMode && 'hdr-accent-active')} onClick={onToggleZen}
-            title="Zen mode (Ctrl+Shift+Z)">
-            <Eye size={13} strokeWidth={1.7} />
+          <button className={clsx('tb-btn', zenMode && 'active')} onClick={onToggleZen}
+            title="Zen mode (Ctrl+Shift+Z)" style={active(zenMode)}>
+            <Eye size={14} strokeWidth={1.8} />
           </button>
-          <button className={clsx('hdr-btn', isFullscreen && 'hdr-active')} onClick={toggleFullscreen}
-            title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}>
-            {isFullscreen ? <Minimize2 size={13} strokeWidth={1.7} /> : <Maximize2 size={13} strokeWidth={1.7} />}
+          <button className={clsx('tb-btn', isFullscreen && 'active')} onClick={toggleFullscreen}
+            title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'} style={active(isFullscreen)}>
+            {isFullscreen ? <Minimize2 size={14} strokeWidth={1.8} /> : <Maximize2 size={14} strokeWidth={1.8} />}
           </button>
-          <button className="hdr-btn" onClick={onToggleDark}
+          <button className="tb-btn" onClick={onToggleDark}
             title={isDark ? 'Light mode' : 'Dark mode'}>
-            {isDark ? <Sun size={13} strokeWidth={1.7} /> : <Moon size={13} strokeWidth={1.7} />}
+            {isDark ? <Sun size={14} strokeWidth={1.8} /> : <Moon size={14} strokeWidth={1.8} />}
           </button>
-          <button className="hdr-btn" onClick={onOpenTour} title="Guided tour">
-            <HelpCircle size={13} strokeWidth={1.7} />
+          <button className="tb-btn" onClick={onOpenTour} title="Guided tour">
+            <HelpCircle size={14} strokeWidth={1.8} />
           </button>
 
           <SEP />
@@ -414,7 +308,7 @@ export default function Header(props: HeaderProps) {
           {/* Account */}
           <button
             ref={accountBtnRef}
-            className="hdr-avatar"
+            className="tb-btn"
             onClick={() => {
               if (!showAccountMenu && accountBtnRef.current) {
                 const r = accountBtnRef.current.getBoundingClientRect();
@@ -422,37 +316,46 @@ export default function Header(props: HeaderProps) {
               }
               setShowAccountMenu(v => !v);
             }}
+            style={{ padding: '2px 3px', borderRadius: 99 }}
           >
             {user?.avatar_url ? (
-              <div className="hdr-avatar-img">
+              <div style={{ width: 24, height: 24, borderRadius: '50%', overflow: 'hidden' }}>
                 <Image src={user.avatar_url} alt="Profile" width={24} height={24} />
               </div>
             ) : (
-              <div className="hdr-avatar-initials">
+              <div style={{
+                width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
+                background: 'linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#fff', fontSize: 9.5, fontWeight: 700,
+              }}>
                 {user?.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || 'S'}
               </div>
             )}
           </button>
         </div>
 
-        {/* ── RIGHT GROUP — mobile ── */}
-        <div className="hdr-mobile editor-header-mobile" style={{ alignItems: 'center', gap: 2, flexShrink: 0 }}>
-          {/* Compact view mode — icons only */}
-          <div className="hdr-view-pill">
+        {/* ── RIGHT: compact mobile toolbar ── */}
+        <div className="editor-header-mobile" style={{ alignItems: 'center', gap: 2, flexShrink: 0 }}>
+          {/* Compact view mode switcher — icons only */}
+          <div style={{ display:'flex', alignItems:'center', gap:1, background:'var(--bg-deep)', border:'1px solid var(--border)', borderRadius:8, padding:2 }}>
             {VIEW_MODES.map(({ id, icon: Icon }) => (
               <button key={id} onClick={() => setViewMode(id)} title={id}
-                className={clsx('hdr-view-btn', viewMode === id ? 'hdr-vm-on' : 'hdr-vm-off')}
-                style={{ padding: '4px 7px' }}>
+                style={{ display:'flex', alignItems:'center', justifyContent:'center', width:28, height:24, borderRadius:6, border:'none', cursor:'pointer', background:viewMode===id?'var(--accent)':'transparent', color:viewMode===id?'#fff':'var(--text-3)', transition:'all 0.12s' }}>
                 <Icon size={13} strokeWidth={1.8} />
               </button>
             ))}
           </div>
-          <button className="hdr-btn" onClick={onToggleDark} title={isDark ? 'Light mode' : 'Dark mode'} style={{ padding: '5px 7px' }}>
-            {isDark ? <Sun size={14} strokeWidth={1.7} /> : <Moon size={14} strokeWidth={1.7} />}
+
+          {/* Dark mode toggle */}
+          <button className="tb-btn" onClick={onToggleDark} title={isDark ? 'Light mode' : 'Dark mode'} style={{ padding:'5px 7px' }}>
+            {isDark ? <Sun size={15} strokeWidth={1.8} /> : <Moon size={15} strokeWidth={1.8} />}
           </button>
+
+          {/* Account avatar */}
           <button
             ref={accountBtnRef}
-            className="hdr-avatar"
+            className="tb-btn"
             onClick={() => {
               if (!showAccountMenu && accountBtnRef.current) {
                 const r = accountBtnRef.current.getBoundingClientRect();
@@ -460,13 +363,14 @@ export default function Header(props: HeaderProps) {
               }
               setShowAccountMenu(v => !v);
             }}
+            style={{ padding: '2px 3px', borderRadius: 99 }}
           >
             {user?.avatar_url ? (
-              <div className="hdr-avatar-img">
+              <div style={{ width: 26, height: 26, borderRadius: '50%', overflow: 'hidden' }}>
                 <Image src={user.avatar_url} alt="Profile" width={26} height={26} />
               </div>
             ) : (
-              <div className="hdr-avatar-initials" style={{ width: 26, height: 26 }}>
+              <div style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, background: 'linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 9.5, fontWeight: 700 }}>
                 {user?.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || 'S'}
               </div>
             )}
@@ -491,17 +395,14 @@ export default function Header(props: HeaderProps) {
         <div
           ref={exportRef}
           className="glass-overlay anim-drop-in"
-          style={{
-            position: 'fixed', top: exportPos.top, right: exportPos.right,
-            minWidth: 164, borderRadius: 8, zIndex: 9950, overflow: 'hidden', padding: 4,
-          }}
+          style={{ position: 'fixed', top: exportPos.top, right: exportPos.right, minWidth: 160, borderRadius: 12, zIndex: 9950, overflow: 'hidden', padding: 4 }}
         >
           {[
             { label: 'Save as .md',   action: () => { onExportMd();   setExportOpen(false); } },
             { label: 'Save as .html', action: () => { onExportHtml(); setExportOpen(false); } },
           ].map((item, i) => (
-            <button key={i} onClick={item.action} className="hdr-btn"
-              style={{ width: '100%', justifyContent: 'flex-start', padding: '9px 14px', borderRadius: 6, fontSize: 12.5, color: 'var(--hdr-text)' }}>
+            <button key={i} onClick={item.action} className="tb-btn"
+              style={{ width: '100%', justifyContent: 'flex-start', padding: '9px 14px', borderRadius: 8, fontSize: 13 }}>
               {item.label}
             </button>
           ))}
