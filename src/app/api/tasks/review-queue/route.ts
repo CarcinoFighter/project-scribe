@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
       ...(blogs.data || []).map(b => ({ ...b, type: 'blogs' })),
       ...(stories.data || []).map(s => ({ ...s, type: 'survivor_stories' })),
       ...(docs.data || []).map(d => ({ ...d, type: 'cancer_docs' })),
-      ...(tasks.data || []).map(t => ({ ...t, type: 'tasks', author_id: t.assigned_to })),
+      ...(tasks.data || []).map(t => ({ ...t, type: 'tasks', author_id: t.assigned_to, assigned_by: t.assigned_by })),
     ];
 
     if (allDocsRaw.length === 0) {

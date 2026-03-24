@@ -54,6 +54,7 @@ interface Assignment {
   assignee?: { id: string; name: string; username: string; avatar_url: string | null; department: string };
   assignees?: { id: string; name: string; username: string; avatar_url: string | null; department: string }[];
   assigner?: { id: string; name: string; username: string };
+  assigned_by?: string;
 }
 
 const DEPARTMENTS = [
@@ -88,6 +89,7 @@ interface ReviewDoc {
   updated_at: string;
   author?: { id: string; name: string; avatar_url: string | null };
   submission_media_url?: string;
+  assigned_by?: string;
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -110,14 +112,17 @@ function PriorityDot({ priority }: { priority: string }) {
   return <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${colors[priority] || 'bg-gray-400'}`} title={priority} />;
 }
 
-function TaskRow({ task, onCompleteClick, completing, isAdmin, showEditor, onInit, onTaskClick }: {
+function TaskRow({ task, onCompleteClick, onDeleteClick, completing, deleting, isAdmin, showEditor, onInit, onTaskClick, currentUserId }: {
   task: Assignment;
   onCompleteClick: (task: Assignment) => void;
+  onDeleteClick?: (task: Assignment) => void;
   completing: string | null;
+  deleting?: string | null;
   isAdmin: boolean;
   showEditor: boolean;
   onInit: (id: string) => void;
   onTaskClick: (task: Assignment) => void;
+  currentUserId?: string;
 }) {
   const router = useRouter();
   const isDone = task.status === 'done';
@@ -200,11 +205,22 @@ function TaskRow({ task, onCompleteClick, completing, isAdmin, showEditor, onIni
           {!isDone && (
             <button
               onClick={() => onCompleteClick(task)}
-              disabled={completing === task.id}
+              disabled={completing === task.id || deleting === task.id}
               className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 text-[10px] font-bold uppercase tracking-wider rounded-[var(--r-md)] border border-emerald-500/20 transition-all disabled:opacity-50 flex-shrink-0"
             >
               {completing === task.id ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
               <span>{task.category === 'task' ? 'Submit' : 'Done'}</span>
+            </button>
+          )}
+
+          {isAdmin && task.assigned_by === currentUserId && onDeleteClick && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDeleteClick(task); }}
+              disabled={deleting === task.id || completing === task.id}
+              className="flex items-center gap-1 px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[10px] font-bold uppercase tracking-wider rounded-[var(--r-md)] border border-red-500/20 transition-all disabled:opacity-50 flex-shrink-0"
+              title="Delete task"
+            >
+              {deleting === task.id ? <Loader2 size={10} className="animate-spin" /> : <Trash2 size={10} />}
             </button>
           )}
 
@@ -267,6 +283,9 @@ function ReviewQueue({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {docs.map((doc) => {
           const isAuthor = doc.author?.id === currentUserId;
+          const isSelfAssignedTask = doc.type === 'tasks' && doc.assigned_by === currentUserId && isAuthor;
+          const cannotApprove = isAuthor && !isSelfAssignedTask;
+          
           const Icon = doc.type === 'blogs' ? BookOpen : doc.type === 'survivor_stories' ? Heart : doc.type === 'tasks' ? Briefcase : FileText;
           const color = doc.type === 'blogs' ? 'text-[#9875c1]' : doc.type === 'survivor_stories' ? 'text-[#10b981]' : doc.type === 'tasks' ? 'text-amber-500' : 'text-[#3b82f6]';
           const bg = doc.type === 'blogs' ? 'bg-[#9875c118]' : doc.type === 'survivor_stories' ? 'bg-[#10b98118]' : doc.type === 'tasks' ? 'bg-amber-500/10' : 'bg-[#3b82f618]';
@@ -323,9 +342,9 @@ function ReviewQueue({
                 </button>
                 <button
                   onClick={() => onApprove(doc)}
-                  disabled={approving === doc.id || isAuthor}
-                  title={isAuthor ? 'You cannot approve your own work' : 'Approve and Publish'}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-green-500/10 hover:bg-green-500 text-green-500 hover:text-white text-[10px] font-bold uppercase tracking-wider rounded-[var(--r-md)] border border-green-500/20 transition-all ${isAuthor ? 'opacity-30 grayscale cursor-not-allowed' : ''}`}
+                  disabled={approving === doc.id || cannotApprove}
+                  title={cannotApprove ? 'You cannot approve your own work' : 'Approve and Publish'}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-green-500/10 hover:bg-green-500 text-green-500 hover:text-white text-[10px] font-bold uppercase tracking-wider rounded-[var(--r-md)] border border-green-500/20 transition-all ${cannotApprove ? 'opacity-30 grayscale cursor-not-allowed' : ''}`}
                 >
                   {approving === doc.id ? <Loader2 size={12} className="animate-spin" /> : <ShieldCheck size={12} />}
                   Approve
@@ -340,17 +359,20 @@ function ReviewQueue({
 }
 
 function SectionTable({ 
-  section, tasks, onCompleteClick, completing, isAdmin, onAssign, onToast, onInit, onTaskClick
+  section, tasks, onCompleteClick, onDeleteClick, completing, deleting, isAdmin, onAssign, onToast, onInit, onTaskClick, currentUserId
 }: {
   section: typeof WRITERS_BLOCK_SECTIONS[0];
   tasks: Assignment[];
   onCompleteClick: (task: Assignment) => void;
+  onDeleteClick?: (task: Assignment) => void;
   completing: string | null;
+  deleting?: string | null;
   isAdmin: boolean;
   onAssign: (category: string) => void;
   onToast: (m: string) => void;
   onInit: (id: string) => void;
   onTaskClick: (task: Assignment) => void;
+  currentUserId?: string;
 }) {
   const [expanded, setExpanded] = useState(true);
   const Icon = section.icon;
@@ -405,17 +427,20 @@ function SectionTable({
           ) : (
             <>
               {pending.map(task => (
-                <TaskRow
-                  key={task.id}
-                  task={task}
-                  onCompleteClick={onCompleteClick}
-                  completing={completing}
-                  isAdmin={isAdmin}
-                  showEditor={section.hasEditor}
-                  onInit={onInit}
-                  onTaskClick={onTaskClick}
-                />
-              ))}
+                  <TaskRow
+                    key={task.id}
+                    task={task}
+                    onCompleteClick={onCompleteClick}
+                    onDeleteClick={onDeleteClick}
+                    completing={completing}
+                    deleting={deleting}
+                    isAdmin={isAdmin}
+                    showEditor={section.hasEditor}
+                    onInit={onInit}
+                    onTaskClick={onTaskClick}
+                    currentUserId={currentUserId}
+                  />
+                ))}
               {done.length > 0 && (
                 <details className="group/done">
                   <summary className="flex items-center gap-2 px-4 py-2 text-xs text-[var(--text-4)] cursor-pointer hover:bg-[var(--bg-deep)] select-none list-none border-t border-[var(--border)]">
@@ -427,11 +452,14 @@ function SectionTable({
                       key={task.id}
                       task={task}
                       onCompleteClick={onCompleteClick}
+                      onDeleteClick={onDeleteClick}
                       completing={completing}
+                      deleting={deleting}
                       isAdmin={isAdmin}
                       showEditor={section.hasEditor}
                       onInit={onInit}
                       onTaskClick={onTaskClick}
+                      currentUserId={currentUserId}
                     />
                   ))}
                 </details>
@@ -487,6 +515,7 @@ export default function WorkPage() {
   
   const isWritersBlock = activeDeptKey === "Writers' Block";
   const [completing, setCompleting] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [view, setView] = useState<'my' | 'admin'>('my');
   const [toast, setToast] = useState<string | null>(null);
   const [submittingTask, setSubmittingTask] = useState<{ id: string; title: string } | null>(null);
@@ -581,6 +610,26 @@ export default function WorkPage() {
       console.error(err);
     } finally {
       setCompleting(null);
+    }
+  };
+
+  const handleDelete = async (task: Assignment) => {
+    if (!confirm('Are you sure you want to delete this task?')) return;
+    setDeleting(task.id);
+    try {
+      const res = await fetch(`/api/tasks?id=${task.id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setMyAssignments(prev => prev.filter(a => a.id !== task.id));
+        setAllAssignments(prev => prev.filter(a => a.id !== task.id));
+        setToast('Task deleted');
+      } else {
+        const err = await res.json();
+        setToast(err.error || 'Failed to delete task');
+      }
+    } catch (err) {
+      setToast('Error deleting task');
+    } finally {
+      setDeleting(null);
     }
   };
 
@@ -898,12 +947,15 @@ export default function WorkPage() {
                             section={section as any}
                             tasks={sectionTasks}
                             onCompleteClick={handleCompleteClick}
+                            onDeleteClick={handleDelete}
                             completing={completing}
+                            deleting={deleting}
                             isAdmin={isAdmin}
                             onAssign={(category: string) => setShowAssignModal({ category, department: activeDeptKey })}
                             onToast={(m: string) => setToast(m)}
                             onInit={handleInitDoc}
                             onTaskClick={handleTaskClick}
+                            currentUserId={user?.id}
                           />
                         );
                       });
@@ -938,12 +990,15 @@ export default function WorkPage() {
                             section={{ key: 'task', label: 'General Tasks', icon: Briefcase, color: '#6b7280', hasEditor: false, table: null }}
                             tasks={[]}
                             onCompleteClick={handleCompleteClick}
+                            onDeleteClick={handleDelete}
                             completing={completing}
+                            deleting={deleting}
                             isAdmin={isAdmin}
                             onAssign={() => setShowAssignModal({ category: 'task', department: activeDeptKey })}
                             onToast={(m: string) => setToast(m)}
                             onInit={handleInitDoc}
                             onTaskClick={handleTaskClick}
+                            currentUserId={user?.id}
                           />
                         );
                       }
@@ -964,12 +1019,15 @@ export default function WorkPage() {
                             }}
                             tasks={sectionTasks}
                             onCompleteClick={handleCompleteClick}
+                            onDeleteClick={handleDelete}
                             completing={completing}
+                            deleting={deleting}
                             isAdmin={isAdmin}
                             onAssign={(category: string) => setShowAssignModal({ category, department: activeDeptKey })}
                             onToast={(m: string) => setToast(m)}
                             onInit={handleInitDoc}
                             onTaskClick={handleTaskClick}
+                            currentUserId={user?.id}
                           />
                         );
                       });

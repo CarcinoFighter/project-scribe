@@ -21,6 +21,7 @@ import {
 import { useUser } from '@/lib/useUser';
 import AccountMenu from '@/components/AccountMenu';
 import Toast from '@/components/Toast';
+import TaskSubmissionModal from '@/components/TaskSubmissionModal';
 import SettingsModal, { loadSettings, saveSettings, applySettings, DEFAULT_SETTINGS, THEMES } from '@/components/SettingsModal';
 import type { AppSettings } from '@/components/SettingsModal';
 
@@ -600,6 +601,7 @@ export default function Dashboard() {
   const [accountMenuPos,   setAccountMenuPos]   = useState<{top:number;right:number}|null>(null);
   const [wordGoal,         setWordGoal]         = useState(0);
   const [tasks,            setTasks]            = useState<Task[]>([]);
+  const [submittingTask,   setSubmittingTask]   = useState<{ id: string; title: string } | null>(null);
   const [docsLoading,      setDocsLoading]      = useState(true);
   const [tasksLoading,     setTasksLoading]     = useState(true);
 
@@ -656,6 +658,16 @@ export default function Dashboard() {
   const deleteDoc = useCallback(async(id:string)=>{ const all=lsDoc?[lsDoc,...docs]:docs; const doc=all.find(d=>d.id===id); if(!doc)return; if(id==='ls-active'){setLsDoc(null);localStorage.removeItem('cs-content');localStorage.removeItem('cs-name');localStorage.removeItem('cs-tabs');}else{setDocs(ds=>ds.filter(d=>d.id!==id));try{await fetch(`/api/documents?id=${id}&type=${doc.type}`,{method:'DELETE'});}catch{}} setToast(`Deleted "${doc.title.slice(0,28)}…"`); },[docs,lsDoc]);
 
   const handleCompleteTask = useCallback(async(taskId:string)=>{ try { const r=await fetch('/api/tasks',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:taskId,status:'done'})}); if(r.ok){setTasks(ts=>ts.map(t=>t.id===taskId?{...t,status:'done'}:t));setToast('Task completed ✓');}else{setToast('Failed to update task');} }catch{setToast('Error updating task');} },[]);
+
+  const handleTaskCardComplete = useCallback(async (taskId: string) => {
+    const t = tasks.find(x => x.id === taskId);
+    if (!t) return;
+    if (t.category === 'task') {
+      setSubmittingTask({ id: t.id, title: t.title });
+    } else {
+      await handleCompleteTask(taskId);
+    }
+  }, [tasks, handleCompleteTask]);
 
   const toggleTheme = useCallback(()=>{ const cur=appSettingsRef.current; const d2l:Record<string,string>={'default-dark':'default-light','catppuccin-mocha':'catppuccin-latte','solarized-dark':'solarized-light'}; const l2d=Object.fromEntries(Object.entries(d2l).map(([k,v])=>[v,k])); const curDark=THEMES[cur.theme]?.dark??isDark; const next={...cur,theme:curDark?(d2l[cur.theme]??'default-light'):(l2d[cur.theme]??'default-dark')}; setAppSettings(next);saveSettings(next);setIsDark(applySettings(next)); },[isDark]);
 
@@ -925,7 +937,7 @@ export default function Dashboard() {
                   </div>
                   <div className="task-grid-2">
                     {pendingTasks.slice(0,4).map(task => (
-                      <TaskCard key={task.id} task={task} onComplete={handleCompleteTask}/>
+                      <TaskCard key={task.id} task={task} onComplete={handleTaskCardComplete}/>
                     ))}
                   </div>
                 </div>
@@ -1113,6 +1125,19 @@ export default function Dashboard() {
 
       {showSettings && (
         <SettingsModal settings={appSettings} onClose={()=>setShowSettings(false)} onChange={next=>{setAppSettings(next);saveSettings(next);setIsDark(applySettings(next));}}/>
+      )}
+
+      {submittingTask && (
+        <TaskSubmissionModal
+          taskId={submittingTask.id}
+          taskTitle={submittingTask.title}
+          onClose={() => setSubmittingTask(null)}
+          onSuccess={() => {
+            setSubmittingTask(null);
+            setTasks(ts=>ts.map(t=>t.id===submittingTask.id?{...t,status:'done'}:t));
+            setToast('Task submitted for review successfully');
+          }}
+        />
       )}
     </div>
   );
