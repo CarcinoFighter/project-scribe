@@ -187,6 +187,12 @@ function EditorContent() {
         }
         setCollaborators(otherUsers);
       })
+      .on('broadcast', { event: 'content-update' }, (payload) => {
+        const { tabId, content, senderId } = payload.payload;
+        if (senderId !== user.id && tabId === activeTabId) {
+          setTabs(prev => prev.map(t => t.id === tabId ? { ...t, content, isSaved: true } : t));
+        }
+      })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
           await channel.track({
@@ -396,6 +402,25 @@ function EditorContent() {
     }, 1500);
     return () => { clearTimeout(markUnsaved); clearTimeout(t); };
   }, [activeTab?.content, activeTab?.title, activeTab?.slug, activeTab?.status, activeTabId]);
+
+  // ---- Content Broadcasting (Realtime) ----
+  useEffect(() => {
+    if (!activeTab || !presenceChannelRef.current || !user) return;
+
+    const t = setTimeout(() => {
+      presenceChannelRef.current.send({
+        type: 'broadcast',
+        event: 'content-update',
+        payload: {
+          tabId: activeTabId,
+          content: activeTab.content,
+          senderId: user.id
+        }
+      });
+    }, 400); // 400ms debounce for "live" feel
+
+    return () => clearTimeout(t);
+  }, [activeTab?.content, activeTabId, user]);
 
   // ---- Title Management ----
   useEffect(() => {
