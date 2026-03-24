@@ -3,18 +3,22 @@
 import { useState, useCallback, useRef } from 'react';
 import {
   Bold, Italic, Strikethrough, Code, Code2, Quote, Link, Image as ImageIcon,
-  Heading1, Heading2, Heading3, List, LucideIcon, ListOrdered, Minus, Table, ScanLine,
+  Heading1, Heading2, Heading3, List, LucideIcon, ListOrdered, Minus, Table, ScanLine, MoreHorizontal
 } from 'lucide-react';
 import clsx from 'clsx';
+
+import type { ViewMode } from '@/types';
 
 export type ToolbarAction =
   | 'bold' | 'italic' | 'strikethrough' | 'code' | 'codeblock'
   | 'quote' | 'link' | 'image' | 'h1' | 'h2' | 'h3'
-  | 'ul' | 'ol' | 'hr' | 'table' | 'focus';
+  | 'ul' | 'ol' | 'hr' | 'table' | 'focus'
+  | 'view-editor' | 'view-preview';
 
 interface Props {
   onAction: (a: ToolbarAction) => void;
   focusMode: boolean;
+  viewMode?: ViewMode;
 }
 
 const GROUPS: { action: ToolbarAction; icon: LucideIcon; title: string }[][] = [
@@ -48,8 +52,9 @@ const GROUPS: { action: ToolbarAction; icon: LucideIcon; title: string }[][] = [
 
 const FLAT_BUTTONS = GROUPS.flatMap(g => g);
 
-export default function Toolbar({ onAction, focusMode }: Props) {
+export default function Toolbar({ onAction, focusMode, viewMode = 'editor' }: Props) {
   const [poppingAction, setPoppingAction] = useState<ToolbarAction | null>(null);
+  const [showMore, setShowMore] = useState(false);
   const popTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleClick = useCallback((action: ToolbarAction) => {
@@ -62,11 +67,14 @@ export default function Toolbar({ onAction, focusMode }: Props) {
   return (
     <div
       id="tour-toolbar"
-      className="toolbar-row glass glass-rim flex items-center px-3 gap-1 flex-shrink-0 anim-slide-down"
-      style={{ height: 40, borderBottom: '1px solid var(--border)', borderRadius: 0, overflowX: 'auto', animationDelay: '0.08s' }}
+      className={clsx(
+        "toolbar-row glass flex sm:justify-center px-1 sm:px-3 gap-0.5 sm:gap-1 flex-shrink-0 anim-slide-down border-t md:border-t-0 md:border-b border-[var(--border)] relative z-30 bg-[var(--surface-0)]/90 backdrop-blur-md transition-all",
+        showMore ? "flex-wrap py-1.5 h-auto items-start justify-start" : "items-center overflow-x-auto justify-start"
+      )}
+      style={{ minHeight: 44, borderRadius: 0, animationDelay: '0.08s' }}
     >
       {GROUPS.map((group, gi) => (
-        <div key={gi} className="flex items-center gap-0.5">
+        <div key={gi} className={clsx("flex items-center gap-0.5", gi >= 3 && !showMore && "hidden md:flex")}>
           {group.map(({ action, icon: Icon, title }) => {
             const flatIdx = FLAT_BUTTONS.findIndex(b => b.action === action);
             const isFocusActive = action === 'focus' && focusMode;
@@ -91,9 +99,18 @@ export default function Toolbar({ onAction, focusMode }: Props) {
               </button>
             );
           })}
-          {gi < GROUPS.length - 1 && <div className="toolbar-sep mx-1" />}
+          {gi < GROUPS.length - 1 && <div className={clsx("toolbar-sep mx-1", gi >= 2 && !showMore && "hidden md:block")} />}
         </div>
       ))}
+      
+      {/* Mobile More Button */}
+      <button
+        className={clsx("tb-btn md:hidden flex-shrink-0", showMore && "bg-[var(--surface-2)]")}
+        onClick={() => setShowMore(!showMore)}
+        title="More options"
+      >
+        <MoreHorizontal size={14} strokeWidth={1.9} />
+      </button>
     </div>
   );
 }

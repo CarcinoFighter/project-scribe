@@ -15,7 +15,10 @@ import ConfirmModal from '@/components/ConfirmModal';
 import MetadataPanel from '@/components/MetadataPanel';
 import SettingsModal, { loadSettings, saveSettings, applySettings, DEFAULT_SETTINGS, THEMES } from '@/components/SettingsModal';
 import type { AppSettings } from '@/components/SettingsModal';
-import { X, Plus, FileText, BookOpen, Heart, Loader2 } from 'lucide-react';
+import { X, Plus, FileText, BookOpen, Heart, Loader2, Users } from 'lucide-react';
+import { useUser } from '@/lib/useUser';
+import { supabase } from '@/lib/supabase';
+import type { Collaborator } from '@/types';
 
 const EditorPane = dynamic(() => import('@/components/EditorPane'), {
   ssr: false,
@@ -131,7 +134,7 @@ function EditorContent() {
   // View State (Shared)
   const [viewMode, setViewMode] = useState<ViewMode>('split');
   const [isDark, setIsDark] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(228);
   const [cursorLine, setCursorLine] = useState(1);
   const [cursorCol, setCursorCol] = useState(1);
@@ -141,9 +144,94 @@ function EditorContent() {
   const [wordGoal, setWordGoal] = useState(0);
   const [showTour, setShowTour] = useState(false);
   const [showCmd, setShowCmd] = useState(false);
+  const [showMetadata, setShowMetadata] = useState(false);
   const [splitPct, setSplitPct] = useState(50);
   const [dragging, setDragging] = useState(false);
   const [sidebarDragging, setSidebarDragging] = useState(false);
+
+  // Collaboration State
+  const { user } = useUser();
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
+  const presenceChannelRef = useRef<any>(null);
+
+  // ---- Presence Logic ----
+  useEffect(() => {
+    if (!user || !activeTabId || activeTabId === 'ls-active' || activeTabId.startsWith('new-')) {
+      setCollaborators([]);
+      return;
+    }
+
+    const channel = supabase.channel(`editor:${activeTabId}`, {
+      config: { presence: { key: user.id } }
+    });
+    presenceChannelRef.current = channel;
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        const otherUsers: Collaborator[] = [];
+        for (const key in state) {
+          const presences = state[key] as any[];
+          presences.forEach(presence => {
+            if (presence.id !== user.id) {
+              otherUsers.push({
+                id: presence.id,
+                name: presence.name,
+                avatar_url: presence.avatar_url,
+                cursor: presence.cursor,
+                lastSeen: Date.now()
+              });
+            }
+          });
+        }
+        setCollaborators(otherUsers);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({
+            id: user.id,
+            name: user.name,
+            avatar_url: user.avatar_url,
+            cursor: { line: cursorLine, col: cursorCol }
+          });
+        }
+      });
+
+    return () => {
+      channel.unsubscribe();
+      presenceChannelRef.current = null;
+    };
+  }, [activeTabId, user]);
+
+  // Update presence on cursor move
+  useEffect(() => {
+    if (presenceChannelRef.current && user) {
+      presenceChannelRef.current.track({
+        id: user.id,
+        name: user.name,
+        avatar_url: user.avatar_url,
+        cursor: { line: cursorLine, col: cursorCol }
+      });
+    }
+  }, [cursorLine, cursorCol, user]);
+
+  // Set default view on mobile + Keyboard resize observer
+  const [viewportHeight, setViewportHeight] = useState<string | number>('100dvh');
+
+  useEffect(() => {
+    if (window.matchMedia('(max-width: 767px)').matches) {
+      setViewMode('editor');
+    }
+
+    const handler = () => {
+      if (window.visualViewport) setViewportHeight(window.visualViewport.height);
+    };
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handler);
+      handler();
+    }
+    return () => window.visualViewport?.removeEventListener('resize', handler);
+  }, []);
 
   const [confirm, setConfirm] = useState<{ title: string; message: string; confirmLabel?: string; danger?: boolean; onConfirm: () => void; } | null>(null);
   const [goalCelebrated, setGoalCelebrated] = useState(false);
@@ -499,7 +587,7 @@ function EditorContent() {
   if (!activeTab) return null;
 
   return (
-    <div className={`overflow-hidden flex flex-col app-bg ${zenMode ? 'zen-mode' : ''}`} style={{ height: '100dvh' }}>
+    <div className={`overflow-hidden flex flex-col app-bg ${zenMode ? 'zen-mode' : ''}`} style={{ height: viewportHeight }}>
       <Header
         fileName={activeTab.title}
         setFileName={(n) => updateActiveTab({ title: n, slug: n.toLowerCase().replace(/\s+/g, '-') })}
@@ -510,6 +598,7 @@ function EditorContent() {
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
         isSaved={activeTab.isSaved}
+        status={activeTab.status}
         zenMode={zenMode}
         focusMode={focusMode}
         onNew={handleAddNew}
@@ -523,9 +612,11 @@ function EditorContent() {
         onToggleFocus={() => setFocusMode(!focusMode)}
         onOpenSettings={() => setShowSettings(true)}
         onToggleDark={() => handleCommand('theme')}
+        onOpenMetadata={() => setShowMetadata(true)}
+        collaborators={collaborators}
       />
 
-      <div className={`zen-tabbar${zenMode ? ' zen-hidden' : ''}`}>
+      <div className={`zen-tabbar${zenMode ? ' zen-hidden' : ''} hidden md:block`}>
         <TabBar 
           tabs={tabs} 
           activeTabId={activeTabId} 
@@ -540,12 +631,14 @@ function EditorContent() {
           content={activeTab.content}
           isOpen={sidebarOpen}
           activeLineNumber={activeLine}
-          onHeadingClick={(line) => editorRef.current?.scrollToLine(line)}
+          onHeadingClick={(line) => { editorRef.current?.scrollToLine(line); setSidebarOpen(false); }}
+          onClose={() => setSidebarOpen(false)}
           width={sidebarWidth}
         />
         {/* Sidebar resize handle */}
         {sidebarOpen && (
           <div
+            className="hidden md:block"
             style={{
               width: 5, flexShrink: 0, cursor: 'col-resize', position: 'relative',
               background: sidebarDragging ? 'var(--accent-subtle)' : 'transparent',
@@ -573,16 +666,17 @@ function EditorContent() {
           />
         )}
 
-        <div className="flex flex-col flex-1 overflow-hidden">
-          <Toolbar onAction={handleCommand} focusMode={focusMode} />
+        <div className="flex flex-col-reverse md:flex-col flex-1 overflow-hidden bg-[var(--bg)]">
+          <Toolbar onAction={handleCommand} focusMode={focusMode} viewMode={viewMode} />
 
-          <div className="flex flex-1 overflow-hidden">
+          <div className="flex flex-1 overflow-hidden relative">
             <div style={{ width: viewMode === 'split' ? `${splitPct}%` : (viewMode === 'editor' ? '100%' : '0%'), overflow: 'hidden' }}>
               <EditorPane
                 content={activeTab.content}
                 onChange={(c) => updateActiveTab({ content: c })}
                 isDark={isDark}
                 focusMode={focusMode}
+                collaborators={collaborators}
                 onCursorChange={(l, c) => { setCursorLine(l); setCursorCol(c); setActiveLine(l); }}
                 onReady={(api) => { editorRef.current = api; }}
               />
@@ -610,19 +704,24 @@ function EditorContent() {
           </div>
         </div>
 
-        {/* Metadata Panel */}
-        {!zenMode && (
-          <MetadataPanel
-            title={activeTab.title}
-            slug={activeTab.slug}
-            setSlug={(s) => updateActiveTab({ slug: s })}
-            status={activeTab.status}
-            setStatus={(s) => updateActiveTab({ status: s })}
-            contentType={activeTab.type}
-            author_id={activeTab.author_id}
-            setContentType={(t) => updateActiveTab({ type: t })}
-            onAutoGenerateSlug={handleAutoSlug}
-          />
+        {/* Metadata Modal */}
+        {showMetadata && (
+          <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
+            <div className="relative w-full max-w-sm max-h-full" onClick={e => e.stopPropagation()}>
+              <MetadataPanel
+                title={activeTab.title}
+                slug={activeTab.slug}
+                setSlug={(s) => updateActiveTab({ slug: s })}
+                status={activeTab.status}
+                setStatus={(s) => updateActiveTab({ status: s })}
+                contentType={activeTab.type}
+                author_id={activeTab.author_id}
+                setContentType={(t) => updateActiveTab({ type: t })}
+                onAutoGenerateSlug={handleAutoSlug}
+                onClose={() => setShowMetadata(false)}
+              />
+            </div>
+          </div>
         )}
       </div>
 

@@ -8,10 +8,10 @@ import {
   LayoutTemplate, PanelLeft, Columns, Eye,
   Moon, Sun, Plus, FolderOpen, Download, Search,
   Check, Loader2, ChevronDown, ChevronRight,
-  Maximize2, Minimize2, HelpCircle, ScanLine,
+  Maximize2, Minimize2, HelpCircle, ScanLine, Save,
 } from 'lucide-react';
 import clsx from 'clsx';
-import type { ViewMode } from '@/types';
+import type { ViewMode, Collaborator } from '@/types';
 import { useUser } from '@/lib/useUser';
 import AccountMenu from '@/components/AccountMenu';
 
@@ -20,12 +20,14 @@ interface HeaderProps {
   isDark: boolean; setIsDark: (d: boolean) => void;
   viewMode: ViewMode; setViewMode: (m: ViewMode) => void;
   sidebarOpen: boolean; setSidebarOpen: (o: boolean) => void;
-  isSaved: boolean; zenMode: boolean; focusMode: boolean;
+  isSaved: boolean; status: string; zenMode: boolean; focusMode: boolean;
   onNew: () => void; onOpenFile: () => void;
   onExportMd: () => void; onExportHtml: () => void;
   onOpenSearch: () => void; onOpenTour: () => void; onOpenCmd: () => void;
   onToggleZen: () => void; onToggleFocus: () => void;
   onOpenSettings: () => void; onToggleDark: () => void;
+  onOpenMetadata: () => void;
+  collaborators: Collaborator[];
 }
 
 const VIEW_MODES = [
@@ -45,7 +47,8 @@ export default function Header(props: HeaderProps) {
     isSaved, zenMode, focusMode,
     onNew, onOpenFile, onExportMd, onExportHtml,
     onOpenSearch, onOpenTour, onOpenCmd,
-    onToggleZen, onToggleFocus, onOpenSettings, onToggleDark,
+    onToggleZen, onToggleFocus, onOpenSettings, onToggleDark, onOpenMetadata,
+    collaborators,
   } = props;
 
   const [editingName,     setEditingName]     = useState(false);
@@ -128,8 +131,8 @@ export default function Header(props: HeaderProps) {
           boxShadow: 'inset 0 -1px 0 var(--border), 0 1px 12px rgba(0,0,0,0.06)',
         }}
       >
-        {/* ── LEFT: sidebar toggle + breadcrumb + filename ── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, marginRight: 8 }}>
+        {/* ── LEFT: sidebar toggle + breadcrumb + filename + status ── */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 1, minWidth: 0, marginRight: 8 }}>
           {/* Sidebar toggle */}
           <button
             className="tb-btn"
@@ -203,12 +206,54 @@ export default function Header(props: HeaderProps) {
                 : <span key="saving"><Loader2 size={11} strokeWidth={2.5} className="animate-spin" /></span>}
             </span>
           </div>
-        </div>
 
           <SEP />
-          <button className="tb-btn editor-cmd-btn" onClick={onOpenCmd} title="Search commands (Ctrl+K)">
-            <Search size={15} strokeWidth={1.8} />
+
+          <SEP />
+
+          <SEP />
+          <SEP />
+
+          {/* Collaborators Avatar Stack */}
+          {collaborators.length > 0 && (
+            <div className="flex items-center -space-x-2 mr-2">
+              {collaborators.map((c) => (
+                <div 
+                  key={c.id}
+                  className="w-6 h-6 rounded-full border-2 border-[var(--surface-0)] overflow-hidden shadow-sm transition-transform hover:-translate-y-0.5"
+                  title={c.name}
+                >
+                  {c.avatar_url ? (
+                    <Image src={c.avatar_url} alt={c.name} width={24} height={24} />
+                  ) : (
+                    <div className="w-full h-full bg-[var(--accent)] flex items-center justify-center text-[8px] font-bold text-white uppercase">
+                      {c.name[0]}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Status / Metadata Button (Icon Only) */}
+          <button
+            className="tb-btn"
+            onClick={onOpenMetadata}
+            title={`Status: ${status} (Click to change)`}
+          >
+            <div className="relative">
+              <Save size={15} strokeWidth={1.8} style={{ 
+                color: status === 'published' ? '#10b981' : status === 'review' ? '#f59e0b' : 'var(--text-3)' 
+              }} />
+              {status !== 'draft' && (
+                <div 
+                  className="absolute -top-1 -right-1 w-2 h-2 rounded-full border border-[var(--bg)]"
+                  style={{ background: status === 'published' ? '#10b981' : '#f59e0b' }}
+                />
+              )}
+            </div>
           </button>
+        </div>
 
         {/* ── Flex spacer ── */}
         <div style={{ flex: 1 }} />

@@ -35,31 +35,58 @@ const IND: Record<number, number> = { 1:0, 2:0, 3:12, 4:20, 5:26, 6:32 };
 const FS:  Record<number, number> = { 1:13, 2:12.5, 3:12, 4:11.5, 5:11, 6:11 };
 const FW:  Record<number, string> = { 1:'650', 2:'600', 3:'500', 4:'450', 5:'400', 6:'400' };
 
-export default function OutlineSidebar({ content, isOpen, activeLineNumber, onHeadingClick, width = 228 }: {
+export default function OutlineSidebar({ content, isOpen, activeLineNumber, onHeadingClick, onClose, width = 228 }: {
   content: string;
   isOpen: boolean;
   activeLineNumber: number;
   onHeadingClick: (n: number) => void;
+  onClose?: () => void;
   width?: number;
 }) {
   const headings = useMemo(() => parse(content), [content]);
   const active   = useMemo(() => activeIdx(headings, activeLineNumber), [headings, activeLineNumber]);
 
   return (
-    <aside
-      id="tour-sidebar"
-      className="sidebar-col glass flex flex-col flex-shrink-0 overflow-hidden"
-      style={{
-        width:         isOpen ? width : 0,
-        minWidth:      isOpen ? width : 0,
-        opacity:       isOpen ? 1 : 0,
-        pointerEvents: isOpen ? 'auto' : 'none',
-        borderRight:   isOpen ? '1px solid var(--border-med)' : 'none',
-        borderRadius:  0,
-        zIndex:        20,
-        transition:    'width 0.22s cubic-bezier(0.4,0,0.2,1), min-width 0.22s cubic-bezier(0.4,0,0.2,1), opacity 0.18s ease',
-      }}
-    >
+    <>
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity"
+          onClick={onClose}
+        />
+      )}
+      <aside
+        id="tour-sidebar"
+        className={clsx(
+          "sidebar-col glass flex flex-col flex-shrink-0 overflow-hidden",
+          "fixed inset-y-0 left-0 z-50 md:relative md:z-20 transition-transform md:transition-all",
+          isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        )}
+        style={{
+          width: width,
+          minWidth: width,
+          opacity: 1, // On mobile opacity is 1, transform handles it.
+          // Override for desktop
+        }}
+      >
+        {/* We use a style tag to handle desktop/mobile dynamic width gracefully */}
+        <style dangerouslySetInnerHTML={{__html: `
+          @media (min-width: 768px) {
+            #tour-sidebar {
+              width: ${isOpen ? width + 'px' : '0px'} !important;
+              min-width: ${isOpen ? width + 'px' : '0px'} !important;
+              opacity: ${isOpen ? 1 : 0} !important;
+              pointer-events: ${isOpen ? 'auto' : 'none'} !important;
+              border-right: ${isOpen ? '1px solid var(--border-med)' : 'none'} !important;
+              transform: none !important;
+              transition: width 0.22s cubic-bezier(0.4,0,0.2,1), min-width 0.22s cubic-bezier(0.4,0,0.2,1), opacity 0.18s ease !important;
+            }
+          }
+          @media (max-width: 767px) {
+            #tour-sidebar {
+              border-right: 1px solid var(--border-med) !important;
+            }
+          }
+        `}} />
       {/* Header */}
       <div
         className="flex items-center gap-2 px-3 flex-shrink-0 anim-slide-down"
@@ -124,9 +151,8 @@ export default function OutlineSidebar({ content, isOpen, activeLineNumber, onHe
         ))}
       </div>
 
-      {/* Footer stats */}
       <div
-        className="anim-slide-up"
+        className="anim-slide-up bg-[var(--bg)]"
         style={{
           borderTop: '1px solid var(--border)',
           padding: '6px 12px',
@@ -134,6 +160,7 @@ export default function OutlineSidebar({ content, isOpen, activeLineNumber, onHe
           color: 'var(--text-4)',
           fontVariantNumeric: 'tabular-nums',
           animationDelay: '0.2s',
+          paddingBottom: 'max(6px, env(safe-area-inset-bottom))',
         }}
       >
         {headings.filter(h => h.level === 1).length}H1 &nbsp;
@@ -141,5 +168,6 @@ export default function OutlineSidebar({ content, isOpen, activeLineNumber, onHe
         {headings.filter(h => h.level === 3).length}H3
       </div>
     </aside>
+    </>
   );
 }

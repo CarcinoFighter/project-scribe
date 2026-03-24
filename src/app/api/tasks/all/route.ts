@@ -28,7 +28,11 @@ export async function GET(req: NextRequest) {
   // Manually fetch user info for all unique IDs involved
   const userIds = new Set<string>();
   assignments.forEach((a: any) => {
-    if (a.assigned_to) userIds.add(a.assigned_to);
+    if (a.assigned_to_ids && Array.isArray(a.assigned_to_ids)) {
+      a.assigned_to_ids.forEach((id: string) => userIds.add(id));
+    } else if (a.assigned_to) {
+      userIds.add(a.assigned_to);
+    }
     if (a.assigned_by) userIds.add(a.assigned_by);
   });
 
@@ -40,11 +44,24 @@ export async function GET(req: NextRequest) {
 
     if (!usersError && users) {
       const userMap = new Map(users.map(u => [u.id, u]));
-      const enriched = assignments.map((a: any) => ({
-        ...a,
-        assignee: a.assigned_to ? userMap.get(a.assigned_to) : null,
-        assigner: a.assigned_by ? userMap.get(a.assigned_by) : null,
-      }));
+      const enriched = assignments.map((a: any) => {
+        const assigner = a.assigned_by ? userMap.get(a.assigned_by) : null;
+        let assignees: any[] = [];
+        
+        if (a.assigned_to_ids && Array.isArray(a.assigned_to_ids)) {
+          assignees = a.assigned_to_ids.map((id: string) => userMap.get(id)).filter(Boolean);
+        } else if (a.assigned_to) {
+          const u = userMap.get(a.assigned_to);
+          if (u) assignees = [u];
+        }
+
+        return {
+          ...a,
+          assignees, // Return array
+          assignee: assignees[0] || null, // Keep for backward compatibility
+          assigner
+        };
+      });
       return NextResponse.json({ assignments: enriched });
     }
   }

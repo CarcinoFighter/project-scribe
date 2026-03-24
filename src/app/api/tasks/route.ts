@@ -14,14 +14,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
   }
 
-  // Fetch assignments where current user is the assignee
+  // Fetch assignments where current user is in assigned_to_ids
   const { data: assignments, error } = await supabaseAdmin
     .from('work_assignments')
     .select('*')
-    .eq('assigned_to', payload.userId)
+    .or(`assigned_to.eq.${payload.userId},assigned_to_ids.cs.{${payload.userId}}`)
     .order('due_date', { ascending: true });
 
   if (error) {
+    console.error('Fetch assignments error:', error);
     return NextResponse.json({ error: 'Failed to fetch assignments' }, { status: 500 });
   }
 
@@ -41,16 +42,29 @@ export async function PATCH(req: NextRequest) {
   }
 
   try {
-    const { id, status, submission_media_url } = await req.json();
+    const { 
+      id, status, submission_media_url, 
+      assigned_to_ids, priority, due_date, title, description 
+    } = await req.json();
 
-    if (!id || !status) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    if (!id) {
+      return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
     const updateData: any = {
-      status, 
       updated_at: new Date().toISOString() 
     };
+
+    if (status !== undefined) updateData.status = status;
+    if (priority !== undefined) updateData.priority = priority;
+    if (due_date !== undefined) updateData.due_date = due_date;
+    if (title !== undefined) updateData.title = title;
+    if (description !== undefined) updateData.description = description;
+
+    // Only admins can reassign generally
+    if (payload.adminAccess && assigned_to_ids !== undefined) {
+      updateData.assigned_to_ids = assigned_to_ids;
+    }
 
     if (submission_media_url !== undefined) {
       updateData.submission_media_url = submission_media_url;
@@ -63,7 +77,7 @@ export async function PATCH(req: NextRequest) {
       .eq('id', id);
 
     if (!payload.adminAccess) {
-      query = query.eq('assigned_to', payload.userId); // Ensure user can only update their own assignments
+      query = query.or(`assigned_to.eq.${payload.userId},assigned_to_ids.cs.{${payload.userId}}`); // Ensure user can only update their own assignments
     }
 
     const { data, error } = await query.select().single();

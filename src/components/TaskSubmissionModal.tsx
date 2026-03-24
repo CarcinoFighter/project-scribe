@@ -76,7 +76,7 @@ export default function TaskSubmissionModal({ taskId, taskTitle, onClose, onSucc
   if (!mounted) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[9500] flex items-start justify-center p-4 bg-black/80 backdrop-blur-xl anim-fade-in pt-[15vh]">
+    <div className="fixed inset-0 z-[9800] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl anim-fade-in">
       <div className="glass-raised w-full max-w-sm rounded-[var(--r-xl)] overflow-hidden shadow-2xl anim-slide-down border-[var(--border-strong)] relative flex flex-col">
         <div className="p-5 border-b border-[var(--border-med)] flex items-center justify-between bg-[var(--bg-deep)]">
           <div>

@@ -9,12 +9,15 @@ import {
   BookOpen, 
   Heart, 
   User, 
-  Calendar, 
+  Calendar as CalendarIcon, 
   AlertTriangle,
   Layers,
   CheckCircle,
-  Loader2
+  Loader2,
+  ChevronDown
 } from 'lucide-react';
+import MultiPersonSelect from './MultiPersonSelect';
+import MiniCalendar from './MiniCalendar';
 
 interface TeamMember {
   id: string;
@@ -38,7 +41,7 @@ export default function AssignTaskModal({ member, onClose, onSuccess, defaultCat
   const [error, setError] = useState<string | null>(null);
 
   // Form state
-  const [assigneeId, setAssigneeId] = useState(member?.id || '');
+  const [assigneeIds, setAssigneeIds] = useState<string[]>(member?.id ? [member.id] : []);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<string>(defaultCategory || 'task');
@@ -46,6 +49,7 @@ export default function AssignTaskModal({ member, onClose, onSuccess, defaultCat
   const [department, setDepartment] = useState(defaultDepartment || member?.department || "Writers' Block");
   const [priority, setPriority] = useState<'low' | 'normal' | 'high'>('normal');
   const [dueDate, setDueDate] = useState('');
+  const [showCalendar, setShowCalendar] = useState(false);
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => { 
@@ -76,7 +80,7 @@ export default function AssignTaskModal({ member, onClose, onSuccess, defaultCat
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!assigneeId || !title || !category || !dueDate) {
+    if (assigneeIds.length === 0 || !title || !category || !dueDate) {
       setError('Please fill in all required fields');
       return;
     }
@@ -95,7 +99,7 @@ export default function AssignTaskModal({ member, onClose, onSuccess, defaultCat
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          assigned_to: assigneeId,
+          assigned_to: assigneeIds, // Now an array
           title,
           description,
           category: finalCategory,
@@ -163,16 +167,17 @@ export default function AssignTaskModal({ member, onClose, onSuccess, defaultCat
                 <User size={10} />
                 Assign To
               </label>
-              <select
-                value={assigneeId}
-                onChange={(e) => setAssigneeId(e.target.value)}
-                className="w-full bg-[var(--bg-deep)] border border-[var(--border-med)] rounded-[var(--r-md)] py-2.5 px-3 text-sm text-[var(--text)] focus:outline-none focus:border-[var(--accent)] transition-colors appearance-none cursor-pointer"
-              >
-                <option value="">Select a team member...</option>
-                {members.map(m => (
-                  <option key={m.id} value={m.id}>{m.name} ({m.department})</option>
-                ))}
-              </select>
+              <MultiPersonSelect 
+                selectedIds={assigneeIds}
+                onChange={setAssigneeIds}
+                maxSelections={(category === 'blog' || category === 'survivor_story') ? 1 : undefined}
+                placeholder={(category === 'blog' || category === 'survivor_story') ? "Assign one person..." : "Search team members..."}
+              />
+              {(category === 'blog' || category === 'survivor_story') && assigneeIds.length > 1 && (
+                <p className="text-[10px] text-amber-500 font-medium anim-fade-in">
+                  Only one person can be assigned to {category === 'blog' ? 'blogs' : 'survivor stories'}.
+                </p>
+              )}
             </div>
           )}
 
@@ -243,17 +248,31 @@ export default function AssignTaskModal({ member, onClose, onSuccess, defaultCat
 
           {/* Date & Priority */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
+            <div className="space-y-2 relative">
               <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-4)] flex items-center gap-1.5">
-                <Calendar size={10} />
+                <CalendarIcon size={10} />
                 Due Date
               </label>
-              <input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="w-full bg-[var(--bg-deep)] border border-[var(--border-med)] rounded-[var(--r-md)] py-2.5 px-3 text-sm text-[var(--text)] focus:outline-none focus:border-[var(--accent)] transition-colors"
-              />
+              <button
+                type="button"
+                onClick={() => setShowCalendar(!showCalendar)}
+                className="w-full bg-[var(--bg-deep)] border border-[var(--border-med)] rounded-[var(--r-md)] py-2.5 px-3 text-sm text-[var(--text)] text-left flex items-center justify-between hover:border-[var(--accent-subtle)] transition-colors"
+              >
+                <span>{dueDate ? new Date(dueDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Select date...'}</span>
+                <CalendarIcon size={14} className="text-[var(--text-4)]" />
+              </button>
+              
+              {showCalendar && (
+                <>
+                  <div className="fixed inset-0 z-[50]" onClick={() => setShowCalendar(false)} />
+                  <div className="absolute top-full left-0 mt-2 z-[60] anim-scale-up">
+                    <MiniCalendar 
+                      value={dueDate} 
+                      onChange={(date) => { setDueDate(date); setShowCalendar(false); }} 
+                    />
+                  </div>
+                </>
+              )}
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-4)] flex items-center gap-1.5">
