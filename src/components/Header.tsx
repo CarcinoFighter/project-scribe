@@ -206,12 +206,6 @@ export default function Header(props: HeaderProps) {
                 : <span key="saving"><Loader2 size={11} strokeWidth={2.5} className="animate-spin" /></span>}
             </span>
           </div>
-
-          <SEP />
-
-          <SEP />
-
-          <SEP />
           <SEP />
 
           {/* Collaborators Avatar Stack */}
@@ -296,6 +290,9 @@ export default function Header(props: HeaderProps) {
           <SEP />
 
           {/* Icon toolbar */}
+          <button className="tb-btn" onClick={onOpenCmd} title="Search commands (Ctrl+K)">
+            <Search size={15} strokeWidth={1.8} />
+          </button>
           <button className="tb-btn" onClick={onOpenSearch} title="Find & Replace (Ctrl+H)">
             <Search size={14} strokeWidth={1.8} />
           </button>
