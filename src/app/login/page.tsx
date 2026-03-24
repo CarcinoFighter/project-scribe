@@ -518,7 +518,7 @@ export default function LoginPage() {
                   Workspace Access
                 </div>
                 <h2 className="lp-card-title">Sign in to Vantage</h2>
-                <p className="lp-card-sub">Welcome back — your team is waiting.</p>
+                <p className="lp-card-sub">Welcome back — lets change the world.</p>
               </div>
 
               {error && (
