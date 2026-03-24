@@ -202,7 +202,7 @@ function TaskRow({ task, onCompleteClick, completing, isAdmin, showEditor, onIni
               className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 text-[10px] font-bold uppercase tracking-wider rounded-[var(--r-md)] border border-emerald-500/20 transition-all disabled:opacity-50 flex-shrink-0"
             >
               {completing === task.id ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
-              <span>Done</span>
+              <span>{task.category === 'task' ? 'Submit' : 'Done'}</span>
             </button>
           )}
 

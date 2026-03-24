@@ -295,19 +295,21 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin, use
                 </button>
               )}
 
-              {/* Submit Work Section for Assignees */}
-              {!isAdmin && task.status !== 'done' && task.status !== 'in_review' && (task.assigned_to_ids?.includes(userId) || task.assigned_to === userId) && (
+              {/* Submit Work Section */}
+              {(isAdmin || (task.status !== 'done' && task.status !== 'in_review' && (task.assigned_to_ids?.includes(userId) || task.assigned_to === userId))) && task.status !== 'done' && (
                 <div className="pt-4 mt-4 border-t border-[var(--border-med)] anim-fade-up">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-4)] mb-3">Your Actions</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-4)] mb-3">
+                    {isAdmin ? 'Admin Actions' : 'Your Actions'}
+                  </p>
                   <button 
                     onClick={() => onOpenSubmission?.(task.id, task.title)}
                     className="w-full py-2.5 px-3 flex items-center justify-center gap-2 text-xs font-bold text-white bg-[var(--accent)] rounded-[var(--r-md)] shadow-lg shadow-[var(--accent-glow)] hover:scale-[1.02] active:scale-[0.98] transition-all"
                   >
                     <Send size={14} />
-                    Submit Proof of Work
+                    {isAdmin ? 'Submit Proof on behalf of Assignee' : 'Submit Proof of Work'}
                   </button>
                   <p className="text-[10px] text-[var(--text-4)] mt-2 text-center">
-                    Upload media to complete task
+                    Upload media to {isAdmin ? 'complete this task' : 'complete your task'}
                   </p>
                 </div>
               )}
