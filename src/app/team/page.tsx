@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { 
   Users, 
   Mail, 
@@ -37,7 +38,8 @@ interface TeamMember {
 }
 
 export default function TeamPage() {
-  const { user: currentUser } = useUser();
+  const router = useRouter();
+  const { user: currentUser, loading: userLoading } = useUser();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
@@ -49,6 +51,12 @@ export default function TeamPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    if (!userLoading && !currentUser) {
+      router.push('/login');
+    }
+  }, [currentUser, userLoading, router]);
 
   useEffect(() => {
     async function fetchTeam() {

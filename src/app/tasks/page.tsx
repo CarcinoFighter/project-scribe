@@ -468,6 +468,7 @@ function DepartmentPlaceholder({ dept, onToast }: { dept: typeof DEPARTMENTS[0],
 
 
 export default function WorkPage() {
+  const router = useRouter();
   const { user } = useUser();
   const [myAssignments, setMyAssignments] = useState<Assignment[]>([]);
   const [allAssignments, setAllAssignments] = useState<Assignment[]>([]);
@@ -489,6 +490,12 @@ export default function WorkPage() {
   const [submittingTask, setSubmittingTask] = useState<{ id: string; title: string } | null>(null);
   const [viewingMedia, setViewingMedia] = useState<{ url: string; title: string } | null>(null);
   const [selectedTask, setSelectedTask] = useState<Assignment | null>(null);
+
+  useEffect(() => {
+    if (user === null) {
+      router.push('/login');
+    }
+  }, [user, router]);
 
   useEffect(() => {
     try {

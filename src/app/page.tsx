@@ -611,6 +611,12 @@ export default function Dashboard() {
   useEffect(() => { appSettingsRef.current = appSettings; }, [appSettings]);
 
   useEffect(() => {
+    if (!userLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, userLoading, router]);
+
+  useEffect(() => {
     try {
       const s = loadSettings(); setAppSettings(s);
       const darkFromTheme = applySettings(s); setIsDark(darkFromTheme);

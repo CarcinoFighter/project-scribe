@@ -151,7 +151,7 @@ function EditorContent() {
   const [sidebarDragging, setSidebarDragging] = useState(false);
 
   // Collaboration State
-  const { user } = useUser();
+  const { user, loading: userLoading } = useUser();
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const presenceChannelRef = useRef<any>(null);
 
@@ -247,6 +247,12 @@ function EditorContent() {
   const splitRef = useRef<HTMLDivElement>(null);
   const prevGoalHit = useRef(false);
   const appSettingsRef = useRef<AppSettings>(DEFAULT_SETTINGS);
+
+  useEffect(() => {
+    if (!userLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, userLoading, router]);
 
   // Helper: Active Tab
   const activeTab = tabs.find(t => t.id === activeTabId) || tabs[0];
