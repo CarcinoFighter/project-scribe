@@ -206,58 +206,92 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin, use
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {comments.map((comment) => (
-                    <div key={comment.id} className="flex gap-4">
-                      {comment.user.avatar_url ? (
-                        <Image src={comment.user.avatar_url} alt={comment.user.name} width={34} height={34} className="rounded-full flex-shrink-0" />
-                      ) : (
-                        <div className="w-[34px] h-[34px] rounded-full bg-[var(--accent)] flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">
-                          {comment.user.name[0]}
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-baseline gap-2 mb-1">
-                          <span className="text-xs font-bold text-[var(--text)]">{comment.user.name}</span>
-                          <span className="text-[10px] text-[var(--text-4)]">{new Date(comment.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                        </div>
-                        {comment.type === 'reassignment' ? (
-                          <div className="group flex items-center gap-3 p-3 rounded-[var(--r-md)] bg-amber-500/5 border border-amber-500/10 text-xs italic text-amber-500/80">
-                            <RefreshCw size={12} />
+                  {comments.map((comment) => {
+                    const isMe = comment.user.id === userId;
+                    const isSystem = comment.type === 'reassignment' || comment.type === 'status_change';
+
+                    if (isSystem) {
+                      return (
+                        <div key={comment.id} className="flex justify-center py-2 anim-fade-up">
+                          <div className="px-4 py-1.5 rounded-full bg-[var(--bg-deep)] border border-[var(--border-med)] flex items-center gap-2 text-[10px] font-black text-[var(--text-4)] uppercase tracking-widest shadow-sm">
+                            {comment.type === 'reassignment' ? <RefreshCw size={10} strokeWidth={3} /> : <MessageSquare size={10} strokeWidth={3} />}
                             <span>{comment.content}</span>
                           </div>
-                        ) : (
-                          <p className="text-[13px] text-[var(--text-3)] leading-relaxed whitespace-pre-wrap">{comment.content}</p>
-                        )}
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div key={comment.id} className={`flex gap-2.5 anim-fade-up ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+                        <div className="flex-shrink-0 self-end mb-1">
+                          {comment.user.avatar_url ? (
+                            <Image src={comment.user.avatar_url} alt={comment.user.name} width={28} height={28} className="rounded-full shadow-md border border-[var(--border-med)]" />
+                          ) : (
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-md ${isMe ? 'bg-[var(--accent)]' : 'bg-[var(--text-4)]'}`}>
+                              {comment.user.name[0]}
+                            </div>
+                          )}
+                        </div>
+                        <div className={`flex flex-col max-w-[85%] sm:max-w-[75%] ${isMe ? 'items-end' : 'items-start'}`}>
+                          {!isMe && (
+                            <span className="text-[10px] font-black text-[var(--accent)] ml-1 mb-1 uppercase tracking-tight opacity-80">
+                              {comment.user.name}
+                            </span>
+                          )}
+                          <div 
+                            className={`px-4 py-2.5 rounded-2xl text-[13px] leading-relaxed shadow-sm whitespace-pre-wrap relative group transition-all hover:shadow-md ${
+                              isMe 
+                                ? 'bg-[var(--accent)] text-white rounded-tr-none' 
+                                : 'bg-[var(--surface-2)] border border-[var(--border-med)] text-[var(--text)] rounded-tl-none'
+                            }`}
+                          >
+                            {comment.content}
+                            <div className={`absolute top-0 ${isMe ? 'right-[-6px]' : 'left-[-6px]'} w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent ${
+                              isMe ? 'border-l-[6px] border-l-[var(--accent)]' : 'border-r-[6px] border-r-[var(--surface-2)]'
+                            }`} />
+                          </div>
+                          <span className={`text-[9px] font-bold text-[var(--text-4)] mt-1.5 px-1 uppercase tracking-tighter opacity-60 ${isMe ? 'mr-1' : 'ml-1'}`}>
+                            {new Date(comment.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   <div ref={commentsEndRef} />
                 </div>
               )}
             </div>
 
             {/* Comment Input */}
-            <div className="p-4 sm:p-6 border-t border-[var(--border-med)] bg-[var(--bg-deep)]">
+            <div className="p-4 sm:p-5 border-t border-[var(--border-med)] bg-[var(--bg-deep)] shadow-[0_-4px_20px_rgba(0,0,0,0.03)]">
               {commentError && (
-                <div className="mb-3 p-2 rounded bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] flex items-center gap-2">
+                <div className="mb-3 p-2 rounded bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] flex items-center gap-2 anim-shake">
                   <AlertCircle size={12} />
                   {commentError}
                 </div>
               )}
-              <form onSubmit={handleAddComment} className="relative">
-                <textarea
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  placeholder="Write a comment..."
-                  rows={2}
-                  className="w-full bg-[var(--surface-0)] border border-[var(--border-med)] rounded-[var(--r-lg)] py-3 pl-4 pr-12 text-sm text-[var(--text)] focus:outline-none focus:border-[var(--accent)] transition-all resize-none shadow-inner"
-                />
+              <form onSubmit={handleAddComment} className="relative flex items-end gap-2">
+                <div className="flex-1 relative">
+                  <textarea
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    placeholder="Type a message..."
+                    rows={1}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleAddComment();
+                      }
+                    }}
+                    className="w-full bg-[var(--surface-0)] border border-[var(--border-med)] rounded-[var(--r-lg)] py-2.5 pl-4 pr-4 text-[13px] text-[var(--text)] focus:outline-none focus:border-[var(--accent)] transition-all resize-none shadow-inner min-h-[42px] max-h-32 custom-scrollbar"
+                  />
+                </div>
                 <button
                   type="submit"
                   disabled={submitting || !commentText.trim()}
-                  className="absolute bottom-3 right-3 p-2 bg-[var(--accent)] text-white rounded-lg shadow-lg shadow-[var(--accent-glow)] hover:scale-105 active:scale-95 transition-all disabled:opacity-30 disabled:scale-100"
+                  className="p-3 bg-[var(--accent)] text-white rounded-xl shadow-lg shadow-[var(--accent-glow)] hover:scale-105 active:scale-95 transition-all disabled:opacity-30 disabled:scale-100 flex-shrink-0 flex items-center justify-center"
                 >
-                  <Send size={16} />
+                  <Send size={18} />
                 </button>
               </form>
             </div>

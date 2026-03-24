@@ -180,7 +180,7 @@ export default function TeamPage() {
         document.body
       )}
 
-      <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+      <div className="flex flex-col md:flex-row flex-1">
         {/* Mobile nav strip — visible only on small screens */}
         <div className="md:hidden flex items-center gap-3 px-4 py-2 border-b border-[var(--border)] bg-[var(--bg-alt)] text-[10px] font-medium tracking-wide flex-shrink-0">
           <Link href="/" className="text-[var(--text-4)] hover:text-[var(--accent)] flex items-center gap-1 transition-colors">

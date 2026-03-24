@@ -162,27 +162,29 @@ function TaskRow({ task, onCompleteClick, completing, isAdmin, showEditor, onIni
       <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 pl-10 sm:pl-0">
         <div className="flex items-center gap-3 sm:gap-4">
           {isAdmin && task.assignees && task.assignees.length > 0 && (
-            <div className="flex items-center -space-x-2 group/avatars mr-1">
-              {task.assignees.slice(0, 3).map((member, idx) => (
-                <div 
-                  key={member.id} 
-                  className="w-5 h-5 rounded-full border border-[var(--bg)] bg-gradient-to-br from-[var(--accent)] to-[var(--accent-hover)] flex items-center justify-center text-white text-[8px] font-bold flex-shrink-0 relative transition-transform hover:-translate-y-0.5 overflow-hidden"
-                  style={{ zIndex: 10 - idx }}
-                  title={member.name}
-                >
-                  {member.avatar_url ? (
-                    <Image src={member.avatar_url} alt={member.name} width={20} height={20} className="rounded-full" />
-                  ) : (
-                    member.name?.split(' ').map(n => n[0]).join('').slice(0,2)
-                  )}
-                </div>
-              ))}
-              {task.assignees.length > 3 && (
-                <div className="w-5 h-5 rounded-full border border-[var(--bg)] bg-[var(--surface-2)] flex items-center justify-center text-[var(--text-4)] text-[7px] font-bold z-0">
-                  +{task.assignees.length - 3}
-                </div>
-              )}
-              <span className="text-[10px] sm:text-xs text-[var(--text-4)] truncate max-w-[60px] sm:max-w-[100px] ml-3">
+            <div className="flex items-center gap-2.5 group/avatars mr-1">
+              <div className="flex items-center -space-x-2">
+                {task.assignees.slice(0, 3).map((member, idx) => (
+                  <div 
+                    key={member.id} 
+                    className="w-5 h-5 rounded-full border border-[var(--bg)] bg-gradient-to-br from-[var(--accent)] to-[var(--accent-hover)] flex items-center justify-center text-white text-[8px] font-bold flex-shrink-0 relative transition-transform hover:-translate-y-0.5 overflow-hidden"
+                    style={{ zIndex: 10 - idx }}
+                    title={member.name}
+                  >
+                    {member.avatar_url ? (
+                      <Image src={member.avatar_url} alt={member.name} width={20} height={20} className="rounded-full" />
+                    ) : (
+                      member.name?.split(' ').map(n => n[0]).join('').slice(0,2)
+                    )}
+                  </div>
+                ))}
+                {task.assignees.length > 3 && (
+                  <div className="w-5 h-5 rounded-full border border-[var(--bg)] bg-[var(--surface-2)] flex items-center justify-center text-[var(--text-4)] text-[7px] font-bold z-0">
+                    +{task.assignees.length - 3}
+                  </div>
+                )}
+              </div>
+              <span className="text-[10px] sm:text-xs text-[var(--text-4)] truncate max-w-[60px] sm:max-w-[100px]">
                 {task.assignees.length === 1 ? task.assignees[0].name : `${task.assignees.length} people`}
               </span>
             </div>
