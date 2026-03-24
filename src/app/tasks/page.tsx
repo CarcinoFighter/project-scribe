@@ -651,11 +651,7 @@ export default function WorkPage() {
 
   // Filter tasks for the active department
   const activeDeptTasks = assignments.filter(a => {
-    // If we're looking at "My Assignments", show all of them regardless of department tab
-    if (view === 'my') return true;
-    
-    // For "All Assignments" (Admin), filter by department
-    // But treat null/undefined as "Writers' Block" for backward compatibility/editorial content
+    // Treat null/undefined as "Writers' Block" for backward compatibility/editorial content
     if (activeDeptKey === "Writers' Block") {
       return a.department === activeDeptKey || !a.department;
     }
@@ -851,8 +847,8 @@ export default function WorkPage() {
                     onViewMedia={(url, title) => setViewingMedia({ url, title })}
                   />
                 )}
-                                {/* Specialized Content Section (Writers' Block) */}
-                {(isWritersBlock || activeDeptTasks.length > 0) ? (
+                {/* Specialized Content Section (Writers' Block) */}
+                {isWritersBlock ? (
                   <div className="anim-fade-in">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
