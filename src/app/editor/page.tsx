@@ -19,6 +19,7 @@ import { X, Plus, FileText, BookOpen, Heart, Loader2, Users } from 'lucide-react
 import { useUser } from '@/lib/useUser';
 import { supabase } from '@/lib/supabase';
 import type { Collaborator } from '@/types';
+import { convertDocxToMarkdown } from '@/lib/document-utils';
 
 const EditorPane = dynamic(() => import('@/components/EditorPane'), {
   ssr: false,
@@ -539,18 +540,39 @@ function EditorContent() {
       case 'search': editorRef.current?.openSearch(); break;
       case 'open': {
         const input = document.createElement('input');
-        input.type = 'file'; input.accept = '.md,.markdown,.txt';
-        input.onchange = (e) => {
+        input.type = 'file'; 
+        input.accept = '.md,.markdown,.txt,.docx';
+        input.onchange = async (e) => {
           const file = (e.target as HTMLInputElement).files?.[0];
           if (!file) return;
-          const reader = new FileReader();
-          reader.onload = (ev) => {
-            const content = ev.target?.result as string;
-            const id = `file-${Date.now()}`;
-            setTabs(prev => [...prev, { id, type: 'blogs', title: file.name.replace(/\.[^/.]+$/, ''), content, slug: '', status: 'draft', isSaved: true }]);
-            setActiveTabId(id);
-          };
-          reader.readAsText(file);
+          
+          const isDocx = file.name.toLowerCase().endsWith('.docx');
+          const id = `file-${Date.now()}`;
+          const title = file.name.replace(/\.[^/.]+$/, '');
+
+          if (isDocx) {
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+              const arrayBuffer = ev.target?.result as ArrayBuffer;
+              try {
+                const content = await convertDocxToMarkdown(arrayBuffer);
+                setTabs(prev => [...prev, { id, type: 'blogs', title, content, slug: '', status: 'draft', isSaved: true }]);
+                setActiveTabId(id);
+              } catch (err) {
+                console.error(err);
+                alert('Failed to convert Word document.');
+              }
+            };
+            reader.readAsArrayBuffer(file);
+          } else {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+              const content = ev.target?.result as string;
+              setTabs(prev => [...prev, { id, type: 'blogs', title, content, slug: '', status: 'draft', isSaved: true }]);
+              setActiveTabId(id);
+            };
+            reader.readAsText(file);
+          }
         };
         input.click(); break;
       }
