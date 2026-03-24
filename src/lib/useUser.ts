@@ -8,6 +8,7 @@ interface User {
   email: string;
   avatar_url: string | null;
   admin_access: boolean;
+  department: string | null;
 }
 
 // Simple client-side cache for the user profile

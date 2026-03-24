@@ -264,7 +264,12 @@ function EditorContent() {
   const activeTab = tabs.find(t => t.id === activeTabId) || tabs[0];
 
   // ---- Load initial state ----
+  const initialized = useRef(false);
+
   useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+
     try {
       const savedTabs = localStorage.getItem('cs-tabs');
       const goal = localStorage.getItem('cs-goal');
@@ -273,82 +278,125 @@ function EditorContent() {
       if (goal) setWordGoal(parseInt(goal, 10) || 0);
       if (!toured) setShowTour(true);
 
-      // Load settings, apply theme (manages .dark on <html>), sync isDark state
+      // Load settings
       const s = loadSettings();
       setAppSettings(s);
-      const darkFromTheme = applySettings(s);
-      setIsDark(darkFromTheme);
+      setIsDark(applySettings(s));
 
+      let initialTabs: Tab[] = [];
       if (savedTabs) {
-        const parsed = JSON.parse(savedTabs);
-        if (parsed.length > 0) {
-          setTabs(parsed);
-          setActiveTabId(parsed[0].id);
-          return;
+        try {
+          initialTabs = JSON.parse(savedTabs);
+        } catch (e) {
+          console.error('Failed to parse saved tabs:', e);
         }
       }
 
-      // Default tab if nothing saved
-      const defaultTab: Tab = {
-        id: 'ls-active',
-        type: 'blogs',
-        title: 'Untitled Document',
-        content: DEFAULT_CONTENT,
-        slug: '',
-        status: 'draft',
-        isSaved: true
-      };
-      setTabs([defaultTab]);
-      setActiveTabId(defaultTab.id);
+      // Check searchParams for initial tab
+      const id = searchParams.get('id');
+      const type = searchParams.get('type') as Tab['type'];
+      
+      if (id && type) {
+        const existing = initialTabs.find(t => t.id === id);
+        if (existing) {
+          setTabs(initialTabs);
+          setActiveTabId(id);
+        } else {
+          const newTab: Tab = {
+            id, type,
+            title: 'Loading...',
+            content: '',
+            slug: '',
+            status: 'draft',
+            isSaved: true,
+            isLoading: true
+          };
+          const nextTabs = [...initialTabs, newTab];
+          setTabs(nextTabs);
+          setActiveTabId(id);
+
+          // Fetch content
+          fetch(`/api/editor/load?id=${id}&type=${type}`)
+            .then(res => res.json())
+            .then(data => {
+              if (data.success) {
+                setTabs(prev => prev.map(t => t.id === id ? { ...t, ...data.doc, isLoading: false } : t));
+              } else {
+                setTabs(prev => prev.map(t => t.id === id ? { ...t, title: 'Error loading', isLoading: false } : t));
+              }
+            })
+            .catch(() => {
+              setTabs(prev => prev.map(t => t.id === id ? { ...t, title: 'Error loading', isLoading: false } : t));
+            });
+        }
+        return;
+      }
+
+      // No search params, use saved or default
+      if (initialTabs.length > 0) {
+        setTabs(initialTabs);
+        setActiveTabId(initialTabs[0].id);
+      } else {
+        const defaultTab: Tab = {
+          id: 'ls-active',
+          type: 'blogs',
+          title: 'Untitled Document',
+          content: DEFAULT_CONTENT,
+          slug: '',
+          status: 'draft',
+          isSaved: true
+        };
+        setTabs([defaultTab]);
+        setActiveTabId(defaultTab.id);
+      }
     } catch (e) {
-      console.error('Failed to load tabs:', e);
+      console.error('Failed to initialize editor:', e);
     }
-  }, []);
+  }, [searchParams]); // Re-run if params change on mount, but initialized.current guards it
 
   // Use a ref for tabs to check for existence in effects without dependency cycles
   const tabsRef = useRef<Tab[]>([]);
   useEffect(() => { tabsRef.current = tabs; }, [tabs]);
 
-  // ---- Handle Search Params ----
+  // ---- Handle Search Params (Subsequent changes) ----
   useEffect(() => {
+    if (!initialized.current) return;
+
     const id = searchParams.get('id');
     const type = searchParams.get('type') as Tab['type'];
 
     if (id && type) {
-      // Check if already open (using ref to avoid stale state issues)
-      const existing = tabsRef.current.find(t => t.id === id);
-      if (existing) {
-        setActiveTabId(id);
-        return;
-      }
-
-      // Add new tab
-      const newTab: Tab = {
-        id, type, 
-        title: 'Loading...', 
-        content: '', 
-        slug: '', 
-        status: 'draft', 
-        isSaved: true, 
-        isLoading: true 
-      };
-      
-      setTabs(prev => [...prev, newTab]);
       setActiveTabId(id);
+      
+      setTabs(prev => {
+        if (prev.find(t => t.id === id)) return prev;
 
-      // Fetch content
-      fetch(`/api/editor/load?id=${id}&type=${type}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            setTabs(prev => prev.map(t => t.id === id ? { ...t, ...data.doc, isLoading: false } : t));
-          } else {
-            setTabs(prev => prev.map(t => t.id === id ? { ...t, title: 'Error loading', isLoading: false } : t));
-          }
-        })
-        .catch(() => {
-          setTabs(prev => prev.map(t => t.id === id ? { ...t, title: 'Error loading', isLoading: false } : t));
-        });
+        const newTab: Tab = {
+          id, type,
+          title: 'Loading...',
+          content: '',
+          slug: '',
+          status: 'draft',
+          isSaved: true,
+          isLoading: true
+        };
+
+        // Fetch content if not already exists
+        fetch(`/api/editor/load?id=${id}&type=${type}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              setTabs(curr => curr.map(t => t.id === id ? { ...t, ...data.doc, isLoading: false } : t));
+            } else {
+              setTabs(curr => curr.map(t => t.id === id ? { ...t, title: 'Error loading', isLoading: false } : t));
+            }
+          })
+          .catch(() => {
+            setTabs(curr => curr.map(t => t.id === id ? { ...t, title: 'Error loading', isLoading: false } : t));
+          });
+
+        return [...prev, newTab];
+      });
     }
   }, [searchParams]);
 
@@ -465,7 +513,7 @@ function EditorContent() {
 
   // ---- Actions ----
   const handleAddNew = useCallback((type: Tab['type'] = 'blogs') => {
-    const id = `new-${Date.now()}`;
+    const id = `new-${typeof crypto !== 'undefined' ? crypto.randomUUID().slice(0, 8) : Date.now()}`;
     const newTab: Tab = {
       id,
       type,
@@ -481,6 +529,9 @@ function EditorContent() {
 
   const doCloseTab = useCallback((id: string) => {
     setTabs(prev => {
+      const idx = prev.findIndex(t => t.id === id);
+      if (idx === -1) return prev;
+      
       const next = prev.filter(t => t.id !== id);
       if (next.length === 0) {
         const defaultTab: Tab = {
@@ -495,9 +546,9 @@ function EditorContent() {
         setActiveTabId(defaultTab.id);
         return [defaultTab];
       }
+      
       if (activeTabId === id) {
-        const currentIdx = prev.findIndex(t => t.id === id);
-        const nextIdx = Math.max(0, currentIdx - 1);
+        const nextIdx = Math.max(0, idx - 1);
         setActiveTabId(next[nextIdx].id);
       }
       return next;
@@ -578,7 +629,7 @@ function EditorContent() {
           if (!file) return;
           
           const isDocx = file.name.toLowerCase().endsWith('.docx');
-          const id = `file-${Date.now()}`;
+          const id = `file-${typeof crypto !== 'undefined' ? crypto.randomUUID().slice(0, 8) : Date.now()}`;
           const title = file.name.replace(/\.[^/.]+$/, '');
 
           if (isDocx) {

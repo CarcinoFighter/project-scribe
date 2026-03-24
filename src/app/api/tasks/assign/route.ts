@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
         title,
         description: description || '',
         category,
-        department: category === 'task' ? department : null,
+        department: (category === 'task' || category === 'other') ? department : "Writers' Block",
         status: status || 'todo',
         priority: priority || 'normal',
         due_date,

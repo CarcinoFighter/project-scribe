@@ -290,8 +290,18 @@ export default function Header(props: HeaderProps) {
           <SEP />
 
           {/* Icon toolbar */}
-          <button className="tb-btn" onClick={onOpenCmd} title="Search commands (Ctrl+K)">
-            <Search size={15} strokeWidth={1.8} />
+          <button
+            onClick={onOpenCmd}
+            className="flex items-center gap-3 px-3 py-1.5 rounded-lg border border-[var(--border-med)] bg-[var(--bg-deep)] hover:bg-[var(--surface-0)] transition-all mr-2 group"
+            title="Search commands (Ctrl+K)"
+            style={{ minWidth: 140 }}
+          >
+            <Search size={14} className="text-[var(--text-4)] group-hover:text-[var(--accent)] transition-colors" />
+            <span className="text-[12.5px] font-medium text-[var(--text-3)] group-hover:text-[var(--text)] transition-colors flex-1 text-left">Search</span>
+            <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-[var(--border-med)] bg-[var(--bg)] text-[10px] font-bold text-[var(--text-4)] shadow-sm">
+              <span style={{ fontSize: 11 }}>⌘</span>
+              <span>K</span>
+            </div>
           </button>
           <button className="tb-btn" onClick={onOpenSearch} title="Find & Replace (Ctrl+H)">
             <Search size={14} strokeWidth={1.8} />

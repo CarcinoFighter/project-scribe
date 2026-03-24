@@ -469,7 +469,7 @@ function DepartmentPlaceholder({ dept, onToast }: { dept: typeof DEPARTMENTS[0],
 
 export default function WorkPage() {
   const router = useRouter();
-  const { user } = useUser();
+  const { user, loading: loadingUser } = useUser();
   const [myAssignments, setMyAssignments] = useState<Assignment[]>([]);
   const [allAssignments, setAllAssignments] = useState<Assignment[]>([]);
   const [reviewDocs, setReviewDocs] = useState<ReviewDoc[]>([]);
@@ -492,10 +492,10 @@ export default function WorkPage() {
   const [selectedTask, setSelectedTask] = useState<Assignment | null>(null);
 
   useEffect(() => {
-    if (user === null) {
+    if (!loadingUser && user === null) {
       router.push('/login');
     }
-  }, [user, router]);
+  }, [user, loadingUser, router]);
 
   useEffect(() => {
     try {
@@ -546,6 +546,11 @@ export default function WorkPage() {
 
   useEffect(() => {
     if (user !== undefined) fetchWork();
+    
+    // Set default department to user's department if it exists
+    if (user?.department) {
+      setActiveDeptKey(user.department);
+    }
   }, [user, fetchWork]);
 
   const handleCompleteClick = (task: Assignment) => {
@@ -645,7 +650,17 @@ export default function WorkPage() {
   };
 
   // Filter tasks for the active department
-  const activeDeptTasks = assignments.filter(a => a.department === activeDeptKey);
+  const activeDeptTasks = assignments.filter(a => {
+    // If we're looking at "My Assignments", show all of them regardless of department tab
+    if (view === 'my') return true;
+    
+    // For "All Assignments" (Admin), filter by department
+    // But treat null/undefined as "Writers' Block" for backward compatibility/editorial content
+    if (activeDeptKey === "Writers' Block") {
+      return a.department === activeDeptKey || !a.department;
+    }
+    return a.department === activeDeptKey;
+  });
   
   const activeDept = DEPARTMENTS.find(d => d.key === activeDeptKey) || DEPARTMENTS[0];
 
@@ -837,7 +852,7 @@ export default function WorkPage() {
                   />
                 )}
                                 {/* Specialized Content Section (Writers' Block) */}
-                {isWritersBlock ? (
+                {(isWritersBlock || activeDeptTasks.length > 0) ? (
                   <div className="anim-fade-in">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
