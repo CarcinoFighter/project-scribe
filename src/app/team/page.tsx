@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTheme } from '@/lib/useTheme';
 import { 
   Users, 
   Mail, 
@@ -47,7 +48,7 @@ export default function TeamPage() {
   const accountBtnRef = React.useRef<HTMLButtonElement>(null);
   const [showAssignModal, setShowAssignModal] = useState<TeamMember | null>(null);
 
-  const [isDark, setIsDark] = useState(false);
+  const { isDark } = useTheme();
   const [toast, setToast] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
@@ -73,22 +74,6 @@ export default function TeamPage() {
       }
     }
     fetchTeam();
-  }, []);
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem('cs-settings');
-      if (raw) {
-        const s = JSON.parse(raw);
-        const themes: Record<string,boolean> = {
-          'default-dark': true, 'catppuccin-mocha': true, 'solarized-dark': true,
-          'default-light': false, 'catppuccin-latte': false, 'solarized-light': false,
-        };
-        const isDarkTheme = themes[s?.theme] ?? false;
-        setIsDark(isDarkTheme);
-        document.documentElement.classList.toggle('dark', isDarkTheme);
-      }
-    } catch {}
   }, []);
 
   // Fixed departments list
