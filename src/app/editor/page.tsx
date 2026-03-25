@@ -20,6 +20,7 @@ import { useUser } from '@/lib/useUser';
 import { supabase } from '@/lib/supabase';
 import type { Collaborator } from '@/types';
 import Toast from '@/components/Toast';
+import { convertDocxToMarkdown } from '@/lib/document-utils';
 
 const EditorPane = dynamic(() => import('@/components/EditorPane'), {
   ssr: false,
