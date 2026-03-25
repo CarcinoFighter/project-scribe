@@ -13,6 +13,9 @@ const nextConfig = {
       },
     ],
   },
+  experimental: {
+    turbopack: {},
+  },
 };
 
 const isDev = process.env.NODE_ENV === "development";
@@ -22,4 +25,4 @@ export default isDev ? nextConfig : withPWAInit({
   register: true,
   skipWaiting: true,
   customWorkers: "worker/push-handler.js",
-})(nextConfig);
+})(nextConfig);
