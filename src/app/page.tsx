@@ -19,6 +19,7 @@ import {
   Flame, BookMarked, Sparkles, TrendingDown,
 } from 'lucide-react';
 import { useUser } from '@/lib/useUser';
+import { useTheme } from '@/lib/useTheme';
 import AccountMenu from '@/components/AccountMenu';
 import Toast from '@/components/Toast';
 import TaskSubmissionModal from '@/components/TaskSubmissionModal';
@@ -586,7 +587,7 @@ export default function Dashboard() {
 
   const [docs,             setDocs]             = useState<Doc[]>([]);
   const [lsDoc,            setLsDoc]            = useState<Doc|null>(null);
-  const [isDark,           setIsDark]           = useState(false);
+  const { isDark, toggleTheme } = useTheme();
   const [showSettings,     setShowSettings]     = useState(false);
   const [appSettings,      setAppSettings]      = useState<AppSettings>(DEFAULT_SETTINGS);
   const [activeNav,        setActiveNav]        = useState<'home'|'articles'|'blogs'>('home');
@@ -621,7 +622,7 @@ export default function Dashboard() {
   useEffect(() => {
     try {
       const s = loadSettings(); setAppSettings(s);
-      const darkFromTheme = applySettings(s); setIsDark(darkFromTheme);
+      applySettings(s);
       const goal = localStorage.getItem('cs-goal');
       if (goal) setWordGoal(parseInt(goal,10)||0);
       const rawContent = localStorage.getItem('cs-content');
@@ -668,8 +669,6 @@ export default function Dashboard() {
       await handleCompleteTask(taskId);
     }
   }, [tasks, handleCompleteTask]);
-
-  const toggleTheme = useCallback(()=>{ const cur=appSettingsRef.current; const d2l:Record<string,string>={'default-dark':'default-light','catppuccin-mocha':'catppuccin-latte','solarized-dark':'solarized-light'}; const l2d=Object.fromEntries(Object.entries(d2l).map(([k,v])=>[v,k])); const curDark=THEMES[cur.theme]?.dark??isDark; const next={...cur,theme:curDark?(d2l[cur.theme]??'default-light'):(l2d[cur.theme]??'default-dark')}; setAppSettings(next);saveSettings(next);setIsDark(applySettings(next)); },[isDark]);
 
   const handleCommand = useCallback((id:string)=>{ if(id==='theme')toggleTheme(); else if(id==='new-doc'||id==='open-editor')router.push('/editor'); else if(id==='go-articles')setActiveNav('articles'); else if(id==='go-blogs')setActiveNav('blogs'); else if(id==='go-overview')setActiveNav('home'); else if(id==='settings')setShowSettings(true); },[toggleTheme,router]);
 
@@ -1124,7 +1123,7 @@ export default function Dashboard() {
       )}
 
       {showSettings && (
-        <SettingsModal settings={appSettings} onClose={()=>setShowSettings(false)} onChange={next=>{setAppSettings(next);saveSettings(next);setIsDark(applySettings(next));}}/>
+        <SettingsModal settings={appSettings} onClose={()=>setShowSettings(false)} onChange={next=>{setAppSettings(next);saveSettings(next);applySettings(next);}}/>
       )}
 
       {submittingTask && (
