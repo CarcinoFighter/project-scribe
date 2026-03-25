@@ -27,6 +27,7 @@ interface HeaderProps {
   onToggleZen: () => void; onToggleFocus: () => void;
   onOpenSettings: () => void; onToggleDark: () => void;
   onOpenMetadata: () => void;
+  onToast: (msg: string) => void;
   collaborators: Collaborator[];
 }
 
@@ -48,6 +49,7 @@ export default function Header(props: HeaderProps) {
     onNew, onOpenFile, onExportMd, onExportHtml,
     onOpenSearch, onOpenTour, onOpenCmd,
     onToggleZen, onToggleFocus, onOpenSettings, onToggleDark, onOpenMetadata,
+    onToast,
     collaborators,
   } = props;
 
@@ -60,16 +62,18 @@ export default function Header(props: HeaderProps) {
   const [accountMenuPos,  setAccountMenuPos]  = useState<{ top: number; right: number } | null>(null);
   const { user } = useUser();
 
-  const nameRef       = useRef<HTMLInputElement>(null);
-  const exportBtnRef  = useRef<HTMLButtonElement>(null);
-  const exportRef     = useRef<HTMLDivElement>(null);
-  const accountBtnRef = useRef<HTMLButtonElement>(null);
+  const nameRef              = useRef<HTMLInputElement>(null);
+  const exportBtnDesktopRef  = useRef<HTMLButtonElement>(null);
+  const exportBtnMobileRef   = useRef<HTMLButtonElement>(null);
+  const exportRef            = useRef<HTMLDivElement>(null);
+  const accountBtnRef        = useRef<HTMLButtonElement>(null);
 
   useEffect(() => { setNameValue(fileName); }, [fileName]);
 
   useEffect(() => {
     const h = (e: MouseEvent) => {
-      if (exportBtnRef.current?.contains(e.target as Node)) return;
+      if (exportBtnDesktopRef.current?.contains(e.target as Node)) return;
+      if (exportBtnMobileRef.current?.contains(e.target as Node)) return;
       if (exportRef.current?.contains(e.target as Node)) return;
       if (accountBtnRef.current?.contains(e.target as Node)) return;
       setExportOpen(false);
@@ -316,10 +320,10 @@ export default function Header(props: HeaderProps) {
           {/* Export dropdown */}
           <div id="tour-export" style={{ position: 'relative' }}>
             <button
-              ref={exportBtnRef}
+              ref={exportBtnDesktopRef}
               className="tb-btn"
               onClick={() => {
-                const btn = exportBtnRef.current;
+                const btn = exportBtnDesktopRef.current;
                 if (btn) {
                   const r = btn.getBoundingClientRect();
                   setExportPos({ top: r.bottom + 6, right: window.innerWidth - r.right });
@@ -407,10 +411,10 @@ export default function Header(props: HeaderProps) {
           {/* Export dropdown */}
           <div style={{ position: 'relative' }}>
             <button
-              ref={exportBtnRef}
+              ref={exportBtnMobileRef}
               className="tb-btn"
               onClick={() => {
-                const btn = exportBtnRef.current;
+                const btn = exportBtnMobileRef.current;
                 if (btn) {
                   const r = btn.getBoundingClientRect();
                   setExportPos({ top: r.bottom + 6, right: window.innerWidth - r.right });
@@ -457,7 +461,7 @@ export default function Header(props: HeaderProps) {
           onMouseDown={e => e.stopPropagation()}
         >
           <AccountMenu user={user} onClose={() => setShowAccountMenu(false)}
-            onToast={m => console.log(m)} onOpenSettings={onOpenSettings} />
+            onToast={onToast} onOpenSettings={onOpenSettings} />
         </div>,
         document.body
       )}

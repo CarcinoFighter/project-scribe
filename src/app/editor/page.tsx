@@ -19,7 +19,7 @@ import { X, Plus, FileText, BookOpen, Heart, Loader2, Users } from 'lucide-react
 import { useUser } from '@/lib/useUser';
 import { supabase } from '@/lib/supabase';
 import type { Collaborator } from '@/types';
-import { convertDocxToMarkdown } from '@/lib/document-utils';
+import Toast from '@/components/Toast';
 
 const EditorPane = dynamic(() => import('@/components/EditorPane'), {
   ssr: false,
@@ -149,6 +149,7 @@ function EditorContent() {
   const [splitPct, setSplitPct] = useState(50);
   const [dragging, setDragging] = useState(false);
   const [sidebarDragging, setSidebarDragging] = useState(false);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   // Collaboration State
   const { user, loading: userLoading } = useUser();
@@ -717,6 +718,7 @@ function EditorContent() {
         onOpenSettings={() => setShowSettings(true)}
         onToggleDark={() => handleCommand('theme')}
         onOpenMetadata={() => setShowMetadata(true)}
+        onToast={setToastMsg}
         collaborators={collaborators}
       />
 
@@ -851,6 +853,9 @@ function EditorContent() {
           onConfirm={() => { confirm.onConfirm(); setConfirm(null); }}
           onCancel={() => setConfirm(null)}
         />
+      )}
+      {toastMsg && (
+        <Toast message={toastMsg} onDismiss={() => setToastMsg(null)} />
       )}
       {showSettings && (
         <SettingsModal

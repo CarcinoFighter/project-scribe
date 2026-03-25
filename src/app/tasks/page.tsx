@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTheme } from '@/lib/useTheme';
 import { 
   Briefcase, 
   CheckCircle2, 
@@ -508,7 +509,7 @@ export default function WorkPage() {
   const [showAssignModal, setShowAssignModal] = useState<{ category?: string; department?: string } | null>(null);
   const [activeDeptKey, setActiveDeptKey] = useState("Writers' Block");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isDark, setIsDark] = useState(false);
+  const { isDark } = useTheme();
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [accountMenuPos, setAccountMenuPos] = useState<{ top: number; right: number } | null>(null);
   const accountBtnRef = useRef<HTMLButtonElement>(null);
@@ -527,22 +528,6 @@ export default function WorkPage() {
       router.push('/login');
     }
   }, [user, loadingUser, router]);
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem('cs-settings');
-      if (raw) {
-        const s = JSON.parse(raw);
-        const themes: Record<string,boolean> = {
-          'default-dark': true, 'catppuccin-mocha': true, 'solarized-dark': true,
-          'default-light': false, 'catppuccin-latte': false, 'solarized-light': false,
-        };
-        const isDarkTheme = themes[s?.theme] ?? false;
-        setIsDark(isDarkTheme);
-        document.documentElement.classList.toggle('dark', isDarkTheme);
-      }
-    } catch {}
-  }, []);
 
   const fetchWork = useCallback(async () => {
     setLoading(true);
