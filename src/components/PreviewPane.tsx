@@ -9,7 +9,7 @@ import type { RefObject } from 'react';
 
 interface Props {
   content: string;
-  containerRef: RefObject<HTMLDivElement>;
+  containerRef: RefObject<HTMLDivElement | null>;
 }
 
 export default function PreviewPane({ content, containerRef }: Props) {
