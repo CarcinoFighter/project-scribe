@@ -911,3 +911,19 @@ main { overflow-x: visible; }
     transform: none !important;
   }
 }
+/* Ensure bullets are visible in the preview pane */
+.markdown-preview ul {
+  list-style-type: disc !important;
+  padding-left: 1.5rem !important;
+  margin-bottom: 1rem;
+}
+
+.markdown-preview ol {
+  list-style-type: decimal !important;
+  padding-left: 1.5rem !important;
+  margin-bottom: 1rem;
+}
+
+.markdown-preview li {
+  display: list-item !important;
+}
