@@ -1089,7 +1089,6 @@ export default function Dashboard() {
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   {item.icon.split(' M').map((d, i) => <path key={i} d={i === 0 ? d : 'M' + d} />)}
                 </svg>
-                <span>{item.label}</span>
                 {item.id === 'tasks' && pendingTasks.length > 0 && (
                   <span style={{ position:'absolute', top:6, left:'50%', transform:'translateX(4px)', width:14, height:14, borderRadius:99, background:'var(--accent)', color:'#fff', fontSize:8, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center' }}>
                     {pendingTasks.length > 9 ? '9+' : pendingTasks.length}
