@@ -1,6 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { unstable_cache } from 'next/cache';
+
+// Cache specifically based on whether it's a global or user-specific fetch
+const getAssignmentsCached = unstable_cache(
+  async (userId: string, isLeadership: boolean) => {
+    let query = supabaseAdmin.from('work_assignments').select('*');
+    
+    if (!isLeadership) {
+      query = query.or(`assigned_to.eq.${userId},assigned_to_ids.cs.{${userId}}`);
+    }
+
+    const { data: assignments, error } = await query.order('due_date', { ascending: true });
+
+    if (error) throw error;
+    return assignments;
+  },
+  ['user-assignments'],
+  { revalidate: 300 } // 5 minutes
+);
 
 export async function GET(req: NextRequest) {
   const token = req.cookies.get('cw_token')?.value;
@@ -14,20 +33,28 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
   }
 
-  // Fetch assignments where current user is in assigned_to_ids
-  const { data: assignments, error } = await supabaseAdmin
-    .from('work_assignments')
-    .select('*')
-    .or(`assigned_to.eq.${payload.userId},assigned_to_ids.cs.{${payload.userId}}`)
-    .order('due_date', { ascending: true });
+  try {
+    // 1. Fetch user department to check for Leadership
+    const { data: userData, error: userError } = await supabaseAdmin
+      .from('users')
+      .select('department')
+      .eq('id', payload.userId)
+      .single();
 
-  if (error) {
+    if (userError) throw userError;
+
+    const isLeadership = payload.adminAccess || userData.department === 'Leadership';
+    
+    // 2. Fetch assignments (conditional based on leadership status)
+    const assignments = await getAssignmentsCached(payload.userId, isLeadership);
+    
+    return NextResponse.json({ assignments });
+  } catch (error: any) {
     console.error('Fetch assignments error:', error);
     return NextResponse.json({ error: 'Failed to fetch assignments' }, { status: 500 });
   }
-
-  return NextResponse.json({ assignments });
 }
+
 
 export async function PATCH(req: NextRequest) {
   const token = req.cookies.get('cw_token')?.value;

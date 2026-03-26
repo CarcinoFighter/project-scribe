@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     tags: b.tags || [],
     words: b.words || 0,
     readTime: b.read_time || Math.ceil((b.content?.length || 0) / 1000) || 1,
-    date: b.updated_at || b.created_at,
+    date: (b.updated_at || b.created_at || new Date().toISOString()).split('T')[0],
   }));
 
   const normalizedStories = (stories.data || []).map(s => ({
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
     tags: s.tags || [],
     words: s.words || 0,
     readTime: s.read_time || Math.ceil((s.content?.length || 0) / 1000) || 1,
-    date: s.updated_at || s.created_at,
+    date: (s.updated_at || s.created_at || new Date().toISOString()).split('T')[0],
   }));
 
   const normalizedDocs = (docs.data || []).map(d => ({
@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
     tags: d.tags || [],
     words: d.words || 0,
     readTime: d.read_time || Math.ceil((d.content?.length || 0) / 1000) || 1,
-    date: d.updated_at || d.created_at,
+    date: (d.updated_at || d.created_at || new Date().toISOString()).split('T')[0],
   }));
 
   const allDocs = [...normalizedBlogs, ...normalizedStories, ...normalizedDocs].sort(
