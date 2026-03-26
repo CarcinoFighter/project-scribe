@@ -7,17 +7,35 @@ const FIGMA_FILE_KEY = 'B9bsb3LhFv8Fd38zLAKdUn';
 
 const getDesignsData = unstable_cache(
   async (pat: string, propertyId?: string, clientEmail?: string, privateKey?: string) => {
-    // 1. Fetch Figma file
-    const res = await fetch(`https://api.figma.com/v1/files/${FIGMA_FILE_KEY}`, {
+    // 1. Fetch Figma file depth=2 to find the Web page
+    const depthRes = await fetch(`https://api.figma.com/v1/files/${FIGMA_FILE_KEY}?depth=2`, {
       headers: { 'X-Figma-Token': pat },
       cache: 'no-store' // We handle caching via unstable_cache instead
     });
 
-    if (!res.ok) {
-      throw new Error(`Figma API error: ${res.status}`);
+    if (!depthRes.ok) {
+      throw new Error(`Figma API error (depth=2): ${depthRes.status}`);
     }
 
-    const data = await res.json();
+    const depthData = await depthRes.json();
+    const webPage = depthData.document?.children?.find((p: any) => p.name === 'Web');
+
+    if (!webPage) {
+      throw new Error('Web page not found in Figma file');
+    }
+
+    // 1b. Fetch only the Web page node
+    const nodesRes = await fetch(`https://api.figma.com/v1/files/${FIGMA_FILE_KEY}/nodes?ids=${webPage.id}`, {
+      headers: { 'X-Figma-Token': pat },
+      cache: 'no-store'
+    });
+
+    if (!nodesRes.ok) {
+      throw new Error(`Figma API error (nodes): ${nodesRes.status}`);
+    }
+
+    const nodesData = await nodesRes.json();
+    const webPageNode = nodesData.nodes[webPage.id]?.document;
     
     // 2. Fetch manual mappings from Supabase
     const { data: dbMappings } = await supabaseServer
@@ -81,27 +99,23 @@ const getDesignsData = unstable_cache(
           id: node.id,
           name: name,
           route: route,
-          lastModified: data.lastModified,
-          thumbnailUrl: data.thumbnailUrl,
+          lastModified: depthData.lastModified,
+          thumbnailUrl: depthData.thumbnailUrl,
           metrics: route ? routeMetrics[route] : null
         });
       }
       if (node.children) node.children.forEach(findFrames);
     };
 
-    if (data.document && data.document.children) {
-      data.document.children.forEach((page: any) => {
-        if (page.name === 'Web' && page.children) {
-          page.children.forEach(findFrames);
-        }
-      });
+    if (webPageNode && webPageNode.children) {
+      webPageNode.children.forEach(findFrames);
     }
 
     return {
       fileId: FIGMA_FILE_KEY,
-      fileName: data.name,
-      lastModified: data.lastModified,
-      thumbnailUrl: data.thumbnailUrl,
+      fileName: depthData.name,
+      lastModified: depthData.lastModified,
+      thumbnailUrl: depthData.thumbnailUrl,
       designs
     };
   },
