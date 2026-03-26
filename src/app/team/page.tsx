@@ -114,7 +114,7 @@ export default function TeamPage() {
       {/* Unified Header */}
       <header className="app-header anim-slide-down flex items-center px-4 h-[52px] sticky top-0 z-50 glass glass-rim">
         <div className="flex items-center gap-2 select-none mr-4">
-          <Image src="/logo.svg" alt="Vantage" width={18} height={22} priority />
+          <Image src="/logo.svg" alt="Vantage" width={18} height={22} style={{ height: 'auto' }} priority />
           <span className="font-bold text-[13.5px] text-[var(--text)] tracking-tight">
             <Link href="/" className="hover:text-[var(--accent)] transition-colors">
               <span className="hidden sm:inline">Carcino </span>Vantage

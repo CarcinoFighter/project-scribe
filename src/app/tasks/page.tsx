@@ -711,7 +711,7 @@ export default function WorkPage() {
         >
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <Image src="/logo.svg" alt="Carcino" width={16} height={20} priority />
+              <Image src="/logo.svg" alt="Carcino" width={16} height={20} style={{ height: 'auto' }} priority />
               <span className="text-[12.5px] font-bold text-[var(--text-4)] uppercase tracking-tight">
                 <span className="hidden sm:inline">Carcino </span>Vantage
               </span>

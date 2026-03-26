@@ -155,7 +155,7 @@ export default function Header(props: HeaderProps) {
             style={{ display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', flexShrink: 0 }}
             title="Back to Dashboard"
           >
-            <Image src="/logo.svg" alt="Carcino" width={16} height={20} priority />
+            <Image src="/logo.svg" alt="Carcino" width={16} height={20} style={{ height: 'auto' }} priority />
             <span className="hidden sm:block" style={{ color: 'var(--text-4)', fontSize: 12.5, fontWeight: 600, letterSpacing: '-0.01em' }}>
               Vantage
             </span>

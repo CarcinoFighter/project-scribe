@@ -1,4 +1,4 @@
-import withPWAInit from "@ducanh2912/next-pwa";
+import withSerwistInit from "@serwist/next";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -13,16 +13,14 @@ const nextConfig = {
       },
     ],
   },
-  experimental: {
-    turbopack: {},
-  },
 };
 
-const isDev = process.env.NODE_ENV === "development";
-
-export default isDev ? nextConfig : withPWAInit({
-  dest: "public",
+const withSerwist = withSerwistInit({
+  swSrc: "src/app/sw.ts",
+  swDest: "public/sw.js",
+  disable: process.env.NODE_ENV === "development",
   register: true,
-  skipWaiting: true,
-  customWorkers: "worker/push-handler.js",
-})(nextConfig);
+  reloadOnOnline: true,
+});
+
+export default withSerwist(nextConfig);

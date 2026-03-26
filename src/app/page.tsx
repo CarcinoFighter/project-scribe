@@ -716,7 +716,7 @@ export default function Dashboard() {
       >
         {/* Logo */}
         <div style={{ display:'flex', alignItems:'center', gap:7, marginRight:4, flexShrink:0, userSelect:'none' }}>
-          <Image src="/logo.svg" alt="Carcino" width={18} height={22} priority/>
+          <Image src="/logo.svg" alt="Carcino" width={18} height={22} style={{ height: 'auto' }} priority/>
           <span style={{ fontWeight:700, fontSize:14, color:'var(--text)', letterSpacing:'-0.02em' }}>
             <span className="hidden sm:inline">Carcino </span>Vantage
           </span>
