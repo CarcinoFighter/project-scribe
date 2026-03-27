@@ -1,963 +1,609 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef, Suspense } from 'react';
-import dynamic from 'next/dynamic';
-import { useSearchParams, useRouter } from 'next/navigation';
-import type { ViewMode, EditorAPI, DocumentStats } from '@/types';
-import Header from '@/components/Header';
-import OutlineSidebar from '@/components/OutlineSidebar';
-import Toolbar from '@/components/Toolbar';
-import PreviewPane from '@/components/PreviewPane';
-import StatusBar from '@/components/StatusBar';
-import GuidedTour from '@/components/GuidedTour';
-import CommandPalette from '@/components/CommandPalette';
-import ConfirmModal from '@/components/ConfirmModal';
-import MetadataPanel from '@/components/MetadataPanel';
-import SettingsModal, { loadSettings, saveSettings, applySettings, DEFAULT_SETTINGS, THEMES } from '@/components/SettingsModal';
-import type { AppSettings } from '@/components/SettingsModal';
-import { X, Plus, FileText, BookOpen, Heart, Loader2, Menu } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useTheme } from '@/lib/useTheme';
+import {
+  Users, Mail, Shield, Search, Sun, Moon,
+  Github, Linkedin, Plus, ChevronDown,
+} from 'lucide-react';
 import { useUser } from '@/lib/useUser';
-import { supabase } from '@/lib/supabase';
-import type { Collaborator } from '@/types';
+import AccountMenu from '@/components/AccountMenu';
+import AssignTaskModal from '@/components/AssignTaskModal';
 import Toast from '@/components/Toast';
-import { convertDocxToMarkdown } from '@/lib/document-utils';
 
-const EditorPane = dynamic(() => import('@/components/EditorPane'), {
-  ssr: false,
-  loading: () => (
-    <div className="flex-1 flex flex-col items-center justify-center bg-[var(--paper)] min-h-[50vh]">
-      <div className="flex flex-col items-center gap-4 db-rise-1">
-        <Loader2 className="w-6 h-6 animate-spin text-[var(--accent)]" />
-        <span className="db-cap text-[10px] text-[var(--mid)] tracking-[0.2em]">INITIALIZING COMPOSITION ✦</span>
-      </div>
-    </div>
-  ),
-});
-
-// ---------------------------------------------------------------  
-// Types
-// ---------------------------------------------------------------
-interface Tab {
+interface TeamMember {
   id: string;
-  type: 'blogs' | 'survivor_stories' | 'cancer_docs';
-  title: string;
-  content: string;
-  slug: string;
-  status: 'draft' | 'review' | 'published' | 'ready_for_proofreading' | 'proofreading' | 'ready_for_upload' | 'in_review';
-  author_id?: string;
-  isSaved: boolean;
-  isLoading?: boolean;
+  name: string;
+  email: string;
+  username: string;
+  avatar_url: string | null;
+  position: string;
+  department: string;
+  is_active: boolean;
+  admin_access: boolean;
 }
 
-// ---------------------------------------------------------------  
-// Templates & Defaults
-// ---------------------------------------------------------------
-const DEFAULT_CONTENT = `# Welcome to Carcino Vantage\n\nA beautiful, distraction-free markdown editor built by The Carcino Foundation.\n`;
+const DEPARTMENTS = [
+  "Leadership",
+  "Writers' Block",
+  "Public Relations",
+  "Design Lab",
+  "Development",
+  "Other",
+];
 
-function makeTemplates() {
-  const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-  return {
-    'tpl-blog': `# Blog Post Title\n\n*Published on ${today}*\n\n## Introduction\n\nWrite a compelling opening paragraph.\n`,
-    'tpl-article': `# Article Title\n\n**Abstract:** A brief summary.\n\n## Introduction\n\nContext here.\n`,
-    'tpl-notes': `# Meeting Notes\n\n**Date:** ${today}\n\n## Agenda\n\n- [ ] Item one\n`,
-  } as Record<string, string>;
-}
+const DEPT_NUM: Record<string, string> = {
+  "Leadership":       "01",
+  "Writers' Block":   "02",
+  "Public Relations": "03",
+  "Design Lab":       "04",
+  "Development":      "05",
+  "Other":            "06",
+};
 
-function computeStats(content: string): DocumentStats {
-  const text = content.trim();
-  const words       = text ? text.split(/\s+/).length : 0;
-  const chars       = content.length;
-  const lines       = content.split('\n').length;
-  const sentences   = text ? (text.match(/[.!?]+/g) ?? []).length : 0;
-  const readingTime = Math.max(1, Math.round(words / 200));
-  return { words, chars, lines, sentences, readingTime };
-}
+const TAPE_ITEMS = ['LEADERSHIP', 'WRITERS', 'DESIGN', 'DEV', 'PR', 'TEAM', '2026', '✦'];
 
-// ---------------------------------------------------------------  
-// TabBar Component - Responsive
-// ---------------------------------------------------------------
-function TabBar({ 
-  tabs, activeTabId, onSwitch, onClose, onNew 
-}: { 
-  tabs: Tab[], activeTabId: string, onSwitch: (id: string) => void, onClose: (id: string) => void, onNew: () => void 
-}) {
+function Logo({ size = 16 }: { size?: number }) {
   return (
-    <div className="tab-bar flex items-center gap-0 px-2 h-10 border-b border-[var(--rule)] bg-[var(--cream)] overflow-x-auto no-scrollbar">
-      {tabs.map((tab) => {
-        const isActive = tab.id === activeTabId;
-        const Icon = tab.type === 'blogs' ? BookOpen : tab.type === 'survivor_stories' ? Heart : FileText;
-        return (
-          <div 
-            key={tab.id}
-            onClick={() => onSwitch(tab.id)}
-            className={`group flex items-center h-9 gap-2 px-3 min-w-[100px] sm:min-w-[120px] max-w-[160px] sm:max-w-[200px] border-r border-[var(--rule)] transition-all cursor-pointer select-none flex-shrink-0
-              ${isActive 
-                ? 'bg-[var(--paper)] border-t-2 border-t-[var(--accent)]' 
-                : 'bg-transparent text-[var(--mid)] hover:bg-[var(--accent-sub)]'
-              }`}
-          >
-            {tab.isLoading ? (
-              <Loader2 size={12} className="animate-spin text-[var(--accent)] flex-shrink-0" />
-            ) : (
-              <Icon size={12} className={`flex-shrink-0 ${isActive ? 'text-[var(--accent)]' : 'text-[var(--mid)]'}`} />
-            )}
-            <span className={`text-[11px] sm:text-[12px] font-medium truncate flex-1 ${isActive ? 'text-[var(--ink)]' : ''}`}>
-              {tab.title}
-            </span>
-            <button 
-              onClick={(e) => { e.stopPropagation(); onClose(tab.id); }}
-              className={`p-1 opacity-0 group-hover:opacity-100 hover:bg-[var(--accent-dim)] transition-all flex-shrink-0 ${isActive ? 'opacity-100' : ''}`}
-            >
-              <X size={10} />
-            </button>
-          </div>
-        );
-      })}
-      <button 
-        onClick={onNew}
-        className="h-9 w-9 flex items-center justify-center border-r border-[var(--rule)] text-[var(--mid)] hover:bg-[var(--accent-sub)] hover:text-[var(--accent)] transition-all flex-shrink-0"
-        title="New Tab"
-      >
-        <Plus size={16} />
-      </button>
-    </div>
+    <svg width={size} height={Math.round(size * 1.2)} viewBox="0 0 20 24" fill="none" aria-hidden>
+      <path d="M9.13307 5.97435C9.21934 5.23291 9.33279 4.80925 9.89802 4.0092C10.9029 2.80263 11.6709 2.67501 12.9912 2.4556L13.0042 2.45344C14.8586 2.34816 15.7395 3.26056 16.1799 4.26653C16.6203 5.27251 16.5553 7.03881 16.4233 7.9863C16.2913 8.93378 15.7627 11.4166 12.7608 13.8614C13.5837 14.1538 13.6573 14.1074 14.65 14.2561C15.6004 13.2384 16.1436 12.4864 17.5128 10.8405C18.882 9.19453 19.661 6.91014 19.8772 5.50646C20.0934 4.10278 20.1438 2.45344 18.9963 1.26031C17.8489 0.0671784 15.5888 -0.131673 14.198 0.067179C12.8072 0.266031 10.3732 1.26031 8.68105 2.6289C6.98888 3.9975 6.20076 5.50646 5.57488 7.5418C4.949 9.57714 5.30938 11.2467 6.08485 13.332C7.40174 16.0707 9.01717 17.9291 10.4196 18.8415C11.822 19.7539 12.8072 20.2451 14.3487 22.842C16.2495 19.8123 16.9991 18.6706 18.4632 16.9465C17.5128 15.7767 16.2842 15.1142 13.8735 14.7825C11.4627 14.4508 10.6865 13.6665 10.2341 13.6478C9.78183 13.6291 9.26057 13.6244 9.09831 13.5776C8.93605 13.5309 8.89093 13.5242 8.76218 13.2384C8.62326 12.7331 8.76218 11.9985 8.76218 11.8932C8.76218 11.7879 8.54197 11.6476 8.54197 11.5072C8.54197 11.3668 8.61607 11.2835 8.77377 11.2031C8.77377 11.2031 8.41448 11.0042 8.41448 10.8405C8.41448 10.6767 8.57673 10.0567 8.54197 9.91637C8.50721 9.776 7.68429 9.60054 7.83497 9.3198C7.98565 9.03906 9.16153 7.60314 9.30692 7.30785C9.45232 7.01256 9.15359 6.6787 9.13307 5.97435Z" fill="currentColor"/>
+      <path d="M8.00883 18.0928C5.32942 19.6789 3.54237 20.5984 1.2981 21.2277L0 24C1.2981 23.9064 5.74874 21.7424 9.23739 19.169L8.00883 18.0928Z" fill="currentColor"/>
+    </svg>
   );
 }
 
-// ---------------------------------------------------------------  
-// Main Editor Implementation
-// ---------------------------------------------------------------
-function EditorContent() {
-  const searchParams = useSearchParams();
+export default function TeamPage() {
   const router = useRouter();
-
-  // Tab State
-  const [tabs, setTabs] = useState<Tab[]>([]);
-  const [activeTabId, setActiveTabId] = useState<string>('');
-  
-  // View State (Shared)
-  const [viewMode, setViewMode] = useState<ViewMode>('split');
-  const [isDark, setIsDark] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarWidth, setSidebarWidth] = useState(210);
-  const [cursorLine, setCursorLine] = useState(1);
-  const [cursorCol, setCursorCol] = useState(1);
-  const [activeLine, setActiveLine] = useState(1);
-  const [zenMode, setZenMode] = useState(false);
-  const [focusMode, setFocusMode] = useState(false);
-  const [wordGoal, setWordGoal] = useState(0);
-  const [showTour, setShowTour] = useState(false);
-  const [showCmd, setShowCmd] = useState(false);
-  const [showMetadata, setShowMetadata] = useState(false);
-  const [splitPct, setSplitPct] = useState(50);
-  const [dragging, setDragging] = useState(false);
-  const [sidebarDragging, setSidebarDragging] = useState(false);
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  // Collaboration State
-  const { user, loading: userLoading } = useUser();
-  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
-  const presenceChannelRef = useRef<any>(null);
-
-  // Check mobile
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.matchMedia('(max-width: 767px)').matches);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  // ---- Presence Logic ----
-  useEffect(() => {
-    if (!user || !activeTabId || activeTabId === 'ls-active' || activeTabId.startsWith('new-')) {
-      setCollaborators([]);
-      return;
-    }
-
-    const channel = supabase.channel(`editor:${activeTabId}`, {
-      config: { presence: { key: user.id } }
-    });
-    presenceChannelRef.current = channel;
-
-    channel
-      .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState();
-        const otherUsers: Collaborator[] = [];
-        for (const key in state) {
-          const presences = state[key] as any[];
-          presences.forEach(presence => {
-            if (presence.id !== user.id) {
-              otherUsers.push({
-                id: presence.id,
-                name: presence.name,
-                avatar_url: presence.avatar_url,
-                cursor: presence.cursor,
-                lastSeen: Date.now()
-              });
-            }
-          });
-        }
-        setCollaborators(otherUsers);
-      })
-      .on('broadcast', { event: 'content-update' }, (payload) => {
-        const { tabId, content, senderId } = payload.payload;
-        if (senderId !== user.id && tabId === activeTabId) {
-          setTabs(prev => prev.map(t => t.id === tabId ? { ...t, content, isSaved: true } : t));
-        }
-      })
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await channel.track({
-            id: user.id,
-            name: user.name,
-            avatar_url: user.avatar_url,
-            cursor: { line: cursorLine, col: cursorCol }
-          });
-        }
-      });
-
-    return () => {
-      channel.unsubscribe();
-      presenceChannelRef.current = null;
-    };
-  }, [activeTabId, user]);
-
-  // Update presence on cursor move
-  useEffect(() => {
-    if (presenceChannelRef.current && user) {
-      presenceChannelRef.current.track({
-        id: user.id,
-        name: user.name,
-        avatar_url: user.avatar_url,
-        cursor: { line: cursorLine, col: cursorCol }
-      });
-    }
-  }, [cursorLine, cursorCol, user]);
-
-  // Set default view on mobile + Keyboard resize observer
-  const [viewportHeight, setViewportHeight] = useState<string | number>('100dvh');
+  const { user: currentUser, loading: userLoading } = useUser();
+  const { isDark, toggleTheme } = useTheme();
+  const [members, setMembers] = useState<TeamMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAccountMenu, setShowAccountMenu] = useState(false);
+  const [accountMenuPos, setAccountMenuPos] = useState<{ top: number; right: number } | null>(null);
+  const accountBtnRef = useRef<HTMLButtonElement>(null);
+  const [showAssignModal, setShowAssignModal] = useState<TeamMember | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const [filter, setFilter] = useState<string>('all');
+  const [search, setSearch] = useState('');
+  const [activeNav, setActiveNav] = useState('team');
 
   useEffect(() => {
-    if (window.matchMedia('(max-width: 767px)').matches) {
-      setViewMode('editor');
-    }
-
-    const handler = () => {
-      if (window.visualViewport) setViewportHeight(window.visualViewport.height);
-    };
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', handler);
-      handler();
-    }
-    return () => window.visualViewport?.removeEventListener('resize', handler);
-  }, []);
-
-  const [confirm, setConfirm] = useState<{ title: string; message: string; confirmLabel?: string; danger?: boolean; onConfirm: () => void; } | null>(null);
-  const [goalCelebrated, setGoalCelebrated] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [appSettings, setAppSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
-
-  const appSettingsRef = useRef<AppSettings>(DEFAULT_SETTINGS);
-  useEffect(() => { appSettingsRef.current = appSettings; }, [appSettings]);
-  
-  const editorRef = useRef<EditorAPI | null>(null);
-  const previewRef = useRef<HTMLDivElement>(null);
-  const splitRef = useRef<HTMLDivElement>(null);
-  const prevGoalHit = useRef(false);
+    if (!userLoading && !currentUser) router.push('/login');
+  }, [currentUser, userLoading, router]);
 
   useEffect(() => {
-    if (!userLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, userLoading, router]);
-
-  const activeTab = tabs.find(t => t.id === activeTabId) || tabs[0];
-
-  // ---- Load initial state ----
-  const initialized = useRef(false);
-
-  useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
-
-    try {
-      const savedTabs = localStorage.getItem('cs-tabs');
-      const goal = localStorage.getItem('cs-goal');
-      const toured = localStorage.getItem('cs-toured');
-
-      if (goal) setWordGoal(parseInt(goal, 10) || 0);
-      if (!toured) setShowTour(true);
-
-      const s = loadSettings();
-      setAppSettings(s);
-      setIsDark(applySettings(s));
-
-      let initialTabs: Tab[] = [];
-      if (savedTabs) {
-        try {
-          initialTabs = JSON.parse(savedTabs);
-        } catch (e) {
-          console.error('Failed to parse saved tabs:', e);
-        }
-      }
-
-      const id = searchParams.get('id');
-      const type = searchParams.get('type') as Tab['type'];
-      
-      if (id && type) {
-        const existing = initialTabs.find(t => t.id === id);
-        if (existing) {
-          setTabs(initialTabs);
-          setActiveTabId(id);
-        } else {
-          const newTab: Tab = {
-            id, type,
-            title: 'Loading...',
-            content: '',
-            slug: '',
-            status: 'draft',
-            isSaved: true,
-            isLoading: true
-          };
-          const nextTabs = [...initialTabs, newTab];
-          setTabs(nextTabs);
-          setActiveTabId(id);
-
-          fetch(`/api/editor/load?id=${id}&type=${type}`)
-            .then(res => res.json())
-            .then(data => {
-              if (data.success) {
-                setTabs(prev => prev.map(t => t.id === id ? { ...t, ...data.doc, isLoading: false } : t));
-              } else {
-                setTabs(prev => prev.map(t => t.id === id ? { ...t, title: 'Error loading', isLoading: false } : t));
-              }
-            })
-            .catch(() => {
-              setTabs(prev => prev.map(t => t.id === id ? { ...t, title: 'Error loading', isLoading: false } : t));
-            });
-        }
-        return;
-      }
-
-      if (initialTabs.length > 0) {
-        setTabs(initialTabs);
-        setActiveTabId(initialTabs[0].id);
-      } else {
-        const defaultTab: Tab = {
-          id: 'ls-active',
-          type: 'blogs',
-          title: 'Untitled Document',
-          content: DEFAULT_CONTENT,
-          slug: '',
-          status: 'draft',
-          isSaved: true
-        };
-        setTabs([defaultTab]);
-        setActiveTabId(defaultTab.id);
-      }
-    } catch (e) {
-      console.error('Failed to initialize editor:', e);
-    }
-  }, [searchParams]);
-
-  const tabsRef = useRef<Tab[]>([]);
-  useEffect(() => { tabsRef.current = tabs; }, [tabs]);
-
-  // ---- Handle Search Params (Subsequent changes) ----
-  useEffect(() => {
-    if (!initialized.current) return;
-
-    const id = searchParams.get('id');
-    const type = searchParams.get('type') as Tab['type'];
-
-    if (id && type) {
-      setActiveTabId(id);
-      
-      setTabs(prev => {
-        if (prev.find(t => t.id === id)) return prev;
-
-        const newTab: Tab = {
-          id, type,
-          title: 'Loading...',
-          content: '',
-          slug: '',
-          status: 'draft',
-          isSaved: true,
-          isLoading: true
-        };
-
-        fetch(`/api/editor/load?id=${id}&type=${type}`)
-          .then(res => res.json())
-          .then(data => {
-            if (data.success) {
-              setTabs(curr => curr.map(t => t.id === id ? { ...t, ...data.doc, isLoading: false } : t));
-            } else {
-              setTabs(curr => curr.map(t => t.id === id ? { ...t, title: 'Error loading', isLoading: false } : t));
-            }
-          })
-          .catch(() => {
-            setTabs(curr => curr.map(t => t.id === id ? { ...t, title: 'Error loading', isLoading: false } : t));
-          });
-
-        return [...prev, newTab];
-      });
-    }
-  }, [searchParams]);
-
-  // ---- Auto-save (debounced) ----
-  useEffect(() => {
-    if (!activeTab || activeTab.title === 'Error loading') return;
-
-    const markUnsaved = setTimeout(() => {
-      setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, isSaved: false } : t));
-    }, 300);
-
-    const t = setTimeout(async () => {
+    (async () => {
       try {
-        const tabsToSave = tabsRef.current.filter(tab => tab.title !== 'Error loading' && !tab.isLoading);
-        if (tabsToSave.length > 0) {
-          localStorage.setItem('cs-tabs', JSON.stringify(tabsToSave));
-        }
-
-        if (activeTab.title !== 'Untitled Document' && activeTab.slug && activeTab.title !== 'Error loading') {
-          const res = await fetch('/api/editor/save', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              id: activeTab.id === 'ls-active' ? null : activeTab.id,
-              title: activeTab.title,
-              slug: activeTab.slug,
-              content: activeTab.content,
-              contentType: activeTab.type,
-              status: activeTab.status,
-              tags: [],
-            }),
-          });
-          
-          if (res.ok) {
-            const data = await res.json();
-            setTabs(prev => prev.map(t => {
-              if (t.id === activeTabId) {
-                return { ...t, id: data.doc?.id || t.id, isSaved: true };
-              }
-              return t;
-            }));
-            if (data.doc?.id && activeTabId === 'ls-active') setActiveTabId(data.doc.id);
-          }
-        } else {
-          setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, isSaved: true } : t));
-        }
-      } catch (e) {}
-    }, 1500);
-    return () => { clearTimeout(markUnsaved); clearTimeout(t); };
-  }, [activeTab?.content, activeTab?.title, activeTab?.slug, activeTab?.status, activeTabId]);
-
-  // ---- Content Broadcasting (Realtime) ----
-  useEffect(() => {
-    if (!activeTab || !presenceChannelRef.current || !user) return;
-
-    const t = setTimeout(() => {
-      presenceChannelRef.current.send({
-        type: 'broadcast',
-        event: 'content-update',
-        payload: {
-          tabId: activeTabId,
-          content: activeTab.content,
-          senderId: user.id
-        }
-      });
-    }, 400);
-
-    return () => clearTimeout(t);
-  }, [activeTab?.content, activeTabId, user]);
-
-  // ---- Title Management ----
-  useEffect(() => {
-    if (!activeTab) return;
-    const unsaved = !activeTab.isSaved;
-    const base = `${activeTab.title} — Vantage`;
-    document.title = unsaved ? `\u25CF ${base}` : base;
-  }, [activeTab?.title, activeTab?.isSaved]);
-
-  // ---- Persist word goal ----
-  useEffect(() => {
-    localStorage.setItem('cs-goal', String(wordGoal));
-  }, [wordGoal]);
-
-  const handleCommandRef = useRef<(id: string) => void>(() => {});
-
-  // ---- Global keyboard shortcuts ----
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      const ctrl = e.ctrlKey || e.metaKey;
-      if (ctrl && e.shiftKey && e.key === 'Z') { e.preventDefault(); setZenMode(z => !z); }
-      if (ctrl && e.shiftKey && e.key === 'F') { e.preventDefault(); setFocusMode(f => !f); }
-      if (ctrl && e.shiftKey && e.key === 'D') { e.preventDefault(); handleCommandRef.current('theme'); }
-      if (e.key === 'Escape' && zenMode)        { e.preventDefault(); setZenMode(false); }
-      if (e.key === 'Escape' && mobileMenuOpen) { setMobileMenuOpen(false); }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [zenMode, mobileMenuOpen]);
-
-  // ---- Word goal celebration ----
-  useEffect(() => {
-    if (!wordGoal || wordGoal <= 0) return;
-    const stats = activeTab ? computeStats(activeTab.content) : computeStats('');
-    const hit = stats.words >= wordGoal;
-    if (hit && !prevGoalHit.current) {
-      setGoalCelebrated(true);
-      setTimeout(() => setGoalCelebrated(false), 3000);
-    }
-    prevGoalHit.current = hit;
-  }, [activeTab?.content, wordGoal]);
-
-  // ---- Actions ----
-  const handleAddNew = useCallback((type: Tab['type'] = 'blogs') => {
-    const id = `new-${typeof crypto !== 'undefined' ? crypto.randomUUID().slice(0, 8) : Date.now()}`;
-    const newTab: Tab = {
-      id,
-      type,
-      title: 'Untitled Document',
-      content: '# New Document\n\n',
-      slug: '',
-      status: 'draft',
-      isSaved: true
-    };
-    setTabs(prev => [...prev, newTab]);
-    setActiveTabId(id);
-    setMobileMenuOpen(false);
+        const res = await fetch('/api/team');
+        if (res.ok) { const data = await res.json(); setMembers(data.users); }
+      } catch {}
+      finally { setLoading(false); }
+    })();
   }, []);
 
-  const doCloseTab = useCallback((id: string) => {
-    setTabs(prev => {
-      const idx = prev.findIndex(t => t.id === id);
-      if (idx === -1) return prev;
-      
-      const next = prev.filter(t => t.id !== id);
-      if (next.length === 0) {
-        const defaultTab: Tab = {
-          id: 'ls-active',
-          type: 'blogs',
-          title: 'Untitled Document',
-          content: DEFAULT_CONTENT,
-          slug: '',
-          status: 'draft',
-          isSaved: true
-        };
-        setActiveTabId(defaultTab.id);
-        return [defaultTab];
-      }
-      
-      if (activeTabId === id) {
-        const nextIdx = Math.max(0, idx - 1);
-        setActiveTabId(next[nextIdx].id);
-      }
-      return next;
+  const filteredMembers = members.filter(m => {
+    let ok = true;
+    if (filter === 'admin') ok = m.admin_access;
+    else if (filter !== 'all') ok = m.department === filter;
+    const q = search.toLowerCase();
+    return ok && (!q ||
+      m.name.toLowerCase().includes(q) ||
+      m.email?.toLowerCase().includes(q) ||
+      m.username.toLowerCase().includes(q) ||
+      m.department?.toLowerCase().includes(q)
+    );
+  });
+
+  const groupedMembers = DEPARTMENTS.reduce<Record<string, TeamMember[]>>((acc, dept) => {
+    const list = filteredMembers.filter(m => {
+      const d = m.department || 'Other';
+      if (dept === 'Other') return !DEPARTMENTS.slice(0, -1).includes(d);
+      return d === dept;
     });
-  }, [activeTabId]);
+    if (list.length > 0) acc[dept] = list;
+    return acc;
+  }, {});
 
-  const handleCloseTab = useCallback((id: string) => {
-    const tab = tabsRef.current.find(t => t.id === id);
-    if (tab && !tab.isSaved && tab.content.trim() && tab.title !== 'Untitled Document') {
-      setConfirm({
-        title: 'Close unsaved tab?',
-        message: `"${tab.title}" has unsaved changes that will be lost.`,
-        confirmLabel: 'Close anyway',
-        danger: true,
-        onConfirm: () => doCloseTab(id),
-      });
-      return;
-    }
-    doCloseTab(id);
-  }, [activeTabId, doCloseTab]);
+  const totalShown = Object.values(groupedMembers).flat().length;
 
-  const updateActiveTab = (patch: Partial<Tab>) => {
-    setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, ...patch } : t));
-  };
-
-  const handleAutoSlug = useCallback(() => {
-    if (!activeTab) return;
-    const newSlug = activeTab.title
-      .toLowerCase()
-      .trim()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/[\s_-]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-    updateActiveTab({ slug: newSlug });
-  }, [activeTab?.title, activeTabId]);
-
-  const handleCommand = useCallback((id: string) => {
-    const api = editorRef.current;
-    switch (id) {
-      case 'bold': api?.wrapSelection('**', '**', 'bold text'); break;
-      case 'italic': api?.wrapSelection('*', '*', 'italic text'); break;
-      case 'h1': api?.prefixLines('#'); break;
-      case 'h2': api?.prefixLines('##'); break;
-      case 'ul': api?.prefixLines('-'); break;
-      case 'ol': api?.prefixLines('', true); break;
-      case 'h3': api?.prefixLines('###'); break;
-      case 'strikethrough': api?.wrapSelection('~~', '~~', 'strikethrough text'); break;
-      case 'code': api?.wrapSelection('`', '`', 'code'); break;
-      case 'codeblock': api?.insertAtCursor('```\n\n```'); break;
-      case 'quote': api?.prefixLines('>'); break;
-      case 'link': api?.wrapSelection('[', '](url)', 'link text'); break;
-      case 'image': api?.insertAtCursor('![alt text](image-url)'); break;
-      case 'hr': api?.insertAtCursor('\n---\n'); break;
-      case 'table': api?.insertAtCursor('| Column 1 | Column 2 | Column 3 |\n| --- | --- | --- |\n| Cell | Cell | Cell |\n'); break;
-      case 'new': handleAddNew(); break;
-      case 'zen': setZenMode(z => !z); break;
-      case 'focus': setFocusMode(f => !f); break;
-      case 'view-editor': setViewMode('editor'); break;
-      case 'view-split': setViewMode('split'); break;
-      case 'view-preview': setViewMode('preview'); break;
-      case 'theme': {
-        const currentTheme = appSettingsRef.current.theme;
-        const darkToLight: Record<string, string> = { 'default-dark': 'default-light', 'catppuccin-mocha': 'catppuccin-latte', 'solarized-dark': 'solarized-light' };
-        const lightToDark: Record<string, string> = Object.fromEntries(Object.entries(darkToLight).map(([k, v]) => [v, k]));
-        const currentIsDark = THEMES[currentTheme]?.dark ?? true;
-        const nextTheme = currentIsDark ? (darkToLight[currentTheme] ?? 'default-light') : (lightToDark[currentTheme] ?? 'default-dark');
-        const next = { ...appSettingsRef.current, theme: nextTheme };
-        setAppSettings(next); saveSettings(next); setIsDark(applySettings(next));
-        break;
-      }
-      case 'search': editorRef.current?.openSearch(); break;
-      case 'open': {
-        const input = document.createElement('input');
-        input.type = 'file'; 
-        input.accept = '.md,.markdown,.txt,.docx';
-        input.onchange = async (e) => {
-          const file = (e.target as HTMLInputElement).files?.[0];
-          if (!file) return;
-          
-          const isDocx = file.name.toLowerCase().endsWith('.docx');
-          const id = `file-${typeof crypto !== 'undefined' ? crypto.randomUUID().slice(0, 8) : Date.now()}`;
-          const title = file.name.replace(/\.[^/.]+$/, '');
-
-          if (isDocx) {
-            const reader = new FileReader();
-            reader.onload = async (ev) => {
-              const arrayBuffer = ev.target?.result as ArrayBuffer;
-              try {
-                const content = await convertDocxToMarkdown(arrayBuffer);
-                setTabs(prev => [...prev, { id, type: 'blogs', title, content, slug: '', status: 'draft', isSaved: true }]);
-                setActiveTabId(id);
-              } catch (err) {
-                alert('Failed to convert Word document.');
-              }
-            };
-            reader.readAsArrayBuffer(file);
-          } else {
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-              const content = ev.target?.result as string;
-              setTabs(prev => [...prev, { id, type: 'blogs', title, content, slug: '', status: 'draft', isSaved: true }]);
-              setActiveTabId(id);
-            };
-            reader.readAsText(file);
-          }
-        };
-        input.click(); break;
-      }
-      case 'export-md': {
-        const tab = tabs.find(t => t.id === activeTabId);
-        if (!tab) break;
-        const blob = new Blob([tab.content], { type: 'text/markdown' });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-        a.download = `${tab.title}.md`; a.click(); URL.revokeObjectURL(a.href); break;
-      }
-      case 'tour': setShowTour(true); break;
-      default:
-        if (id.startsWith('tpl-')) {
-          const templates = makeTemplates();
-          if (templates[id]) updateActiveTab({ content: templates[id] });
-        }
-    }
-  }, [handleAddNew, activeTabId, tabs]);
-
-  useEffect(() => { handleCommandRef.current = handleCommand; }, [handleCommand]);
-
-  const stats = activeTab ? computeStats(activeTab.content) : computeStats('');
-
-  if (!activeTab) return null;
+  const NAV_ITEMS = [
+    { id: 'home',  label: 'Overview', href: '/' },
+    { id: 'tasks', label: 'Assignments', href: '/tasks' },
+    { id: 'team',  label: 'Team',       href: '/team' },
+  ];
 
   return (
-    <div className={`editor-layout ${zenMode ? 'zen-mode' : ''}`} style={{ height: viewportHeight }}>
-      <Header
-        fileName={activeTab.title}
-        setFileName={(n) => updateActiveTab({ title: n, slug: n.toLowerCase().replace(/\s+/g, '-') })}
-        isDark={isDark}
-        setIsDark={setIsDark}
-        viewMode={viewMode}
-        setViewMode={setViewMode}
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-        isSaved={activeTab.isSaved}
-        status={activeTab.status}
-        zenMode={zenMode}
-        focusMode={focusMode}
-        onNew={handleAddNew}
-        onOpenFile={() => handleCommand('open')}
-        onExportMd={() => handleCommand('export-md')}
-        onExportHtml={() => handleCommand('export-html')}
-        onOpenSearch={() => editorRef.current?.openSearch()}
-        onOpenTour={() => setShowTour(true)}
-        onOpenCmd={() => setShowCmd(true)}
-        onToggleZen={() => setZenMode(!zenMode)}
-        onToggleFocus={() => setFocusMode(!focusMode)}
-        onOpenSettings={() => setShowSettings(true)}
-        onToggleDark={() => handleCommand('theme')}
-        onOpenMetadata={() => setShowMetadata(true)}
-        onToast={setToastMsg}
-        collaborators={collaborators}
-        mobileMenuOpen={mobileMenuOpen}
-        setMobileMenuOpen={setMobileMenuOpen}
-      />
-
-      <div className="w-full h-px bg-[var(--rule)] flex-shrink-0" />
-
-      <div className={`hidden md:block ${zenMode ? 'hidden' : ''}`}>
-        <TabBar 
-          tabs={tabs} 
-          activeTabId={activeTabId} 
-          onSwitch={setActiveTabId} 
-          onClose={handleCloseTab} 
-          onNew={handleAddNew} 
-        />
-      </div>
-
-      {/* Mobile Tab Bar - Simplified */}
-      <div className="md:hidden border-b border-[var(--rule)] bg-[var(--cream)] overflow-x-auto flex">
-        {tabs.map((tab) => {
-          const isActive = tab.id === activeTabId;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTabId(tab.id)}
-              className={`px-3 py-2 text-xs whitespace-nowrap border-r border-[var(--rule)] ${isActive ? 'bg-[var(--paper)] text-[var(--ink)] border-t-2 border-t-[var(--accent)]' : 'text-[var(--mid)]'}`}
-            >
-              {tab.title.length > 12 ? tab.title.slice(0, 12) + '…' : tab.title}
-            </button>
-          );
-        })}
-        <button onClick={() => handleAddNew()} className="px-3 py-2 text-[var(--mid)] border-r border-[var(--rule)]">
-          <Plus size={14} />
-        </button>
-      </div>
-
-<div ref={splitRef} className="editor-body relative">
-  {/* Only render sidebar when open */}
-  {sidebarOpen && (
-    <OutlineSidebar
-      content={activeTab.content}
-      isOpen={sidebarOpen}
-      activeLineNumber={activeLine}
-      onHeadingClick={(line) => { editorRef.current?.scrollToLine(line); setSidebarOpen(false); }}
-      onClose={() => setSidebarOpen(false)}
-      width={isMobile ? 280 : sidebarWidth}
-    />
-  )}
-  
-  {/* Move the resize handle inside the conditional or remove if not needed */}
-  {sidebarOpen && !isMobile && (
-    <div
-      className="hidden md:block"
-      style={{
-        width: 5, 
-        flexShrink: 0, 
-        cursor: 'col-resize', 
-        position: 'relative',
-        background: sidebarDragging ? 'var(--accent-dim)' : 'transparent',
-        borderRight: `1px solid ${sidebarDragging ? 'var(--accent)' : 'var(--rule)'}`,
-        zIndex: 21,
-      }}
-      onMouseDown={(e) => {
-        e.preventDefault();
-        setSidebarDragging(true);
-        const startX = e.clientX;
-        const startW = sidebarWidth;
-        const move = (m: MouseEvent) => {
-          const rect = splitRef.current?.getBoundingClientRect();
-          if (rect) {
-            const next = Math.min(Math.max(startW + (m.clientX - startX), 160), 420);
-            setSidebarWidth(next);
-          }
-        };
-        const up = () => {
-          setSidebarDragging(false);
-          window.removeEventListener('mousemove', move);
-          window.removeEventListener('mouseup', up);
-        };
-        window.addEventListener('mousemove', move);
-        window.addEventListener('mouseup', up);
-      }}
-    />
-  )}
-
-        <div className="flex flex-col-reverse md:flex-col flex-1 overflow-hidden min-w-0">
-          <Toolbar onAction={handleCommand} focusMode={focusMode} viewMode={viewMode} isMobile={isMobile} />
-
-          <div className="flex flex-1 overflow-hidden relative">
-            <div 
-              className="border-r border-[var(--rule)] min-w-0"
-              style={{ 
-                width: isMobile 
-                  ? (viewMode === 'preview' ? '0%' : '100%') 
-                  : (viewMode === 'split' ? `${splitPct}%` : (viewMode === 'editor' ? '100%' : '0%')), 
-                overflow: 'hidden',
-                display: isMobile && viewMode === 'preview' ? 'none' : 'block'
-              }}
-            >
-              <EditorPane
-                content={activeTab.content}
-                onChange={(c) => updateActiveTab({ content: c })}
-                isDark={isDark}
-                focusMode={focusMode}
-                collaborators={collaborators}
-                onCursorChange={(l, c) => { setCursorLine(l); setCursorCol(c); setActiveLine(l); }}
-                onReady={(api) => { editorRef.current = api; }}
-              />
-            </div>
-
-            {!isMobile && viewMode === 'split' && (
-              <div 
-                className={`split-handle ${dragging ? 'active' : ''}`}
-                style={{ left: `${splitPct}%` }}
-                onMouseDown={(e) => {
-                  setDragging(true);
-                  const move = (m: MouseEvent) => {
-                    const rect = splitRef.current?.getBoundingClientRect();
-                    if (rect) setSplitPct(Math.min(Math.max((m.clientX - rect.left) / rect.width * 100, 20), 80));
-                  };
-                  const up = () => { setDragging(false); window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); };
-                  window.addEventListener('mousemove', move);
-                  window.addEventListener('mouseup', up);
-                }}
-              />
-            )}
-
-            <div 
-              className="bg-[var(--cream)] prose-editor min-w-0"
-              style={{ 
-                flex: isMobile 
-                  ? (viewMode === 'editor' ? 0 : 1) 
-                  : (viewMode === 'preview' ? 1 : (viewMode === 'split' ? 1 : 0)), 
-                overflow: 'hidden',
-                display: isMobile && viewMode === 'editor' ? 'none' : 'block',
-                width: isMobile && viewMode === 'editor' ? '0%' : 'auto'
-              }}
-            >
-              <div className="h-full overflow-y-auto p-4 md:p-8 lg:p-16 max-w-4xl mx-auto">
-                <PreviewPane content={activeTab.content} containerRef={previewRef} />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {showMetadata && (
-          <div className="db-overlay" onClick={() => setShowMetadata(false)}>
-            <div 
-              className="db-modal"
-              style={{ maxWidth: isMobile ? 'calc(100vw - 32px)' : '400px', margin: isMobile ? '16px' : 'auto' }}
-              onClick={e => e.stopPropagation()}
-            >
-              <MetadataPanel
-                id={activeTab.id}
-                title={activeTab.title}
-                slug={activeTab.slug}
-                setSlug={(s) => updateActiveTab({ slug: s })}
-                status={activeTab.status}
-                setStatus={(s) => updateActiveTab({ status: s })}
-                contentType={activeTab.type}
-                author_id={activeTab.author_id}
-                setContentType={(t) => updateActiveTab({ type: t })}
-                onAutoGenerateSlug={handleAutoSlug}
-                onClose={() => setShowMetadata(false)}
-              />
-            </div>
-          </div>
-        )}
-      </div>
-
-      <StatusBar
-        stats={stats}
-        cursorLine={cursorLine}
-        cursorCol={cursorCol}
-        isSaved={activeTab.isSaved}
-        viewMode={viewMode}
-        wordGoal={wordGoal}
-        goalCelebrated={goalCelebrated}
-        onSetWordGoal={setWordGoal}
-        isMobile={isMobile}
-        onToggleView={() => setViewMode(viewMode === 'editor' ? 'preview' : 'editor')}
-      />
-
-      {/* Mobile View Toggle */}
-      {isMobile && (
-        <button
-          onClick={() => setViewMode(viewMode === 'editor' ? 'preview' : 'editor')}
-          className="fixed bottom-20 right-4 w-12 h-12 bg-[var(--ink)] text-[var(--paper)] flex items-center justify-center shadow-lg z-50"
-          style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}
-        >
-          <span className="db-cap text-[10px]">{viewMode === 'editor' ? 'PREV' : 'EDIT'}</span>
-        </button>
-      )}
-
-      {showCmd && <CommandPalette isDark={isDark} onClose={() => setShowCmd(false)} onCommand={handleCommand} isMobile={isMobile} />}
-      {showTour && <GuidedTour onClose={() => setShowTour(false)} isMobile={isMobile} />}
+    <div className="min-h-[100dvh] bg-[var(--paper)] text-[var(--ink)] flex flex-col">
       
-      {confirm && (
-        <div className="db-overlay">
-          <div className="db-modal" style={{ maxWidth: isMobile ? 'calc(100vw - 32px)' : '480px', margin: isMobile ? '16px' : 'auto', borderLeft: '3px solid #b03030' }}>
-             <ConfirmModal
-              title={confirm.title}
-              message={confirm.message}
-              confirmLabel={confirm.confirmLabel}
-              danger={confirm.danger}
-              onConfirm={() => { confirm.onConfirm(); setConfirm(null); }}
-              onCancel={() => setConfirm(null)}
+      {/* Header */}
+      <header className="db-header flex items-center justify-between px-4 md:px-6 h-[42px] border-b border-[var(--rule)] bg-[var(--paper)] sticky top-0 z-50">
+        {/* Left: Logo */}
+        <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
+          <Link href="/" className="flex items-center gap-2 text-[var(--ink)] no-underline">
+            <Logo size={14} />
+            <span className="font-[var(--ff-display)] text-[15px] font-bold tracking-tight hidden sm:block">
+              Carcino Vantage
+            </span>
+          </Link>
+          <span className="hidden sm:block text-[var(--rule)] text-sm font-[var(--ff-mono)]">/</span>
+          <span className="hidden sm:block font-[var(--ff-mono)] text-[9px] tracking-[0.14em] uppercase text-[var(--mid)]">
+            Team
+          </span>
+        </div>
+
+        {/* Center: Search */}
+        <div className="flex-1 max-w-[320px] mx-2 md:mx-4 hidden sm:block">
+          <div className="relative">
+            <Search size={11} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--mid)]" />
+            <input
+              type="text"
+              placeholder="Search team..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full bg-transparent border border-[var(--rule)] py-1.5 pl-8 pr-3 font-[var(--ff-mono)] text-[10px] tracking-wide text-[var(--ink)] focus:border-[var(--accent)] outline-none transition-colors"
             />
           </div>
         </div>
-      )}
 
-      {toastMsg && (
-        <Toast message={toastMsg} onDismiss={() => setToastMsg(null)} />
-      )}
-
-      {showSettings && (
-        <div className="db-overlay">
-          <div className="db-modal" style={{ maxWidth: isMobile ? 'calc(100vw - 32px)' : '600px', margin: isMobile ? '16px' : 'auto', maxHeight: isMobile ? 'calc(100vh - 32px)' : '90vh', overflow: 'auto' }}>
-            <SettingsModal
-              settings={appSettings}
-              onClose={() => setShowSettings(false)}
-              onChange={(next) => {
-                setAppSettings(next);
-                saveSettings(next);
-                const dark = applySettings(next);
-                setIsDark(dark);
-              }}
+        {/* Mobile Search Toggle */}
+        <div className="flex-1 sm:hidden mx-2">
+          <div className="relative">
+            <Search size={11} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--mid)]" />
+            <input
+              type="text"
+              placeholder="Search..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full bg-transparent border border-[var(--rule)] py-1.5 pl-8 pr-3 font-[var(--ff-mono)] text-[10px] text-[var(--ink)] focus:border-[var(--accent)] outline-none"
             />
           </div>
         </div>
-      )}
-    </div>
-  );
-}
 
-export default function Page() {
-  return (
-    <Suspense fallback={
-      <div className="app-bg flex items-center justify-center min-h-screen">
-        <div className="flex flex-col items-center gap-2">
-          <div className="w-12 h-[1px] bg-[var(--accent)] animate-pulse" />
-          <span className="db-cap text-[8px] tracking-[0.3em]">LOADING VANTAGE</span>
+        {/* Right: Actions */}
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <button 
+            className="db-icon-btn w-7 h-7 flex items-center justify-center border border-transparent hover:border-[var(--rule)] text-[var(--mid)] hover:text-[var(--ink)] transition-colors" 
+            onClick={toggleTheme}
+          >
+            {isDark ? <Sun size={13} /> : <Moon size={13} />}
+          </button>
+          
+          <div className="hidden sm:block w-px h-4 bg-[var(--rule)] mx-1" />
+          
+          <button
+            ref={accountBtnRef}
+            className="flex items-center gap-2 px-2 py-1 border border-transparent hover:border-[var(--rule)] text-[var(--ink)] transition-colors"
+            onClick={() => {
+              if (!showAccountMenu && accountBtnRef.current) {
+                const r = accountBtnRef.current.getBoundingClientRect();
+                setAccountMenuPos({ top: r.bottom + 5, right: window.innerWidth - r.right });
+              }
+              setShowAccountMenu(o => !o);
+            }}
+          >
+            {currentUser?.avatar_url ? (
+              <div className="w-5 h-5 border border-[var(--rule)] overflow-hidden">
+                <Image src={currentUser.avatar_url} alt="Profile" width={20} height={20} />
+              </div>
+            ) : (
+              <div className="db-avatar w-5 h-5 flex items-center justify-center bg-[var(--accent)] text-[var(--paper)] text-xs font-[var(--ff-mono)]">
+                {currentUser?.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || 'U'}
+              </div>
+            )}
+            <span className="hidden md:block font-[var(--ff-mono)] text-[9px] font-medium tracking-wider text-[var(--ink)]">
+              {currentUser?.name || ''}
+            </span>
+            <ChevronDown size={10} className="hidden sm:block text-[var(--mid)]" />
+          </button>
         </div>
+      </header>
+
+      {/* Body */}
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+        
+        {/* Sidebar - Desktop */}
+        <aside className="hidden md:flex w-[210px] flex-shrink-0 flex-col border-r border-[var(--rule)] bg-[var(--paper)] overflow-y-auto">
+          <div className="db-sidebar-label px-5 py-2 font-[var(--ff-mono)] text-[8px] font-semibold tracking-[0.22em] uppercase text-[var(--ink)] opacity-90">
+            Navigate
+          </div>
+
+          {NAV_ITEMS.map((item, i) => (
+            <Link
+              key={item.id}
+              href={item.href}
+              className={`flex items-center gap-2 px-5 py-2 border-l-2 border-t border-[var(--rule)] bg-transparent font-[var(--ff-mono)] text-[9px] font-medium tracking-wide uppercase text-[var(--ink)] text-left w-full transition-colors hover:bg-[rgba(152,117,193,0.06)] ${item.id === activeNav ? 'border-l-[var(--accent)] text-[var(--accent)] bg-[rgba(152,117,193,0.04)]' : 'border-l-transparent'}`}
+            >
+              <span className={`font-[var(--ff-display)] italic text-[10px] w-4 flex-shrink-0 ${item.id === activeNav ? 'text-[var(--accent)]' : 'text-[var(--mid)]'}`}>
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <span className="flex-1">{item.label}</span>
+            </Link>
+          ))}
+
+          <div className="h-px bg-[var(--rule)] my-3" />
+          
+          <div className="db-sidebar-label px-5 py-2 font-[var(--ff-mono)] text-[8px] font-semibold tracking-[0.22em] uppercase text-[var(--ink)] opacity-90">
+            Filter
+          </div>
+
+          <button
+            className={`flex items-center gap-2 px-5 py-2 border-l-2 border-t border-[var(--rule)] bg-transparent font-[var(--ff-mono)] text-[9px] font-medium tracking-wide uppercase text-[var(--ink)] text-left w-full transition-colors hover:bg-[rgba(152,117,193,0.06)] ${filter === 'all' ? 'border-l-[var(--accent)] text-[var(--accent)]' : 'border-l-transparent'}`}
+            onClick={() => setFilter('all')}
+          >
+            <span className="font-[var(--ff-display)] italic text-[10px] w-4 flex-shrink-0 text-[var(--mid)]">—</span>
+            <span className="flex-1">All ({members.length})</span>
+          </button>
+
+          <button
+            className={`flex items-center gap-2 px-5 py-2 border-l-2 border-t border-[var(--rule)] bg-transparent font-[var(--ff-mono)] text-[9px] font-medium tracking-wide uppercase text-[var(--ink)] text-left w-full transition-colors hover:bg-[rgba(152,117,193,0.06)] ${filter === 'admin' ? 'border-l-[var(--accent)] text-[var(--accent)]' : 'border-l-transparent'}`}
+            onClick={() => setFilter('admin')}
+          >
+            <span className="w-4 flex-shrink-0"><Shield size={9} /></span>
+            <span className="flex-1">Admins</span>
+          </button>
+
+          <div className="h-px bg-[var(--rule)] my-3" />
+          
+          <div className="db-sidebar-label px-5 py-2 font-[var(--ff-mono)] text-[8px] font-semibold tracking-[0.22em] uppercase text-[var(--ink)] opacity-90">
+            Departments
+          </div>
+
+          {DEPARTMENTS.filter(d => d !== 'Other').map((dept) => {
+            const count = members.filter(m => m.department === dept).length;
+            return (
+              <button
+                key={dept}
+                className={`flex items-center gap-2 px-5 py-2 border-l-2 border-t border-[var(--rule)] bg-transparent font-[var(--ff-mono)] text-[9px] font-medium tracking-wide uppercase text-[var(--ink)] text-left w-full transition-colors hover:bg-[rgba(152,117,193,0.06)] ${filter === dept ? 'border-l-[var(--accent)] text-[var(--accent)]' : 'border-l-transparent'}`}
+                onClick={() => setFilter(dept)}
+              >
+                <span className="font-[var(--ff-display)] italic text-[10px] w-4 flex-shrink-0 text-[var(--mid)]">
+                  {DEPT_NUM[dept]}
+                </span>
+                <span className="flex-1 truncate">{dept}</span>
+                {count > 0 && (
+                  <span className={`font-[var(--ff-mono)] text-[8px] px-1.5 py-0.5 tracking-wide ${filter === dept ? 'bg-[var(--accent)] text-[var(--paper)]' : 'bg-[var(--accent-dim)] text-[var(--mid)]'}`}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto bg-[var(--paper)] p-4 md:p-8 pb-20 md:pb-8">
+          
+          {/* Page Header */}
+          <div className="mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
+              <div>
+                <h1 className="font-[var(--ff-display)] text-[28px] md:text-[34px] font-bold tracking-tight text-[var(--ink)] leading-none">
+                  Team<em className="text-[var(--accent)]">.</em>
+                </h1>
+                <p className="mt-2 font-[var(--ff-mono)] text-[9px] tracking-[0.1em] uppercase text-[var(--mid)]">
+                  {totalShown} member{totalShown !== 1 ? 's' : ''} — The Carcino Foundation
+                </p>
+              </div>
+              {currentUser?.admin_access && (
+                <button className="db-btn self-start flex items-center gap-2 px-4 py-2 bg-[var(--ink)] text-[var(--paper)] font-[var(--ff-mono)] text-[9px] font-medium tracking-[0.16em] uppercase clip-path-polygon hover:opacity-90 transition-opacity">
+                  <Plus size={10} strokeWidth={2.2} />
+                  <span>Invite</span>
+                </button>
+              )}
+            </div>
+            
+            <div className="w-full h-px bg-[var(--rule)] mb-6 shadow-[0_1px_0_var(--ink),0_2px_0_var(--rule)]" />
+          </div>
+
+          {/* Mobile Filter Dropdown */}
+          <div className="md:hidden mb-6">
+            <label className="block font-[var(--ff-mono)] text-[8px] tracking-[0.2em] uppercase text-[var(--mid)] mb-2">
+              Filter Department
+            </label>
+            <div className="relative">
+              <select
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                className="w-full appearance-none bg-[var(--paper)] border border-[var(--rule)] px-3 py-2.5 pr-10 font-[var(--ff-mono)] text-[11px] text-[var(--ink)] focus:border-[var(--accent)] outline-none"
+              >
+                <option value="all">All Members ({members.length})</option>
+                <option value="admin">Administrators</option>
+                {DEPARTMENTS.filter(d => d !== 'Other').map(d => (
+                  <option key={d} value={d}>{d} ({members.filter(m => m.department === d).length})</option>
+                ))}
+              </select>
+              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--mid)] pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Desktop Filter Tabs */}
+          <div className="hidden md:flex flex-wrap gap-0 border border-[var(--rule)] mb-8">
+            <button
+              onClick={() => setFilter('all')}
+              className={`px-4 py-2 border-r border-[var(--rule)] font-[var(--ff-mono)] text-[8px] tracking-[0.14em] uppercase transition-colors ${filter === 'all' ? 'bg-[var(--ink)] text-[var(--paper)]' : 'text-[var(--mid)] hover:text-[var(--ink)] hover:bg-[var(--accent-sub)]'}`}
+            >
+              All ({members.length})
+            </button>
+            <button
+              onClick={() => setFilter('admin')}
+              className={`px-4 py-2 border-r border-[var(--rule)] font-[var(--ff-mono)] text-[8px] tracking-[0.14em] uppercase transition-colors ${filter === 'admin' ? 'bg-[var(--ink)] text-[var(--paper)]' : 'text-[var(--mid)] hover:text-[var(--ink)] hover:bg-[var(--accent-sub)]'}`}
+            >
+              Admins
+            </button>
+            {DEPARTMENTS.filter(d => d !== 'Other').map((dept) => (
+              <button
+                key={dept}
+                onClick={() => setFilter(dept)}
+                className={`px-4 py-2 border-r border-[var(--rule)] last:border-r-0 font-[var(--ff-mono)] text-[8px] tracking-[0.14em] uppercase transition-colors ${filter === dept ? 'bg-[var(--ink)] text-[var(--paper)]' : 'text-[var(--mid)] hover:text-[var(--ink)] hover:bg-[var(--accent-sub)]'}`}
+              >
+                {dept}
+              </button>
+            ))}
+          </div>
+
+          {/* Members List */}
+          {loading ? (
+            <div className="border border-[var(--rule)] border-b-0">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="h-16 border-b border-[var(--rule)] animate-pulse bg-[var(--cream)] opacity-50" />
+              ))}
+            </div>
+          ) : totalShown === 0 ? (
+            <div className="py-12 text-center border border-[var(--rule)]">
+              <Users size={28} className="mx-auto mb-3 text-[var(--mid)]" />
+              <p className="font-[var(--ff-mono)] text-[10px] tracking-[0.14em] uppercase text-[var(--mid)]">
+                No members found
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-8 md:gap-10">
+              {Object.entries(groupedMembers).map(([dept, deptMembers], deptIndex) => (
+                <section key={dept} className="animate-[fadeIn_0.4s_ease-out]" style={{ animationDelay: `${deptIndex * 0.05}s` }}>
+                  
+                  {/* Department Header */}
+                  <div className="flex items-center gap-3 mb-4 pb-2 border-b border-[var(--rule)]">
+                    <span className="font-[var(--ff-display)] italic text-[11px] text-[var(--accent)] w-6">
+                      {DEPT_NUM[dept] || String(deptIndex + 1).padStart(2, '0')}
+                    </span>
+                    <span className="font-[var(--ff-mono)] text-[9px] tracking-[0.2em] uppercase text-[var(--ink)] font-medium">
+                      {dept}
+                    </span>
+                    <div className="flex-1 h-px bg-[var(--rule)]" />
+                    <span className="font-[var(--ff-mono)] text-[8px] font-bold tracking-wider bg-[var(--accent)] text-[var(--paper)] px-2 py-0.5">
+                      {deptMembers.length}
+                    </span>
+                  </div>
+
+                  {/* Members Cards */}
+                  <div className="grid gap-3 md:gap-0 md:border md:border-[var(--rule)] md:border-b-0">
+                    {deptMembers.map((member) => (
+                      <div
+                        key={member.id}
+                        className="bg-[var(--paper)] md:bg-transparent border md:border-0 border-[var(--rule)] p-4 md:p-0 md:border-b md:border-[var(--rule)] hover:bg-[var(--accent-sub)] transition-colors group"
+                      >
+                        {/* Mobile Layout */}
+                        <div className="md:hidden">
+                          <div className="flex items-start gap-3 mb-3">
+                            <div className="relative flex-shrink-0">
+                              <div className="w-10 h-10 border border-[var(--rule)] overflow-hidden">
+                                {member.avatar_url ? (
+                                  <Image src={member.avatar_url} alt={member.name} width={40} height={40} className="object-cover w-full h-full" />
+                                ) : (
+                                  <div className="w-full h-full bg-[var(--accent-dim)] flex items-center justify-center font-[var(--ff-display)] font-bold text-sm text-[var(--accent)]">
+                                    {member.name?.split(' ').map(n => n[0]).join('').slice(0, 2) || '?'}
+                                  </div>
+                                )}
+                              </div>
+                              {member.admin_access && (
+                                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[var(--accent)] flex items-center justify-center" title="Admin">
+                                  <Shield size={8} className="text-[var(--paper)]" />
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="font-[var(--ff-display)] text-sm font-bold text-[var(--ink)] truncate">
+                                  {member.name}
+                                </h3>
+                                {member.admin_access && (
+                                  <span className="flex-shrink-0 px-1.5 py-0.5 border border-[var(--accent)] text-[var(--accent)] bg-[var(--accent-sub)] font-[var(--ff-mono)] text-[7px] tracking-wider uppercase">
+                                    Admin
+                                  </span>
+                                )}
+                              </div>
+                              <p className="font-[var(--ff-mono)] text-[9px] text-[var(--mid)] mb-1">
+                                {member.position || 'Contributor'}
+                              </p>
+                              <p className="font-[var(--ff-mono)] text-[9px] text-[var(--mid)] flex items-center gap-1.5 truncate">
+                                <Mail size={8} />
+                                <span className="truncate">{member.email || `${member.username}@carcino.work`}</span>
+                              </p>
+                            </div>
+                            
+                            <div className={`w-2 h-2 flex-shrink-0 ${member.is_active ? 'bg-[#3e9a5e]' : 'bg-[var(--mid)]'}`} title={member.is_active ? 'Active' : 'Inactive'} />
+                          </div>
+                          
+                          <div className="flex items-center gap-2 pt-3 border-t border-[var(--rule)]">
+                            <a
+                              href={`https://github.com/${member.username}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1.5 px-3 py-1.5 border border-[var(--rule)] text-[var(--mid)] hover:text-[var(--accent)] hover:border-[var(--accent)] font-[var(--ff-mono)] text-[9px] transition-colors"
+                            >
+                              <Github size={10} />
+                              <span>GitHub</span>
+                            </a>
+                            <a
+                              href={`https://linkedin.com/in/${member.username}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1.5 px-3 py-1.5 border border-[var(--rule)] text-[var(--mid)] hover:text-[var(--accent)] hover:border-[var(--accent)] font-[var(--ff-mono)] text-[9px] transition-colors"
+                            >
+                              <Linkedin size={10} />
+                              <span>LinkedIn</span>
+                            </a>
+                            {currentUser?.admin_access && (
+                              <button
+                                onClick={() => setShowAssignModal(member)}
+                                className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-[var(--ink)] text-[var(--paper)] font-[var(--ff-mono)] text-[9px] tracking-wider uppercase hover:opacity-90 transition-opacity"
+                              >
+                                <Plus size={10} />
+                                <span>Assign</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Desktop Layout */}
+                        <div className="hidden md:grid md:grid-cols-[52px_1fr_auto] md:items-center md:gap-4 md:px-4 md:py-3.5">
+                          {/* Avatar */}
+                          <div className="relative">
+                            <div className="w-10 h-10 border border-[var(--rule)] overflow-hidden">
+                              {member.avatar_url ? (
+                                <Image src={member.avatar_url} alt={member.name} width={40} height={40} className="object-cover w-full h-full" />
+                              ) : (
+                                <div className="w-full h-full bg-[var(--accent-dim)] flex items-center justify-center font-[var(--ff-display)] font-bold text-sm text-[var(--accent)]">
+                                  {member.name?.split(' ').map(n => n[0]).join('').slice(0, 2) || '?'}
+                                </div>
+                              )}
+                            </div>
+                            {member.admin_access && (
+                              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[var(--accent)] flex items-center justify-center" title="Admin">
+                                <Shield size={8} className="text-[var(--paper)]" />
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Info */}
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-3 mb-1">
+                              <h3 className="font-[var(--ff-display)] text-[13px] font-bold text-[var(--ink)]">
+                                {member.name}
+                              </h3>
+                              {member.admin_access && (
+                                <span className="px-1.5 py-0.5 border border-[var(--accent)] text-[var(--accent)] bg-[var(--accent-sub)] font-[var(--ff-mono)] text-[7px] tracking-wider uppercase">
+                                  Admin
+                                </span>
+                              )}
+                              <div className={`w-1.5 h-1.5 ${member.is_active ? 'bg-[#3e9a5e]' : 'bg-[var(--mid)]'}`} title={member.is_active ? 'Active' : 'Inactive'} />
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <span className="font-[var(--ff-mono)] text-[9px] text-[var(--mid)]">
+                                {member.position || 'Contributor'}
+                              </span>
+                              <span className="font-[var(--ff-mono)] text-[9px] text-[var(--mid)] flex items-center gap-1.5">
+                                <Mail size={8} />
+                                {member.email || `${member.username}@carcino.work`}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={`https://github.com/${member.username}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-2 border border-[var(--rule)] text-[var(--mid)] hover:text-[var(--accent)] hover:border-[var(--accent)] transition-colors"
+                              title="GitHub"
+                            >
+                              <Github size={10} />
+                            </a>
+                            <a
+                              href={`https://linkedin.com/in/${member.username}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-2 border border-[var(--rule)] text-[var(--mid)] hover:text-[var(--accent)] hover:border-[var(--accent)] transition-colors"
+                              title="LinkedIn"
+                            >
+                              <Linkedin size={10} />
+                            </a>
+                            {currentUser?.admin_access && (
+                              <button
+                                onClick={() => setShowAssignModal(member)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--ink)] text-[var(--paper)] font-[var(--ff-mono)] text-[8px] tracking-wider uppercase hover:opacity-90 transition-opacity"
+                              >
+                                <Plus size={9} />
+                                Assign
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          )}
+        </main>
       </div>
-    }>
-      <EditorContent />
-    </Suspense>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--paper)] border-t border-[var(--rule)] z-40">
+        <div className="bg-[var(--tape-bg)] h-6 flex items-center overflow-hidden">
+          <div className="flex whitespace-nowrap animate-[scroll_28s_linear_infinite]">
+            {[...TAPE_ITEMS, ...TAPE_ITEMS].map((item, i) => (
+              <span key={i} className="font-[var(--ff-mono)] text-[8px] tracking-wider uppercase px-3.5 text-[rgba(240,236,228,0.7)]">
+                {item}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="flex h-[52px]">
+          {[
+            { id: 'home', label: 'Home', href: '/' },
+            { id: 'tasks', label: 'Tasks', href: '/tasks' },
+            { id: 'team', label: 'Team', href: '/team' },
+          ].map(item => (
+            <Link 
+              key={item.id} 
+              href={item.href} 
+              className={`flex-1 flex flex-col items-center justify-center gap-1 border-r border-[var(--rule)] last:border-r-0 font-[var(--ff-mono)] text-[7px] tracking-wider uppercase transition-colors ${item.id === 'team' ? 'text-[var(--accent)] border-b-2 border-b-[var(--accent)] bg-[var(--accent-dim)]' : 'text-[var(--mid)]'}`}
+            >
+              {item.id === 'home' && (
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+                </svg>
+              )}
+              {item.id === 'tasks' && (
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                </svg>
+              )}
+              {item.id === 'team' && (
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+              )}
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </div>
+      </nav>
+
+      {/* Overlays */}
+      {showAccountMenu && accountMenuPos && createPortal(
+        <div className="fixed z-[9960]" style={{ top: accountMenuPos.top, right: accountMenuPos.right }}>
+          <AccountMenu user={currentUser} onClose={() => setShowAccountMenu(false)} onToast={m => setToast(m)} />
+        </div>,
+        document.body
+      )}
+      
+      {showAssignModal && (
+        <AssignTaskModal
+          member={showAssignModal}
+          onClose={() => setShowAssignModal(null)}
+          onSuccess={() => { setShowAssignModal(null); setToast('Task assigned successfully'); }}
+        />
+      )}
+      
+      {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
+    </div>
   );
 }

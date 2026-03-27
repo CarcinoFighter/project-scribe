@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useTheme } from '@/lib/useTheme';
 import {
   Users, Mail, Shield, Search, Sun, Moon,
-  ArrowLeft, Github, Linkedin, Plus, ChevronDown,
+  Github, Linkedin, Plus, ChevronDown,
 } from 'lucide-react';
 import { useUser } from '@/lib/useUser';
 import AccountMenu from '@/components/AccountMenu';
@@ -47,7 +47,6 @@ const DEPT_NUM: Record<string, string> = {
 
 const TAPE_ITEMS = ['LEADERSHIP', 'WRITERS', 'DESIGN', 'DEV', 'PR', 'TEAM', '2026', '✦'];
 
-/* ── Logo ─────────────────────────────────────────────────── */
 function Logo({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={Math.round(size * 1.2)} viewBox="0 0 20 24" fill="none" aria-hidden>
@@ -120,14 +119,13 @@ export default function TeamPage() {
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--paper)', color: 'var(--ink)', display: 'flex', flexDirection: 'column' }}>
 
-      {/* ══ HEADER ═══════════════════════════════════════════════ */}
+      {/* Header */}
       <header className="db-header">
-        {/* Brand */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, userSelect: 'none' }}>
           <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink)', textDecoration: 'none' }}>
             <Logo size={14} />
             <span style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1 }}>
-              Carcino<span className="hidden sm:inline"> Vantage</span>
+              <span className="hidden sm:inline"> Carcino</span> Vantage
             </span>
           </Link>
           <span style={{ color: 'var(--rule)', fontSize: 14, fontFamily: 'var(--ff-mono)' }}>/</span>
@@ -136,7 +134,6 @@ export default function TeamPage() {
 
         <div className="db-vr" />
 
-        {/* Search */}
         <div style={{ position: 'relative', flex: 1, maxWidth: 320, display: 'flex', alignItems: 'center' }}>
           <Search size={11} style={{ position: 'absolute', left: 10, color: 'var(--mid)', pointerEvents: 'none' }} />
           <input
@@ -163,7 +160,6 @@ export default function TeamPage() {
 
         <div style={{ flex: 1 }} />
 
-        {/* Right actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <button className="db-icon-btn" onClick={toggleTheme} title={isDark ? 'Light' : 'Dark'}>
             {isDark ? <Sun size={13} strokeWidth={1.8} /> : <Moon size={13} strokeWidth={1.8} />}
@@ -198,10 +194,10 @@ export default function TeamPage() {
         </div>
       </header>
 
-      {/* ══ BODY ══════════════════════════════════════════════════ */}
+      {/* Body */}
       <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
 
-        {/* ── SIDEBAR ──────────────────────────────────────────── */}
+        {/* Sidebar */}
         <aside className="db-sidebar">
           <div className="db-sidebar-label">Navigate</div>
 
@@ -219,7 +215,6 @@ export default function TeamPage() {
           <div className="db-sidebar-rule" />
           <div className="db-sidebar-label">Filter</div>
 
-          {/* All / Admin */}
           {[{ key: 'all', label: `All (${members.length})` }, { key: 'admin', label: 'Admins' }].map(f => (
             <button
               key={f.key}
@@ -256,7 +251,7 @@ export default function TeamPage() {
           })}
         </aside>
 
-        {/* ── MAIN ─────────────────────────────────────────────── */}
+        {/* Main */}
         <main className="db-main">
 
           {/* Page title */}
@@ -278,8 +273,22 @@ export default function TeamPage() {
           </div>
           <hr className="db-triple-rule" />
 
-          {/* Filter bar */}
-          <div className="db-filter-bar db-rise-1">
+          {/* Filter bar - Scrollable */}
+          <div className="db-filter-bar db-rise-1" style={{
+            display: 'flex',
+            overflowX: 'auto',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+            WebkitOverflowScrolling: 'touch',
+            gap: 0,
+            flexWrap: 'nowrap',
+            border: '1px solid var(--rule)',
+          }}>
+            <style jsx>{`
+              div::-webkit-scrollbar {
+                display: none;
+              }
+            `}</style>
             {[
               { k: 'all',   l: `All (${members.length})` },
               { k: 'admin', l: 'Admins' },
@@ -289,6 +298,12 @@ export default function TeamPage() {
                 key={f.k}
                 className={`db-filter-btn${filter === f.k ? ' active' : ''}`}
                 onClick={() => setFilter(f.k)}
+                style={{ 
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                  borderRight: '1px solid var(--rule)',
+                  borderBottom: 'none',
+                }}
               >
                 {f.l}
               </button>
@@ -313,7 +328,7 @@ export default function TeamPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
               {Object.entries(groupedMembers).map(([dept, deptMembers], si) => (
                 <section key={dept} className="db-rise-1" style={{ animationDelay: `${si * 0.06}s` }}>
-                  {/* Dept header — editorial section rule */}
+                  {/* Dept header */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 14 }}>
                     <span style={{
                       fontFamily: 'var(--ff-display)',
@@ -340,16 +355,14 @@ export default function TeamPage() {
                     </span>
                   </div>
 
-                  {/* Members grid list — editorial rows */}
+                  {/* Members grid list - Responsive */}
                   <div style={{ border: '1px solid var(--rule)', borderBottom: 'none' }}>
                     {deptMembers.map((member, mi) => (
                       <div
                         key={member.id}
                         style={{
-                          display: 'grid',
-                          gridTemplateColumns: '52px 1fr auto',
-                          alignItems: 'center',
-                          gap: 16,
+                          display: 'flex',
+                          flexDirection: 'column',
                           padding: '14px 18px',
                           borderBottom: '1px solid var(--rule)',
                           transition: 'background 0.12s',
@@ -358,78 +371,90 @@ export default function TeamPage() {
                         onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-sub)')}
                         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                       >
-                        {/* Avatar */}
-                        <div style={{ position: 'relative' }}>
-                          <div style={{ width: 40, height: 40, overflow: 'hidden', border: '1px solid var(--rule)', flexShrink: 0 }}>
-                            {member.avatar_url ? (
-                              <Image src={member.avatar_url} alt={member.name} width={40} height={40} style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
-                            ) : (
-                              <div style={{ width: '100%', height: '100%', background: 'var(--accent-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--ff-display)', fontWeight: 700, fontSize: 14, color: 'var(--accent)' }}>
-                                {member.name?.split(' ').map(n => n[0]).join('').slice(0, 2) || '?'}
+                        {/* Top Row: Avatar + Info + Status */}
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
+                          {/* Avatar */}
+                          <div style={{ position: 'relative', flexShrink: 0 }}>
+                            <div style={{ width: 40, height: 40, overflow: 'hidden', border: '1px solid var(--rule)' }}>
+                              {member.avatar_url ? (
+                                <Image src={member.avatar_url} alt={member.name} width={40} height={40} style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
+                              ) : (
+                                <div style={{ width: '100%', height: '100%', background: 'var(--accent-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--ff-display)', fontWeight: 700, fontSize: 14, color: 'var(--accent)' }}>
+                                  {member.name?.split(' ').map(n => n[0]).join('').slice(0, 2) || '?'}
+                                </div>
+                              )}
+                            </div>
+                            {member.admin_access && (
+                              <div style={{ position: 'absolute', bottom: -3, right: -3, background: 'var(--accent)', width: 14, height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Admin">
+                                <Shield size={8} style={{ color: 'var(--paper)' }} />
                               </div>
                             )}
                           </div>
-                          {member.admin_access && (
-                            <div style={{ position: 'absolute', bottom: -3, right: -3, background: 'var(--accent)', width: 14, height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Admin">
-                              <Shield size={8} style={{ color: 'var(--paper)' }} />
-                            </div>
-                          )}
-                        </div>
 
-                        {/* Info */}
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-                            <span style={{ fontFamily: 'var(--ff-display)', fontSize: 13.5, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--ink)' }}>
-                              {member.name}
-                            </span>
-                            {member.admin_access && (
-                              <span className="db-status" style={{ color: 'var(--accent)', background: 'var(--accent-sub)', border: '1px solid var(--accent)', fontSize: 7, letterSpacing: '0.14em', padding: '1px 5px' }}>
-                                Admin
+                          {/* Info */}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3, flexWrap: 'wrap' }}>
+                              <span style={{ fontFamily: 'var(--ff-display)', fontSize: 13.5, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--ink)' }}>
+                                {member.name}
                               </span>
-                            )}
-                            <span style={{ width: 4, height: 4, background: member.is_active ? '#3e9a5e' : 'var(--mid)', flexShrink: 0 }} title={member.is_active ? 'Active' : 'Inactive'} />
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-                            <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 9.5, color: 'var(--mid)', letterSpacing: '0.04em' }}>
-                              {member.position || 'Contributor'}
-                            </span>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--ff-mono)', fontSize: 9, color: 'var(--mid)' }}>
-                              <Mail size={9} strokeWidth={1.6} />
-                              {member.email || `${member.username}@carcino.org`}
-                            </span>
+                              {member.admin_access && (
+                                <span className="db-status" style={{ color: 'var(--accent)', background: 'var(--accent-sub)', border: '1px solid var(--accent)', fontSize: 7, letterSpacing: '0.14em', padding: '1px 5px' }}>
+                                  Admin
+                                </span>
+                              )}
+                              <span style={{ width: 4, height: 4, background: member.is_active ? '#3e9a5e' : 'var(--mid)', flexShrink: 0 }} title={member.is_active ? 'Active' : 'Inactive'} />
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                              <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 9.5, color: 'var(--mid)', letterSpacing: '0.04em' }}>
+                                {member.position || 'Contributor'}
+                              </span>
+                              <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--ff-mono)', fontSize: 9, color: 'var(--mid)' }}>
+                                <Mail size={9} strokeWidth={1.6} />
+                                {member.email || `${member.username}@carcino.work`}
+                              </span>
+                            </div>
                           </div>
                         </div>
 
-                        {/* Actions */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                        {/* Bottom Row: Actions - Inside card, full width */}
+                        <div style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: 8, 
+                          paddingTop: 12,
+                          borderTop: '1px solid var(--rule)',
+                          marginTop: 'auto'
+                        }}>
                           <a
                             href={`https://github.com/${member.username}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="db-ghost"
-                            style={{ padding: '4px 8px' }}
+                            style={{ padding: '6px 10px', display: 'flex', alignItems: 'center', gap: 6 }}
                             title="GitHub"
                           >
-                            <Github size={10} strokeWidth={1.8} />
+                            <Github size={12} strokeWidth={1.8} />
+                            <span style={{ fontSize: 9 }}>GitHub</span>
                           </a>
                           <a
                             href={`https://linkedin.com/in/${member.username}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="db-ghost"
-                            style={{ padding: '4px 8px' }}
+                            style={{ padding: '6px 10px', display: 'flex', alignItems: 'center', gap: 6 }}
                             title="LinkedIn"
                           >
-                            <Linkedin size={10} strokeWidth={1.8} />
+                            <Linkedin size={12} strokeWidth={1.8} />
+                            <span style={{ fontSize: 9 }}>LinkedIn</span>
                           </a>
                           {currentUser?.admin_access && (
                             <button
                               className="db-btn"
-                              style={{ padding: '5px 12px', fontSize: 8 }}
+                              style={{ padding: '6px 12px', fontSize: 8, marginLeft: 'auto' }}
                               onClick={() => setShowAssignModal(member)}
                             >
                               <Plus size={9} />
-                              Assign
+                              <span>Assign</span>
                             </button>
                           )}
                         </div>
@@ -443,9 +468,8 @@ export default function TeamPage() {
         </main>
       </div>
 
-      {/* ══ MOBILE BOTTOM NAV ════════════════════════════════════ */}
+      {/* Mobile Bottom Nav */}
       <nav className="db-mobile-nav">
-        {/* Tape strip */}
         <div className="db-tape-bar">
           <div className="db-tape">
             {[...TAPE_ITEMS, ...TAPE_ITEMS].map((item, i) => (
@@ -469,7 +493,7 @@ export default function TeamPage() {
         </div>
       </nav>
 
-      {/* ══ OVERLAYS ═════════════════════════════════════════════ */}
+      {/* Overlays */}
       {showAccountMenu && accountMenuPos && createPortal(
         <div style={{ position: 'fixed', top: accountMenuPos.top, right: accountMenuPos.right, zIndex: 9960 }}>
           <AccountMenu user={currentUser} onClose={() => setShowAccountMenu(false)} onToast={m => setToast(m)} />
