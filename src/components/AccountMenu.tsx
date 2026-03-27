@@ -14,10 +14,11 @@ interface AccountMenuProps {
 
 export default function AccountMenu({ user, onClose, onToast, onOpenSettings }: AccountMenuProps) {
   const router = useRouter();
+
   const items = [
-    { icon: User,       label: 'Profile',      active: false, action: () => { onClose(); router.push('/profile'); } },
-    { icon: Settings,   label: 'Settings',     active: false, action: () => { onClose(); onOpenSettings?.(); } },
-    { icon: Edit3,      label: 'Open Editor',  active: false, action: () => { onClose(); router.push('/editor'); } },
+    { icon: User,     label: 'Profile',     action: () => { onClose(); router.push('/profile'); } },
+    { icon: Settings, label: 'Settings',    action: () => { onClose(); onOpenSettings?.(); } },
+    { icon: Edit3,    label: 'Open Editor', action: () => { onClose(); router.push('/editor'); } },
   ];
 
   const handleLogout = async () => {
@@ -29,36 +30,72 @@ export default function AccountMenu({ user, onClose, onToast, onOpenSettings }: 
   };
 
   return (
-    <div className="glass-overlay anim-drop-in" style={{ borderRadius: 'var(--r-lg)', minWidth: 170, width: 'max-content', maxWidth: 230, overflow: 'hidden', zIndex: 200 }}>
-      <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)' }} className="p-4">
+    <div
+      className="anim-slide-down db-ctx-menu"
+      style={{ minWidth: 190, width: 'max-content', maxWidth: 240, zIndex: 200 }}
+    >
+      {/* ── User identity strip ── */}
+      <div style={{ padding: '13px 14px', borderBottom: '1px solid var(--rule)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {user?.avatar_url ? (
-            <div style={{ width: 34, height: 34, borderRadius: '50%', overflow: 'hidden' }}>
-              <Image src={user.avatar_url} alt="Profile" width={34} height={34} />
-            </div>
-          ) : (
-            <div style={{ width: 34, height: 34, borderRadius: '50%', flexShrink: 0, background: 'linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 12, fontWeight: 700 }}>
-              {user?.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || 'S'}
-            </div>
-          )}
+          {/* Avatar — square per design system */}
+          <div style={{
+            width: 32, height: 32,
+            overflow: 'hidden',
+            border: '1px solid var(--rule)',
+            flexShrink: 0,
+            background: 'var(--accent)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            {user?.avatar_url ? (
+              <Image src={user.avatar_url} alt="Profile" width={32} height={32} style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
+            ) : (
+              <span style={{ fontFamily: 'var(--ff-display)', fontWeight: 700, fontSize: 11, color: 'var(--paper)', letterSpacing: '0.04em' }}>
+                {user?.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || 'S'}
+              </span>
+            )}
+          </div>
+
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.2 }}>{user?.name || 'User'}</div>
-            <div style={{ fontSize: 11, color: 'var(--text-4)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 2 }}>{user?.email || ''}</div>
+            <div style={{
+              fontFamily: 'var(--ff-display)', fontSize: 12, fontWeight: 700,
+              color: 'var(--ink)', whiteSpace: 'nowrap',
+              overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.3,
+            }}>
+              {user?.name || 'User'}
+            </div>
+            <div style={{
+              fontFamily: 'var(--ff-mono)', fontSize: 9, letterSpacing: '0.05em',
+              color: 'var(--mid)', whiteSpace: 'nowrap',
+              overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 2,
+            }}>
+              {user?.email || ''}
+            </div>
           </div>
         </div>
       </div>
+
+      {/* ── Menu items ── */}
       {items.map(item => (
-        <button key={item.label} className="tb-btn" style={{ width: '100%', justifyContent: 'flex-start', padding: '9px 16px', borderRadius: 0, gap: 10, color: item.active ? 'var(--accent)' : 'var(--text-3)', background: item.active ? 'var(--accent-subtle)' : 'transparent' }} onClick={item.action}>
-          <item.icon size={14} strokeWidth={1.8} />
-          <span style={{ fontSize: 13 }}>{item.label}</span>
+        <button
+          key={item.label}
+          className="db-ctx-item"
+          style={{ width: '100%', textAlign: 'left' }}
+          onClick={item.action}
+        >
+          <item.icon size={11} strokeWidth={1.8} />
+          {item.label}
         </button>
       ))}
-      <div style={{ borderTop: '1px solid var(--border)' }}>
-        <button className="tb-btn" style={{ width: '100%', justifyContent: 'flex-start', padding: '9px 16px', borderRadius: 0, gap: 10, color: '#ef4444' }} onClick={handleLogout}>
-          <LogOut size={14} strokeWidth={1.8} />
-          <span style={{ fontSize: 13 }}>Sign out</span>
-        </button>
-      </div>
+
+      {/* ── Sign out ── */}
+      <button
+        className="db-ctx-item danger"
+        style={{ width: '100%', textAlign: 'left', borderTop: '1px solid var(--rule)' }}
+        onClick={handleLogout}
+      >
+        <LogOut size={11} strokeWidth={1.8} />
+        Sign out
+      </button>
     </div>
   );
 }
