@@ -26,15 +26,16 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { 
+    const {
       assigned_to, // Now expected to be an array of UUIDs
-      title, 
-      description, 
-      status, 
-      priority, 
-      due_date, 
-      category, 
-      department 
+      title,
+      description,
+      status,
+      priority,
+      due_date,
+      category,
+      category_icon,
+      department,
     } = await req.json();
 
     if (!assigned_to || !Array.isArray(assigned_to) || assigned_to.length === 0 || !title || !category) {
@@ -128,7 +129,8 @@ export async function POST(req: NextRequest) {
         title,
         description: description || '',
         category,
-        department: (category === 'task' || category === 'other') ? department : "Writers' Block",
+        category_icon: category_icon || null,
+        department: department || null,
         status: status || 'todo',
         priority: priority || 'normal',
         due_date,

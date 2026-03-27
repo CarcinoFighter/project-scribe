@@ -32,7 +32,21 @@ import {
   Trash2,
   Menu,
   X,
-  Layers as LayersIcon
+  Layers as LayersIcon,
+  Star, Zap, Globe, Camera, Music, Video, Mail, Share2, BarChart2,
+  Cpu, Microscope, Stethoscope, Landmark, FlaskConical,
+  Activity, Airplay, Anchor, Archive, Award, Bell, Bike, Bookmark,
+  Box, Brain, Bug, Building, Building2, Bus, Calculator, Cast,
+  Clipboard, Clock, Cloud, Coffee, Columns, Compass, CreditCard, Crop,
+  Database, Download, Edit, Filter, Flag, Folder, Gift, GitBranch,
+  Grid, Hash, Headphones, Home,
+  Image as LucideImage, Inbox, Key, Layout,
+  LifeBuoy, Link as LucideLink, List, Lock, Map, MapPin, MessageCircle, MessageSquare,
+  Monitor, Moon, Package, Phone, Printer, Radio, RefreshCw, Rss,
+  Search, Server, Settings, Slack, Sliders, Smartphone, Speaker, Sun,
+  Tag, Terminal, Thermometer, ThumbsUp, TrendingUp, Truck,
+  Twitter, Type, Umbrella, Upload, UserCheck, UserPlus, Volume2,
+  Watch, Wifi, Wind, Wrench, Youtube, ZoomIn,
 } from 'lucide-react';
 import { useUser } from '@/lib/useUser';
 import AccountMenu from '@/components/AccountMenu';
@@ -49,7 +63,8 @@ interface Assignment {
   description: string;
   status: 'todo' | 'in_progress' | 'done' | 'in_review';
   priority: 'low' | 'normal' | 'high';
-  category: 'task' | 'article' | 'blog' | 'survivor_story' | 'awareness_post';
+  category: string;
+  category_icon?: string;
   department?: string;
   due_date: string;
   document_id?: string;
@@ -78,6 +93,37 @@ const KNOWN_CATEGORIES: Record<string, { label: string; icon: any; color: string
   awareness_post: { label: 'Awareness Posts', icon: Megaphone, color: '#f59e0b' },
   task: { label: 'Task Assignments', icon: Briefcase, color: '#6b7280' },
 };
+
+// Map stored icon names → Lucide components (mirrors ICON_OPTIONS in AssignTaskModal)
+const ICON_NAME_MAP: Record<string, any> = {
+  Briefcase, FileText, BookOpen, Heart, Megaphone, Layers: LayersIcon,
+  Code2, Palette, PenTool, Users, Star, Zap, Globe, Camera, Music,
+  Video, Mail, Share2, BarChart2, Shield, ShieldCheck, Cpu, Microscope,
+  Stethoscope, Landmark, FlaskConical, Eye, Send, Activity, Airplay,
+  Anchor, Archive, Award, Bell, Bike, Bookmark, Box, Brain, Bug,
+  Building, Building2, Bus, Calculator, Cast, Clipboard, Clock, Cloud,
+  Coffee, Columns, Compass, CreditCard, Crop, Database, Download, Edit,
+  Filter, Flag, Folder, Gift, GitBranch, Grid, Hash, Headphones, Home,
+  Image: LucideImage, Inbox, Key, Layout, LifeBuoy, Link: LucideLink,
+  List, Lock, Map, MapPin, MessageCircle, MessageSquare, Monitor, Moon,
+  Package, Phone, Printer, Radio, RefreshCw, Rss, Search, Server,
+  Settings, Slack, Sliders, Smartphone, Speaker, Sun, Tag, Terminal,
+  Thermometer, ThumbsUp, TrendingUp, Truck, Twitter, Type, Umbrella,
+  Upload, UserCheck, UserPlus, Volume2, Watch, Wifi, Wind, Wrench,
+  Youtube, ZoomIn,
+};
+
+function getDeptHex(deptKey?: string): string {
+  const map: Record<string, string> = {
+    "Writers' Block": '#f59e0b',
+    'Design Lab':     '#3b82f6',
+    'Development':    '#10b981',
+    'Marketing':      '#ec4899',
+    'Public Relations':'#ec4899',
+    'Leadership':     '#6366f1',
+  };
+  return map[deptKey || ''] || '#6b7280';
+}
 
 interface ReviewDoc {
   id: string;
@@ -988,14 +1034,18 @@ export default function WorkPage() {
                       return categories.sort().map(cat => {
                         const sectionTasks = activeDeptTasks.filter(a => a.category === cat);
                         const known = KNOWN_CATEGORIES[cat];
+                        // Use stored icon name from the first task in this category
+                        const storedIconName = sectionTasks[0]?.category_icon;
+                        const storedIcon = storedIconName ? (ICON_NAME_MAP[storedIconName] || LayersIcon) : null;
+                        const deptColor = getDeptHex(activeDeptKey);
                         return (
                           <SectionTable
                             key={cat}
                             section={{
                               key: cat,
                               label: known?.label || cat.charAt(0).toUpperCase() + cat.slice(1).replace(/_/g, ' '),
-                              icon: known?.icon || Layers,
-                              color: known?.color || '#6b7280',
+                              icon: storedIcon || known?.icon || LayersIcon,
+                              color: known?.color || deptColor,
                               hasEditor: ['article', 'blog', 'survivor_story'].includes(cat),
                               table: null
                             }}
