@@ -25,16 +25,15 @@ function GoalRing({ words, goal }: { words: number; goal: number }) {
 
   return (
     <svg width="26" height="26" viewBox="0 0 26 26" style={{ flexShrink: 0 }}>
-      <circle cx="13" cy="13" r={R} fill="none" stroke="var(--border-strong)" strokeWidth="2.5" />
+      <circle cx="13" cy="13" r={R} fill="none" stroke="var(--rule)" strokeWidth="2.5" />
       <circle
         cx="13" cy="13" r={R}
         fill="none"
         stroke={done ? '#4ade80' : 'var(--accent)'}
         strokeWidth="2.5"
-        strokeLinecap="round"
+        strokeLinecap="square"
         strokeDasharray={C}
         strokeDashoffset={offset}
-        className="goal-ring"
         style={{ transform: 'rotate(-90deg)', transformOrigin: '13px 13px' }}
       />
       {done && (
@@ -61,19 +60,18 @@ export default function StatusBar({ stats, cursorLine, cursorCol, isSaved, viewM
 
   const goalModal = editingGoal ? createPortal(
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center"
-      style={{ background: 'rgba(10,6,20,0.45)', backdropFilter: 'blur(4px)' }}
+      className="db-overlay"
       onClick={() => setEditingGoal(false)}
     >
       <div
-        className="glass-overlay scale-in"
-        style={{ borderRadius: 18, padding: '28px 32px', width: 300 }}
+        className="db-modal"
+        style={{ maxWidth: '300px' }}
         onClick={e => e.stopPropagation()}
       >
-        <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 6, letterSpacing: '-0.02em' }}>
+        <div className="db-page-title" style={{ fontSize: '16px', marginBottom: '6px' }}>
           Set word goal
         </div>
-        <div style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 16 }}>
+        <div className="db-cap" style={{ marginBottom: '16px' }}>
           Track your progress with a ring in the status bar.
         </div>
         <input
@@ -83,29 +81,19 @@ export default function StatusBar({ stats, cursorLine, cursorCol, isSaved, viewM
           onChange={e => setGoalInput(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') commitGoal(); if (e.key === 'Escape') setEditingGoal(false); }}
           placeholder="e.g. 500"
-          style={{
-            width: '100%', padding: '10px 14px', borderRadius: 10,
-            background: 'var(--surface-1)', border: '1.5px solid var(--border-strong)',
-            fontFamily: 'inherit', fontSize: 15, color: 'var(--text)', outline: 'none',
-            marginBottom: 14,
-          }}
+          className="db-inp"
+          style={{ marginBottom: '14px' }}
         />
         <div className="flex gap-2">
           <button
             onClick={commitGoal}
-            style={{
-              flex: 1, padding: '9px', borderRadius: 10, border: 'none', cursor: 'pointer',
-              background: 'var(--accent)', color: '#fff', fontFamily: 'inherit', fontWeight: 600, fontSize: 13.5,
-            }}
+            className="db-btn flex-1 justify-center"
           >
             Set goal
           </button>
           <button
             onClick={() => { onSetWordGoal(0); setEditingGoal(false); }}
-            style={{
-              padding: '9px 16px', borderRadius: 10, border: '1px solid var(--border-strong)',
-              cursor: 'pointer', background: 'none', fontFamily: 'inherit', fontSize: 13.5, color: 'var(--text-3)',
-            }}
+            className="db-ghost"
           >
             Clear
           </button>
@@ -120,10 +108,9 @@ export default function StatusBar({ stats, cursorLine, cursorCol, isSaved, viewM
       {goalModal}
       <footer
         id="tour-statusbar"
-        className="status-bar glass glass-rim flex items-center gap-3 px-4 flex-shrink-0 anim-slide-up"
-        style={{ height: 30, borderTop: '1px solid var(--border-med)', borderRadius: 0, overflowX: 'auto', animationDelay: '0.1s' }}
+        className="status-bar"
+        style={{ height: '28px', borderTop: '1px solid var(--rule)' }}
       >
-        {/* Word goal ring + count (clickable) */}
         <button
           onClick={openGoal}
           className="flex items-center gap-1.5"
@@ -135,66 +122,60 @@ export default function StatusBar({ stats, cursorLine, cursorCol, isSaved, viewM
               <GoalRing words={stats.words} goal={wordGoal} />
             </span>
           ) : (
-            <Target size={12} strokeWidth={2} style={{ color: 'var(--text-4)' }} />
+            <Target size={12} strokeWidth={2} style={{ color: 'var(--mid)' }} />
           )}
-          <span style={{ fontSize: 12, color: 'var(--text-3)', fontVariantNumeric: 'tabular-nums' }}>
+          <span className="db-cap" style={{ fontSize: '10px' }}>
             {stats.words.toLocaleString()}
             {wordGoal > 0 && (
-              <span style={{ color: 'var(--text-4)' }}>/{wordGoal.toLocaleString()}</span>
+              <span style={{ color: 'var(--mid)' }}>/{wordGoal.toLocaleString()}</span>
             )}
-            <span className="hidden sm:inline" style={{ color: 'var(--text-4)', marginLeft: 2 }}>w</span>
+            <span className="hidden sm:inline" style={{ marginLeft: 2 }}>w</span>
           </span>
         </button>
 
-      {/* Separator */}
-      <div className="toolbar-sep" />
+        <div className="db-vr" style={{ margin: '0 8px' }} />
 
-      {/* Other stats */}
-      <span style={{ fontSize: 12, color: 'var(--text-4)', fontVariantNumeric: 'tabular-nums' }}>
-        {stats.chars.toLocaleString()}<span className="hidden sm:inline" style={{ marginLeft: 2 }}>ch</span>
-      </span>
-      <span style={{ fontSize: 12, color: 'var(--text-4)', fontVariantNumeric: 'tabular-nums' }}>
-        {stats.readingTime}min read
-      </span>
-      <span style={{ fontSize: 12, color: 'var(--text-4)' }}>
-        {stats.lines.toLocaleString()}<span className="hidden sm:inline" style={{ marginLeft: 2 }}>ln</span>
-      </span>
+        <span className="db-cap" style={{ fontSize: '10px' }}>
+          {stats.chars.toLocaleString()}<span className="hidden sm:inline" style={{ marginLeft: 2 }}>ch</span>
+        </span>
+        <span className="db-cap" style={{ fontSize: '10px', marginLeft: '12px' }}>
+          {stats.readingTime}min read
+        </span>
+        <span className="db-cap" style={{ fontSize: '10px', marginLeft: '12px' }}>
+          {stats.lines.toLocaleString()}<span className="hidden sm:inline" style={{ marginLeft: 2 }}>ln</span>
+        </span>
 
-      <div className="flex-1" />
+        <div className="flex-1" />
 
-      {/* Cursor */}
-      <span style={{ fontSize: 12, color: 'var(--text-4)', fontVariantNumeric: 'tabular-nums' }}>
-        {cursorLine}:{cursorCol}
-      </span>
+        <span className="db-cap hidden md:inline" style={{ fontSize: '10px' }}>
+          {cursorLine}:{cursorCol}
+        </span>
 
-      <div className="toolbar-sep" />
+        <div className="db-vr hidden md:block" style={{ margin: '0 8px' }} />
 
-      {/* View label */}
-      <span className="hidden md:inline" style={{ fontSize: 11.5, color: 'var(--text-4)' }}>
-        {viewMode === 'split' ? 'Split' : viewMode === 'editor' ? 'Editor' : 'Preview'}
-      </span>
+        <span className="hidden md:inline db-cap" style={{ fontSize: '10px' }}>
+          {viewMode === 'split' ? 'SPLIT' : viewMode === 'editor' ? 'EDITOR' : 'PREVIEW'}
+        </span>
 
-      <div className="toolbar-sep" />
+        <div className="db-vr" style={{ margin: '0 8px' }} />
 
-      {/* Save state */}
-      <span className="flex items-center gap-1" style={{ fontSize: 12, color: isSaved ? 'var(--accent)' : 'var(--text-4)', transition: 'color 0.2s' }}>
-        {isSaved
-          ? <><span className="anim-check-pop" key="saved"><Check size={11} strokeWidth={2.5} /></span><span className="hidden sm:inline">Saved</span></>
-          : <><span className="anim-shimmer"  key="saving"><Loader2 size={11} strokeWidth={2.5} className="animate-spin" /></span><span className="hidden sm:inline">Saving...</span></>
-        }
-      </span>
+        <span className="flex items-center gap-1" style={{ color: isSaved ? 'var(--accent)' : 'var(--mid)', transition: 'color 0.2s' }}>
+          {isSaved
+            ? <><Check size={11} strokeWidth={2.5} /><span className="hidden sm:inline db-cap" style={{ fontSize: '10px' }}>Saved</span></>
+            : <><Loader2 size={11} strokeWidth={2.5} className="animate-spin" /><span className="hidden sm:inline db-cap" style={{ fontSize: '10px' }}>Saving...</span></>
+          }
+        </span>
 
-      {/* Lang badge */}
-      <span
-        className="hidden sm:inline"
-        style={{
-          fontSize: 10.5, padding: '1px 7px', borderRadius: 99,
-          background: 'var(--accent-subtle2)', color: 'var(--accent)', fontWeight: 600,
-        }}
-      >
-        MD
-      </span>
-    </footer>
+        <span
+          className="hidden sm:inline db-cap"
+          style={{
+            fontSize: '9px', padding: '1px 6px', marginLeft: '8px',
+            background: 'var(--accent-dim)', color: 'var(--accent)',
+          }}
+        >
+          MD
+        </span>
+      </footer>
     </>
   );
 }

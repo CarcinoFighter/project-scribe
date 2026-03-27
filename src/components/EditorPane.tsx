@@ -27,7 +27,7 @@ const makeTheme = (dark: boolean, fontFamily?: string) =>
       gutterForeground:    dark ? 'rgba(152,117,193,0.30)' : 'rgba(120,90,170,0.35)',
       gutterActiveForeground: '#9875c1',
       gutterBorder:        'transparent',
-      fontFamily:          fontFamily ?? "'Google Sans Flex','Google Sans','DM Sans',sans-serif",
+      fontFamily:          fontFamily ?? "'Google Sans Flex','Google Sans','DM Mono',sans-serif",
     },
     styles: [
       { tag: [t.heading1, t.heading2, t.heading3, t.heading4, t.heading5, t.heading6],
@@ -41,7 +41,7 @@ const makeTheme = (dark: boolean, fontFamily?: string) =>
       { tag: t.monospace,
         color: dark ? '#c4a8e8' : '#6a40a0',
         background: dark ? 'rgba(152,117,193,0.12)' : 'rgba(152,117,193,0.09)',
-        borderRadius: '3px', padding: '0 3px' },
+        padding: '0 3px' },
       { tag: t.keyword,     color: dark ? '#c4a0e8' : '#7040b0', fontWeight: '600' },
       { tag: t.string,      color: dark ? '#e8a870' : '#b84820' },
       { tag: t.comment,     color: dark ? '#6a5880' : '#9a8ab8', fontStyle: 'italic' },
@@ -65,7 +65,6 @@ const baseTheme = EditorView.theme({
   '.cm-activeLineGutter': { background: 'transparent' },
 });
 
-// --- Remote Cursor Widget ---
 class CursorWidget extends WidgetType {
   constructor(readonly name: string, readonly color: string, readonly avatar: string | null) { super(); }
   toDOM() {
@@ -116,7 +115,6 @@ const remoteCursorStyle = EditorView.baseTheme({
     fontWeight: "600",
     color: "white",
     padding: "1px 4px",
-    borderRadius: "2px 2px 2px 0",
     pointerEvents: "none",
     zIndex: "11",
     display: "flex",
@@ -130,7 +128,6 @@ const remoteCursorStyle = EditorView.baseTheme({
   ".cm-remote-cursor-avatar": {
     width: "12px",
     height: "12px",
-    borderRadius: "50%",
     objectFit: "cover"
   }
 });

@@ -36,8 +36,7 @@ export default function PreviewPane({ content, containerRef }: Props) {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Reading progress */}
-      <div style={{ height: 2, background: 'var(--border)', flexShrink: 0, position: 'relative' }}>
+      <div style={{ height: 2, background: 'var(--rule)', flexShrink: 0, position: 'relative' }}>
         <div 
           className="progress-bar" 
           style={{ 
@@ -52,13 +51,11 @@ export default function PreviewPane({ content, containerRef }: Props) {
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-auto p-6 md:p-10" style={{ scrollBehavior: 'smooth' }}>
-        {/* The 'prose-carcino' class acts as our style boundary */}
-        <div className="prose-carcino fade-in mx-auto max-w-3xl">
+        <div className="prose-carcino mx-auto max-w-3xl">
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             rehypePlugins={[rehypeHighlight, rehypeSlug]}
             components={{
-              // Ensure links open in new tabs
               a: ({ href, children, ...props }) => (
                 <a
                   href={href}
@@ -70,22 +67,20 @@ export default function PreviewPane({ content, containerRef }: Props) {
                   {children}
                 </a>
               ),
-              // Fix for checkboxes/task lists
               input: ({ type, checked, ...props }) =>
                 type === 'checkbox' ? (
                   <input 
                     type="checkbox" 
                     checked={checked} 
                     readOnly 
-                    className="mr-2 h-4 w-4 rounded border-gray-300"
+                    className="mr-2 h-4 w-4 border border-[var(--rule)]"
                     style={{ accentColor: 'var(--accent)' }} 
                     {...props} 
                   />
                 ) : <input type={type} {...props} />,
-              // Explicitly ensuring tables have borders
               table: ({ children }) => (
                 <div className="overflow-x-auto my-6">
-                  <table className="min-w-full border-collapse border border-[var(--border-med)]">
+                  <table className="min-w-full border-collapse border border-[var(--rule)]">
                     {children}
                   </table>
                 </div>
@@ -97,9 +92,6 @@ export default function PreviewPane({ content, containerRef }: Props) {
         </div>
       </div>
 
-      {/* CRITICAL FIX: Scoped CSS for lists and typography.
-          This ensures bullets appear regardless of global Tailwind/CSS resets.
-      */}
       <style jsx global>{`
         .prose-carcino ul {
           list-style-type: disc !important;
@@ -120,21 +112,40 @@ export default function PreviewPane({ content, containerRef }: Props) {
           margin-top: 1.5em;
           margin-bottom: 0.5em;
           font-weight: 700;
-          color: var(--text);
+          color: var(--ink);
+          font-family: var(--ff-display);
         }
         .prose-carcino blockquote {
-          border-left: 4px solid var(--accent);
+          border-left: 3px solid var(--accent);
           padding-left: 1em;
-          color: var(--text-4);
+          color: var(--mid);
           font-style: italic;
           margin: 1.5em 0;
         }
         .prose-carcino pre {
-          background: var(--bg-alt);
+          background: var(--cream);
           padding: 1em;
-          border-radius: 8px;
           overflow-x: auto;
-          border: 1px solid var(--border-med);
+          border: 1px solid var(--rule);
+          border-left: 2px solid var(--accent);
+        }
+        .prose-carcino code {
+          background: var(--cream);
+          padding: 2px 6px;
+          font-family: var(--ff-mono);
+          font-size: 0.88em;
+        }
+        .prose-carcino pre code {
+          background: transparent;
+          padding: 0;
+        }
+        .prose-carcino th, .prose-carcino td {
+          border: 1px solid var(--rule);
+          padding: 8px 12px;
+        }
+        .prose-carcino th {
+          background: var(--cream);
+          font-weight: 600;
         }
       `}</style>
     </div>

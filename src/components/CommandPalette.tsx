@@ -124,49 +124,16 @@ export default function CommandPalette({ onClose, onCommand, isDark }: Props) {
 
   const portal = createPortal(
     <>
-      {/* ── Backdrop ─────────────────────────────────────────────────────── */}
-      <div
-        style={{
-          position: 'fixed', inset: 0, zIndex: 9980,
-          background: 'rgba(0,0,0,0.38)',
-          backdropFilter: 'blur(3px)',
-          WebkitBackdropFilter: 'blur(3px)',
-          animation: 'cpBackdropIn 0.14s ease both',
-        }}
-        aria-hidden="true"
-      />
-
-      {/* ── Panel ────────────────────────────────────────────────────────── */}
+      <div className="db-overlay" onClick={onClose} />
       <div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-label="Command palette"
-        style={{
-          position: 'fixed',
-          top: '14vh',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 9990,
-          width: 580,
-          maxWidth: 'calc(100vw - 24px)',
-          borderRadius: 14,
-          overflow: 'hidden',
-          background: 'var(--surface-2)',
-          backdropFilter: 'blur(48px) saturate(200%)',
-          WebkitBackdropFilter: 'blur(48px) saturate(200%)',
-          border: '1px solid var(--border-med)',
-          boxShadow: '0 24px 80px rgba(0,0,0,0.50), 0 4px 16px rgba(0,0,0,0.24)',
-          animation: 'cpPanelIn 0.18s cubic-bezier(0.22,1,0.36,1) both',
-        }}
+        className="db-cmd-wrap db-rise-0"
       >
-        {/* ── Search input ─────────────────────────────────────────────── */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 12, padding: '0 16px',
-          borderBottom: '1px solid var(--border)',
-          height: 56,
-        }}>
-          <Search size={16} strokeWidth={1.8} style={{ color: 'var(--text-4)', flexShrink: 0 }} aria-hidden="true" />
+        <div className="db-cmd-search">
+          <Search size={13} strokeWidth={1.8} className="db-cmd-search-icon" />
           <input
             ref={inputRef}
             role="combobox"
@@ -176,160 +143,91 @@ export default function CommandPalette({ onClose, onCommand, isDark }: Props) {
             aria-activedescendant={flat[selected] ? `cmd-item-${flat[selected].id}` : undefined}
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Search commands, formats, views…"
-            style={{
-              flex: 1, background: 'none', border: 'none', outline: 'none',
-              fontFamily: 'inherit', fontSize: 15, color: 'var(--text)',
-              letterSpacing: '-0.01em',
-            }}
+            placeholder="Search documents and commands…"
+            className="db-cmd-input"
           />
           {query && (
             <button
               onClick={() => setQuery('')}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-4)', padding: 4, borderRadius: 4, display: 'flex', lineHeight: 1 }}
+              className="db-cmd-clear"
               aria-label="Clear search"
             >
               ×
             </button>
           )}
-          <kbd
-            onClick={onClose}
-            style={{
-              cursor: 'pointer', fontSize: 10, fontWeight: 600, padding: '2px 7px',
-              borderRadius: 5, border: '1px solid var(--border-med)', background: 'var(--bg-deep)',
-              color: 'var(--text-4)', flexShrink: 0, userSelect: 'none',
-            }}
-            aria-label="Press Escape to close"
-          >
-            Esc
-          </kbd>
+          <span className="db-kbd" onClick={onClose}>Esc</span>
         </div>
 
-        {/* ── Results ──────────────────────────────────────────────────── */}
         <div
           id="cmd-results"
           ref={listRef}
           role="listbox"
-          style={{ maxHeight: 400, overflowY: 'auto', padding: '6px 8px 8px' }}
+          className="db-cmd-list"
         >
           {filtered.length === 0 ? (
-            <div style={{
-              padding: '32px 16px', textAlign: 'center',
-              color: 'var(--text-4)', fontSize: 13,
-            }}>
-              No results for <strong style={{ color: 'var(--text-3)' }}>&quot;{query}&quot;</strong>
+            <div className="db-cmd-empty">
+              No results for <strong>"{query}"</strong>
             </div>
-          ) : Object.entries(groups).map(([group, cmds]) => (
-            <div key={group}>
-              {/* Group header */}
-              <div style={{
-                padding: '8px 10px 4px',
-                fontSize: 10, fontWeight: 700, letterSpacing: '0.09em',
-                textTransform: 'uppercase', color: 'var(--text-4)',
-                userSelect: 'none',
-              }}>
-                {group}
-              </div>
-
-              {cmds.map(cmd => {
-                const idx = flatIdx++;
-                const isSelected = idx === selected;
-                return (
-                  <button
-                    key={cmd.id}
-                    id={`cmd-item-${cmd.id}`}
-                    role="option"
-                    aria-selected={isSelected}
-                    data-idx={idx}
-                    onClick={() => run(cmd.id)}
-                    onMouseEnter={() => setSelected(idx)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 10,
-                      width: '100%', padding: '8px 10px',
-                      borderRadius: 8, border: 'none', cursor: 'pointer',
-                      fontFamily: 'inherit', fontSize: 13.5, textAlign: 'left',
-                      background: isSelected ? 'var(--accent-subtle2)' : 'transparent',
-                      color: isSelected ? 'var(--accent)' : 'var(--text-2)',
-                      transition: 'background 0.07s, color 0.07s',
-                    }}
-                  >
-                    <span style={{
-                      width: 28, height: 28, borderRadius: 7, flexShrink: 0,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      background: isSelected ? 'var(--accent-subtle)' : 'var(--bg-deep)',
-                      border: `1px solid ${isSelected ? 'var(--accent-subtle2)' : 'var(--border)'}`,
-                      transition: 'background 0.07s, border-color 0.07s',
-                    }}>
-                      <cmd.icon size={13} strokeWidth={1.8} />
-                    </span>
-                    <span style={{ flex: 1, fontWeight: 500 }}>{cmd.label}</span>
-                    {cmd.hint && !cmd.shortcut && (
-                      <span style={{ fontSize: 11.5, color: isSelected ? 'var(--accent)' : 'var(--text-4)', opacity: 0.8 }}>
-                        {cmd.hint}
-                      </span>
-                    )}
-                    {cmd.shortcut && (
-                      <span style={{ display: 'flex', gap: 3, alignItems: 'center', flexShrink: 0 }}>
-                        {cmd.shortcut.split('+').map((k, i) => (
-                          <kbd key={i} style={{
-                            fontSize: 10, fontWeight: 600, padding: '1px 5px',
-                            borderRadius: 4, border: '1px solid var(--border-med)',
-                            background: 'var(--bg-deep)', color: 'var(--text-4)',
-                            lineHeight: '16px',
-                          }}>{k}</kbd>
-                        ))}
-                      </span>
-                    )}
-                    {isSelected && (
-                      <ArrowRight size={12} style={{ flexShrink: 0, opacity: 0.5 }} />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          ))}
+          ) : (
+            <>
+              {Object.entries(groups).map(([group, cmds]) => (
+                <div key={group}>
+                  <div className="db-cmd-group">{group}</div>
+                  {cmds.map(cmd => {
+                    const idx = flatIdx++;
+                    const isSelected = idx === selected;
+                    return (
+                      <button
+                        key={cmd.id}
+                        id={`cmd-item-${cmd.id}`}
+                        role="option"
+                        aria-selected={isSelected}
+                        data-idx={idx}
+                        onClick={() => run(cmd.id)}
+                        onMouseEnter={() => setSelected(idx)}
+                        className={`db-cmd-item ${isSelected ? 'sel' : ''}`}
+                      >
+                        <cmd.icon size={12} strokeWidth={1.8} />
+                        <span className="db-cmd-label">{cmd.label}</span>
+                        {cmd.hint && !cmd.shortcut && (
+                          <span className="db-cmd-hint">{cmd.hint}</span>
+                        )}
+                        {cmd.shortcut && (
+                          <span className="db-cmd-shortcut">
+                            {cmd.shortcut}
+                          </span>
+                        )}
+                        {isSelected && (
+                          <ArrowRight size={12} className="db-cmd-arrow" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+            </>
+          )}
         </div>
 
-        {/* ── Footer ───────────────────────────────────────────────────── */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 16,
-          padding: '8px 16px',
-          borderTop: '1px solid var(--border)',
-          background: 'var(--bg-alt)',
-        }}>
-          {[
-            { keys: ['↑', '↓'], label: 'Navigate' },
-            { keys: ['↵'],       label: 'Run' },
-            { keys: ['Esc'],     label: 'Close' },
-          ].map(({ keys, label }) => (
-            <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-4)' }}>
-              {keys.map(k => (
-                <kbd key={k} style={{
-                  padding: '1px 5px', borderRadius: 4, border: '1px solid var(--border-med)',
-                  background: 'var(--bg-deep)', fontSize: 10, color: 'var(--text-4)',
-                  fontFamily: 'monospace',
-                }}>{k}</kbd>
-              ))}
-              <span>{label}</span>
-            </span>
-          ))}
-          <span style={{ flex: 1 }} />
-          <span style={{ fontSize: 11, color: 'var(--text-4)', opacity: 0.6 }}>
+        <div className="db-cmd-footer">
+          <span className="db-cmd-footer-hint">
+            <span className="db-kbd">↑</span>
+            <span className="db-kbd">↓</span>
+            <span>Navigate</span>
+          </span>
+          <span className="db-cmd-footer-hint">
+            <span className="db-kbd">↵</span>
+            <span>Run</span>
+          </span>
+          <span className="db-cmd-footer-hint">
+            <span className="db-kbd">Esc</span>
+            <span>Close</span>
+          </span>
+          <span className="db-cmd-count">
             {filtered.length} command{filtered.length !== 1 ? 's' : ''}
           </span>
         </div>
       </div>
-
-      <style>{`
-        @keyframes cpBackdropIn {
-          from { opacity: 0; }
-          to   { opacity: 1; }
-        }
-        @keyframes cpPanelIn {
-          from { opacity: 0; transform: translateX(-50%) translateY(-10px) scale(0.97); }
-          to   { opacity: 1; transform: translateX(-50%) translateY(0)     scale(1);    }
-        }
-      `}</style>
     </>,
     document.body,
   );

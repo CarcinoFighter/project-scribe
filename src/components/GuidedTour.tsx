@@ -144,14 +144,12 @@ export default function GuidedTour({ onClose }: TourProps) {
 
   const content = (
     <>
-      {/* SVG overlay with animated transparent cutout around target */}
       <svg
         className="fixed inset-0 z-[9990]"
         style={{ pointerEvents: 'none', width: '100%', height: '100%' }}
       >
         <defs>
           <mask id="tour-mask">
-            {/* White = opaque, Black = transparent */}
             <rect width="100%" height="100%" fill="white" />
             {rect && (
               <rect
@@ -160,9 +158,7 @@ export default function GuidedTour({ onClose }: TourProps) {
                 width={rect.width + PAD * 2}
                 height={rect.height + PAD * 2}
                 fill="black"
-                style={{
-                  transition: 'x 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), y 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), height 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-                }}
+                className="tour-rect-transition"
               />
             )}
           </mask>
@@ -175,7 +171,6 @@ export default function GuidedTour({ onClose }: TourProps) {
         />
       </svg>
 
-      {/* Spotlight ring around target element */}
       {rect && (
         <div
           className="tour-spotlight fixed z-[9998]"
@@ -184,44 +179,22 @@ export default function GuidedTour({ onClose }: TourProps) {
             left:   rect.left   - PAD,
             width:  rect.width  + PAD * 2,
             height: rect.height + PAD * 2,
-            transition: 'top 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), left 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), height 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
           }}
         />
       )}
 
-      {/* Tour card */}
-      <div
-        className="fixed z-[9999] glass-overlay scale-in"
-        style={{
-          borderRadius: 20,
-          width: '90%',
-          maxWidth: 380,
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          padding: '24px 20px',
-        }}
-      >
-        {/* Step emoji + counter */}
+      <div className="fixed z-[9999] db-modal tour-modal">
         <div className="flex items-center justify-between mb-4">
-          <div
-            className="flex items-center justify-center text-xl font-bold"
-            style={{
-              width: 44, height: 44, borderRadius: 14,
-              background: 'var(--accent-subtle2)',
-              color: 'var(--accent)',
-            }}
-          >
+          <div className="tour-emoji">
             {current.emoji}
           </div>
           <div className="flex items-center gap-2">
-            <span style={{ fontSize: 12, color: 'var(--text-3)', fontVariantNumeric: 'tabular-nums' }}>
+            <span className="db-cap">
               {step + 1} / {currentSteps.length}
             </span>
             <button
               onClick={onClose}
-              className="tb-btn"
-              style={{ padding: '4px', borderRadius: 8 }}
+              className="db-icon-btn"
               title="Skip tour"
             >
               <X size={14} strokeWidth={2} />
@@ -229,57 +202,30 @@ export default function GuidedTour({ onClose }: TourProps) {
           </div>
         </div>
 
-        {/* Progress dots */}
         <div className="flex gap-1.5 mb-4">
           {currentSteps.map((_, i) => (
             <button
               key={i}
               onClick={() => setStep(i)}
-              style={{
-                height: 3,
-                flex: i === step ? 3 : 1,
-                borderRadius: 2,
-                background: i === step ? 'var(--accent)' : i < step ? 'var(--accent-xlight)' : 'var(--border-strong)',
-                border: 'none',
-                cursor: 'pointer',
-                transition: 'flex 0.3s, background 0.2s',
-                padding: 0,
-              }}
+              className={`tour-dot ${i === step ? 'active' : ''} ${i < step ? 'completed' : ''}`}
             />
           ))}
         </div>
 
-        {/* Content */}
-        <div className="fade-in" key={step}>
-          <h3
-            style={{
-              fontSize: 17,
-              fontWeight: 700,
-              color: 'var(--text)',
-              marginBottom: 8,
-              letterSpacing: '-0.02em',
-            }}
-          >
+        <div className="db-rise-0" key={step}>
+          <h3 className="db-page-title" style={{ fontSize: '17px', marginBottom: '8px' }}>
             {current.title}
           </h3>
-          <p style={{ fontSize: 13.5, color: 'var(--text-2)', lineHeight: 1.65, margin: 0 }}>
+          <p className="tour-body">
             {current.body}
           </p>
         </div>
 
-        {/* Controls */}
         <div className="flex items-center justify-between mt-6">
           <button
             onClick={onClose}
-            style={{
-              fontSize: 12.5,
-              color: 'var(--text-3)',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              padding: '6px 4px',
-            }}
+            className="db-ghost"
+            style={{ padding: '4px 8px', fontSize: '12px' }}
           >
             Skip tour
           </button>
@@ -288,28 +234,14 @@ export default function GuidedTour({ onClose }: TourProps) {
             {step > 0 && (
               <button
                 onClick={prev}
-                className="tb-btn"
-                style={{ padding: '7px 12px', borderRadius: 10, border: '1px solid var(--border-strong)' }}
+                className="db-ghost"
               >
                 <ArrowLeft size={14} strokeWidth={2} />
               </button>
             )}
             <button
               onClick={next}
-              className="flex items-center gap-2"
-              style={{
-                padding: '8px 18px',
-                borderRadius: 12,
-                background: 'var(--accent)',
-                color: '#fff',
-                border: 'none',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                fontWeight: 600,
-                fontSize: 13.5,
-                boxShadow: '0 2px 12px var(--accent-glow)',
-                transition: 'background 0.13s, box-shadow 0.13s',
-              }}
+              className="db-btn"
             >
               {step === currentSteps.length - 1 ? (
                 <><Sparkles size={14} /> Get writing</>
