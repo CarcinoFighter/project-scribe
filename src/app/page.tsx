@@ -295,11 +295,11 @@ const DASH_STYLES = `
     padding: 0 20px 7px;
     font-family: var(--ff-ui);
     font-size: 8px;
-    font-weight: 600;
+    font-weight: 500;
     letter-spacing: 0.22em;
     text-transform: uppercase;
-    color: var(--ink);
-    opacity: 0.9;
+    color: var(--mid);
+    opacity: 0.65;
   }
 
   /* Each nav row: left-border active indicator, no bg pill */
@@ -310,11 +310,11 @@ const DASH_STYLES = `
     border-left: 2px solid transparent;
     border-top: 1px solid var(--rule);
     background: transparent;
-    color: var(--ink);
+    color: var(--mid);
     cursor: pointer;
     font-family: var(--ff-ui);
     font-size: 9.5px;
-    font-weight: 500;
+    font-weight: 400;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     text-align: left;
@@ -322,14 +322,12 @@ const DASH_STYLES = `
     transition: color 0.12s, border-color 0.12s, background 0.12s;
     text-decoration: none;
   }
-  .db-nav-item:hover { color: var(--ink); background: rgba(152,117,193,0.06); }
+  .db-nav-item:hover { color: var(--ink); background: var(--accent-sub); }
   .db-nav-item.active {
     color: var(--accent);
     border-left-color: var(--accent);
-    background: transparent;
-    font-weight: 600;
-    outline: 2px solid var(--accent);
-    outline-offset: -1px;
+    background: var(--accent-dim);
+    font-weight: 500;
   }
 
   /* italic serif index numeral — login dept index style */
@@ -1034,7 +1032,7 @@ export default function Dashboard() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginRight: 0, flexShrink: 0, userSelect: 'none' }}>
           <Image src="/logo.svg" alt="Carcino" width={15} height={18} style={{ height: 'auto' }} priority />
           <span style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1, color: 'var(--ink)' }}>
-            Carcino<span className="hidden sm:inline"> Vantage</span>
+            <span className="hidden sm:inline">Carcino</span> Vantage
           </span>
         </div>
 
