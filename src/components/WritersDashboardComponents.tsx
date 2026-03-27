@@ -222,17 +222,25 @@ export function QuickAction({ icon: Icon, label, sublabel, color, bg, onClick }:
 }
 
 // ── Empty doc state ───────────────────────────────────────────────────────────
-export function EmptyDocState({ type, onNew }: { type:'articles'|'blogs'; onNew:()=>void }) {
+export function EmptyDocState({ type, onNew, canCreate = true }: { type:'articles'|'blogs'; onNew:()=>void; canCreate?: boolean }) {
   const Icon = type==='articles' ? FileText : BookOpen;
   const label = type==='articles' ? 'article' : 'blog post';
   return (
     <div style={{ padding:'36px 20px', textAlign:'center', border:'1px dashed var(--border-med)', borderRadius:'var(--r-lg)', background:'var(--bg-alt)' }}>
       <Icon size={28} strokeWidth={1.2} style={{ margin:'0 auto 12px', display:'block', color:'var(--text-4)', opacity:0.45 }}/>
       <div style={{ fontSize:14, fontWeight:600, color:'var(--text)', marginBottom:6 }}>No {label}s yet</div>
-      <div style={{ fontSize:12, color:'var(--text-4)', marginBottom:16 }}>Start writing your first {label}.</div>
-      <button onClick={onNew} className="tb-btn" style={{ background:'var(--accent)', color:'#fff', padding:'7px 16px', borderRadius:'var(--r-md)', fontWeight:600, fontSize:12.5, gap:6, margin:'0 auto', display:'flex', boxShadow:'0 2px 12px var(--accent-glow)' }}>
-        <Plus size={13} strokeWidth={2.5}/> New {label}
-      </button>
+      {canCreate ? (
+        <>
+          <div style={{ fontSize:12, color:'var(--text-4)', marginBottom:16 }}>Start writing your first {label}.</div>
+          <button onClick={onNew} className="tb-btn" style={{ background:'var(--accent)', color:'#fff', padding:'7px 16px', borderRadius:'var(--r-md)', fontWeight:600, fontSize:12.5, gap:6, margin:'0 auto', display:'flex', boxShadow:'0 2px 12px var(--accent-glow)' }}>
+            <Plus size={13} strokeWidth={2.5}/> New {label}
+          </button>
+        </>
+      ) : (
+        <div style={{ fontSize:12, color:'var(--text-4)', lineHeight:1.6 }}>
+          You need to be assigned a writing task before you can create content.
+        </div>
+      )}
     </div>
   );
 }

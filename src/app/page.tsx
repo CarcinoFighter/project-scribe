@@ -427,6 +427,17 @@ export default function Dashboard() {
   const isWritersBlock = activeDeptKey === "Writers' Block" || !activeDeptKey;
   const isFullSidebar = isWritersBlock || activeDeptKey === 'Leadership';
 
+  // Leadership can always create; others need an active (non-done) writing task
+  const isLeadership = activeDeptKey === 'Leadership';
+  const hasWritingTask = useMemo(() =>
+    tasks.some(t =>
+      t.status !== 'done' &&
+      (t.category === 'article' || t.category === 'blog' || t.category === 'survivor_story')
+    ),
+    [tasks]
+  );
+  const canCreate = isLeadership || hasWritingTask;
+
   return (
     <div className={`app-bg ${isDark?'dark':''}`} style={{ minHeight:'100vh', display:'flex', flexDirection:'column' }}>
 
@@ -487,13 +498,15 @@ export default function Dashboard() {
 
           <span className="hidden sm:inline-block" style={sep}/>
 
-          {/* New */}
-          <Link href="/editor">
-            <button className="tb-btn" style={{ background:'var(--accent)', color:'#fff', padding:'5px 14px', borderRadius:8, fontWeight:600, fontSize:12.5, gap:5, boxShadow:'0 1px 8px var(--accent-glow)' }}>
-              <Plus size={13} strokeWidth={2.5}/>
-              <span className="hidden sm:inline">New</span>
-            </button>
-          </Link>
+          {/* New — only shown if user can create */}
+          {canCreate && (
+            <Link href="/editor">
+              <button className="tb-btn" style={{ background:'var(--accent)', color:'#fff', padding:'5px 14px', borderRadius:8, fontWeight:600, fontSize:12.5, gap:5, boxShadow:'0 1px 8px var(--accent-glow)' }}>
+                <Plus size={13} strokeWidth={2.5}/>
+                <span className="hidden sm:inline">New</span>
+              </button>
+            </Link>
+          )}
 
           <span className="hidden sm:inline-block" style={sep}/>
 
@@ -685,6 +698,7 @@ export default function Dashboard() {
                       toggleStar={toggleStar}
                       handleContextMenu={handleContextMenu}
                       handleTaskCardComplete={handleTaskCardComplete}
+                      canCreate={canCreate}
                     />
                   )}
                 </>
@@ -700,15 +714,17 @@ export default function Dashboard() {
                   <h1 style={{ fontSize:21, fontWeight:700, color:'var(--text)', margin:'0 0 3px', letterSpacing:'-0.025em' }}>Articles</h1>
                   <p style={{ fontSize:13, color:'var(--text-4)', margin:0 }}>{articles.length} articles · {articles.filter(a=>a.status==='published').length} published</p>
                 </div>
-                <Link href="/editor">
-                  <button className="tb-btn" style={{ background:'var(--accent)', color:'#fff', padding:'7px 14px', borderRadius:'var(--r-md)', fontWeight:600, fontSize:13, gap:6, flexShrink:0, boxShadow:'0 1px 8px var(--accent-glow)' }}>
-                    <Plus size={14} strokeWidth={2.5}/> New Article
-                  </button>
-                </Link>
+                {canCreate && (
+                  <Link href="/editor">
+                    <button className="tb-btn" style={{ background:'var(--accent)', color:'#fff', padding:'7px 14px', borderRadius:'var(--r-md)', fontWeight:600, fontSize:13, gap:6, flexShrink:0, boxShadow:'0 1px 8px var(--accent-glow)' }}>
+                      <Plus size={14} strokeWidth={2.5}/> New Article
+                    </button>
+                  </Link>
+                )}
               </div>
               <SortFilterBar sortBy={sortBy} setSortBy={setSortBy} filter={filter} setFilter={setFilter} total={articles.length}/>
               {sortedArticles.length===0 ? (
-                <EmptyDocState type="articles" onNew={()=>router.push('/editor')}/>
+                <EmptyDocState type="articles" onNew={()=>router.push('/editor')} canCreate={canCreate}/>
               ) : (
                 <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                   {sortedArticles.map((doc,i)=>(
@@ -729,15 +745,17 @@ export default function Dashboard() {
                   <h1 style={{ fontSize:21, fontWeight:700, color:'var(--text)', margin:'0 0 3px', letterSpacing:'-0.025em' }}>Blog Posts</h1>
                   <p style={{ fontSize:13, color:'var(--text-4)', margin:0 }}>{blogs.length} posts · {blogs.filter(b=>b.status==='published').length} published</p>
                 </div>
-                <Link href="/editor">
-                  <button className="tb-btn" style={{ background:'var(--accent)', color:'#fff', padding:'7px 14px', borderRadius:'var(--r-md)', fontWeight:600, fontSize:13, gap:6, flexShrink:0, boxShadow:'0 1px 8px var(--accent-glow)' }}>
-                    <Plus size={14} strokeWidth={2.5}/> New Post
-                  </button>
-                </Link>
+                {canCreate && (
+                  <Link href="/editor">
+                    <button className="tb-btn" style={{ background:'var(--accent)', color:'#fff', padding:'7px 14px', borderRadius:'var(--r-md)', fontWeight:600, fontSize:13, gap:6, flexShrink:0, boxShadow:'0 1px 8px var(--accent-glow)' }}>
+                      <Plus size={14} strokeWidth={2.5}/> New Post
+                    </button>
+                  </Link>
+                )}
               </div>
               <SortFilterBar sortBy={sortBy} setSortBy={setSortBy} filter={filter} setFilter={setFilter} total={blogs.length}/>
               {sortedBlogs.length===0 ? (
-                <EmptyDocState type="blogs" onNew={()=>router.push('/editor')}/>
+                <EmptyDocState type="blogs" onNew={()=>router.push('/editor')} canCreate={canCreate}/>
               ) : (
                 <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                   {sortedBlogs.map((doc,i)=>(

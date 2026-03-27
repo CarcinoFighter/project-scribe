@@ -32,12 +32,14 @@ interface WritersDashboardProps {
   handleContextMenu: (e: React.MouseEvent, id: string) => void;
   handleTaskCardComplete: (taskId: string) => Promise<void>;
   selectedDept?: string | null;
+  canCreate?: boolean;
 }
 
 export default function WritersDashboard({
   user, allDocs, fmtWords, totalWords, weekWords, published, drafts, goalProgress,
   docsLoading, tasksLoading, pendingTasks, doneTasks, articles, blogs,
-  router, setActiveNav, toggleStar, handleContextMenu, handleTaskCardComplete, selectedDept
+  router, setActiveNav, toggleStar, handleContextMenu, handleTaskCardComplete, selectedDept,
+  canCreate = true,
 }: WritersDashboardProps) {
   const displayFmtWords = fmtWords || utilFmtWords;
   return (
@@ -49,11 +51,13 @@ export default function WritersDashboard({
       </div>
 
       {/* Quick actions */}
-      <div className="anim-fade-up dash-quick-actions" style={{ display: 'flex', gap: 10, marginBottom: 20, animationDelay: '0.04s', flexWrap: 'wrap' }}>
-        <QuickAction icon={FileText} label="New Article" sublabel="Research or cancer doc" color="#3b82f6" bg="rgba(59,130,246,0.08)" onClick={() => router.push('/editor')} />
-        <QuickAction icon={BookOpen} label="New Blog Post" sublabel="Share your perspective" color="var(--accent)" bg="var(--accent-subtle)" onClick={() => router.push('/editor')} />
-        <QuickAction icon={Heart} label="Survivor Story" sublabel="Community & support" color="#10b981" bg="rgba(16,185,129,0.08)" onClick={() => router.push('/editor')} />
-      </div>
+      {canCreate && (
+        <div className="anim-fade-up dash-quick-actions" style={{ display: 'flex', gap: 10, marginBottom: 20, animationDelay: '0.04s', flexWrap: 'wrap' }}>
+          <QuickAction icon={FileText} label="New Article" sublabel="Research or cancer doc" color="#3b82f6" bg="rgba(59,130,246,0.08)" onClick={() => router.push('/editor')} />
+          <QuickAction icon={BookOpen} label="New Blog Post" sublabel="Share your perspective" color="var(--accent)" bg="var(--accent-subtle)" onClick={() => router.push('/editor')} />
+          <QuickAction icon={Heart} label="Survivor Story" sublabel="Community & support" color="#10b981" bg="rgba(16,185,129,0.08)" onClick={() => router.push('/editor')} />
+        </div>
+      )}
 
       {/* Stat cards */}
       <div className="stats-grid anim-fade-up" style={{ marginBottom: 18, animationDelay: '0.08s' }}>
@@ -94,7 +98,7 @@ export default function WritersDashboard({
               {[0, 1].map(i => <div key={i} style={{ border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: '13px 15px', display: 'flex', flexDirection: 'column', gap: 8 }}><Skeleton h={12} w="60%" /><Skeleton h={14} w="90%" /><Skeleton h={11} w="80%" /></div>)}
             </div>
           ) : articles.length === 0 ? (
-            <EmptyDocState type="articles" onNew={() => router.push('/editor')} />
+            <EmptyDocState type="articles" onNew={() => router.push('/editor')} canCreate={canCreate} />
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {articles.slice(0, 3).map((doc, i) => (
@@ -121,7 +125,7 @@ export default function WritersDashboard({
               {[0, 1].map(i => <div key={i} style={{ border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: '13px 15px', display: 'flex', flexDirection: 'column', gap: 8 }}><Skeleton h={12} w="60%" /><Skeleton h={14} w="90%" /><Skeleton h={11} w="80%" /></div>)}
             </div>
           ) : blogs.length === 0 ? (
-            <EmptyDocState type="blogs" onNew={() => router.push('/editor')} />
+            <EmptyDocState type="blogs" onNew={() => router.push('/editor')} canCreate={canCreate} />
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {blogs.slice(0, 3).map((doc, i) => (
