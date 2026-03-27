@@ -57,6 +57,13 @@ import MediaViewerModal from '@/components/MediaViewerModal';
 import TaskDetailsModal from '@/components/TaskDetailsModal';
 import { DEPARTMENTS } from '@/config/departments';
 
+// Custom SVG icons for departments (where we have them in public/icons)
+const DEPT_CUSTOM_ICON: Record<string, string> = {
+  'Development': '/icons/development.svg',
+  'Design Lab':  '/icons/design.svg',
+  'Marketing':   '/icons/marketing.svg',
+};
+
 interface Assignment {
   id: string;
   title: string;
@@ -112,6 +119,29 @@ const ICON_NAME_MAP: Record<string, any> = {
   Upload, UserCheck, UserPlus, Volume2, Watch, Wifi, Wind, Wrench,
   Youtube, ZoomIn,
 };
+
+// Guess a reasonable icon from category name keywords when category_icon isn't stored
+function guessIconFromCategoryName(cat: string): any {
+  const lower = cat.toLowerCase();
+  if (/feature|product|sprint|ticket/.test(lower)) return Star;
+  if (/bug|fix|issue|error/.test(lower)) return Bug;
+  if (/design|ui|ux|visual|art/.test(lower)) return Palette;
+  if (/dev|code|backend|frontend|api/.test(lower)) return Code2;
+  if (/market|campaign|ad|promo|seo/.test(lower)) return Megaphone;
+  if (/doc|article|write|blog|content/.test(lower)) return FileText;
+  if (/social|share|post|media/.test(lower)) return Share2;
+  if (/data|analytic|report|metric|chart/.test(lower)) return BarChart2;
+  if (/video|film|record|shoot/.test(lower)) return Video;
+  if (/photo|image|camera/.test(lower)) return Camera;
+  if (/event|conference|meeting|webinar/.test(lower)) return Calendar;
+  if (/research|science|study|lab|medical/.test(lower)) return Microscope;
+  if (/health|clinical|patient|therapy/.test(lower)) return Stethoscope;
+  if (/infra|server|cloud|deploy|ops/.test(lower)) return Server;
+  if (/security|auth|access|permission/.test(lower)) return Shield;
+  if (/train|learning|education|course/.test(lower)) return BookOpen;
+  if (/lead|manage|strategy|plan/.test(lower)) return Users;
+  return LayersIcon; // final fallback
+}
 
 function getDeptHex(deptKey?: string): string {
   const map: Record<string, string> = {
@@ -993,9 +1023,21 @@ export default function WorkPage() {
                   <div className="anim-fade-in">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-xl ${activeDept.bg} flex items-center justify-center`}>
-                          <activeDept.icon size={16} className={activeDept.color} />
-                        </div>
+                        {DEPT_CUSTOM_ICON[activeDeptKey] ? (
+                          <div className={`w-8 h-8 rounded-xl ${activeDept.bg} flex items-center justify-center p-1.5`}>
+                            <Image
+                              src={DEPT_CUSTOM_ICON[activeDeptKey]}
+                              alt={activeDept.label}
+                              width={20}
+                              height={20}
+                              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                            />
+                          </div>
+                        ) : (
+                          <div className={`w-8 h-8 rounded-xl ${activeDept.bg} flex items-center justify-center`}>
+                            <activeDept.icon size={16} className={activeDept.color} />
+                          </div>
+                        )}
                         <div>
                           <h2 className="text-base font-bold text-[var(--text)]">{activeDept.label} Board</h2>
                           <p className="text-xs text-[var(--text-4)]">Active projects and tasks for {activeDept.label}</p>
@@ -1036,15 +1078,17 @@ export default function WorkPage() {
                         const known = KNOWN_CATEGORIES[cat];
                         // Use stored icon name from the first task in this category
                         const storedIconName = sectionTasks[0]?.category_icon;
-                        const storedIcon = storedIconName ? (ICON_NAME_MAP[storedIconName] || LayersIcon) : null;
+                        const storedIcon = storedIconName ? (ICON_NAME_MAP[storedIconName] ?? null) : null;
                         const deptColor = getDeptHex(activeDeptKey);
+                        // If no stored icon, try to guess from the category name keywords
+                        const resolvedIcon = storedIcon || known?.icon || guessIconFromCategoryName(cat);
                         return (
                           <SectionTable
                             key={cat}
                             section={{
                               key: cat,
                               label: known?.label || cat.charAt(0).toUpperCase() + cat.slice(1).replace(/_/g, ' '),
-                              icon: storedIcon || known?.icon || LayersIcon,
+                              icon: resolvedIcon,
                               color: known?.color || deptColor,
                               hasEditor: ['article', 'blog', 'survivor_story'].includes(cat),
                               table: null
