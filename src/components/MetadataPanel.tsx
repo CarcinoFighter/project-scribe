@@ -2,13 +2,13 @@
 
 import React, { useState } from 'react';
 import { useUser } from '@/lib/useUser';
-import { 
-  FileText, 
-  Globe, 
-  Lock, 
-  Tag, 
-  Layers, 
-  ChevronDown, 
+import {
+  FileText,
+  Globe,
+  Lock,
+  Tag,
+  Layers,
+  ChevronDown,
   Info,
   RefreshCw,
   ExternalLink,
@@ -34,9 +34,9 @@ interface MetadataPanelProps {
 }
 
 export default function MetadataPanel(props: MetadataPanelProps) {
-  const { 
-    id, title, slug, setSlug, 
-    status, setStatus, 
+  const {
+    id, title, slug, setSlug,
+    status, setStatus,
     contentType, setContentType,
     onAutoGenerateSlug, author_id, onClose
   } = props;
@@ -44,6 +44,7 @@ export default function MetadataPanel(props: MetadataPanelProps) {
   const [commentText, setCommentText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [comments, setComments] = useState<any[]>([]);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   React.useEffect(() => {
     if (id && id !== 'ls-active' && !id.startsWith('new-')) {
@@ -77,9 +78,14 @@ export default function MetadataPanel(props: MetadataPanelProps) {
         setComments(prev => [...prev, data.comment]);
         setStatus('draft');
         setCommentText('');
+        setErrorMsg(null);
+      } else {
+        const errData = await res.json();
+        setErrorMsg(errData.details || errData.error || 'Failed to request changes');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      setErrorMsg(err.message || 'Connection error');
     } finally {
       setIsSubmitting(false);
     }
@@ -101,12 +107,18 @@ export default function MetadataPanel(props: MetadataPanelProps) {
         if (res.ok) {
           const data = await res.json();
           setComments(prev => [...prev, data.comment]);
+          setErrorMsg(null);
+        } else {
+          const errData = await res.json();
+          setErrorMsg(errData.details || errData.error || 'Failed to add proofreading note');
+          if (res.status === 500) return;
         }
       }
       setStatus('ready_for_upload');
       setCommentText('');
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      setErrorMsg(err.message || 'Connection error');
     } finally {
       setIsSubmitting(false);
     }
@@ -120,7 +132,7 @@ export default function MetadataPanel(props: MetadataPanelProps) {
           <span className="text-sm font-bold text-[var(--text)]">Document Setup</span>
         </div>
         {onClose && (
-          <button 
+          <button
             onClick={onClose}
             className="text-[var(--text-4)] hover:text-[var(--text)] transition-colors p-1"
           >
@@ -145,11 +157,10 @@ export default function MetadataPanel(props: MetadataPanelProps) {
               <button
                 key={type.id}
                 onClick={() => setContentType(type.id as any)}
-                className={`flex items-center justify-between px-3 py-2 rounded-[var(--r-md)] text-xs transition-all border ${
-                  contentType === type.id 
-                    ? 'bg-[var(--accent-subtle2)] border-[var(--accent-subtle)] text-[var(--accent)] font-semibold' 
+                className={`flex items-center justify-between px-3 py-2 rounded-[var(--r-md)] text-xs transition-all border ${contentType === type.id
+                    ? 'bg-[var(--accent-subtle2)] border-[var(--accent-subtle)] text-[var(--accent)] font-semibold'
                     : 'bg-transparent border-transparent text-[var(--text-3)] hover:bg-[var(--bg-deep)]'
-                }`}
+                  }`}
               >
                 <span>{type.label}</span>
                 {contentType === type.id && <div className="w-1.5 h-1.5 rounded-full" style={{ background: type.color }} />}
@@ -165,7 +176,7 @@ export default function MetadataPanel(props: MetadataPanelProps) {
               <Globe size={10} />
               URL Slug
             </label>
-            <button 
+            <button
               onClick={onAutoGenerateSlug}
               className="text-[10px] text-[var(--accent)] hover:underline flex items-center gap-1"
             >
@@ -193,21 +204,20 @@ export default function MetadataPanel(props: MetadataPanelProps) {
             <RefreshCw size={10} />
             Publication Flow
           </label>
-          
+
           <div className="space-y-2">
             {/* Current Status Indicator */}
-            <div className={`flex items-center gap-3 px-3 py-2.5 rounded-[var(--r-md)] border ${
-              status === 'published' ? 'bg-green-500/10 border-green-500/20 text-green-500' :
-              status === 'review' || status === 'in_review' ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' :
-              status === 'ready_for_proofreading' ? 'bg-purple-500/10 border-purple-500/20 text-purple-500' :
-              status === 'proofreading' ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-500' :
-              status === 'ready_for_upload' ? 'bg-cyan-500/10 border-cyan-500/20 text-cyan-500' :
-              'bg-[var(--bg-deep)] border-[var(--border-med)] text-[var(--text-3)]'
-            }`}>
-              {status === 'published' ? <Globe size={14} /> : 
-               status === 'review' || status === 'in_review' ? <ShieldCheck size={14} /> : 
-               status === 'ready_for_proofreading' || status === 'proofreading' || status === 'ready_for_upload' ? <Send size={14} /> :
-               <Lock size={14} />}
+            <div className={`flex items-center gap-3 px-3 py-2.5 rounded-[var(--r-md)] border ${status === 'published' ? 'bg-green-500/10 border-green-500/20 text-green-500' :
+                status === 'review' || status === 'in_review' ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' :
+                  status === 'ready_for_proofreading' ? 'bg-purple-500/10 border-purple-500/20 text-purple-500' :
+                    status === 'proofreading' ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-500' :
+                      status === 'ready_for_upload' ? 'bg-cyan-500/10 border-cyan-500/20 text-cyan-500' :
+                        'bg-[var(--bg-deep)] border-[var(--border-med)] text-[var(--text-3)]'
+              }`}>
+              {status === 'published' ? <Globe size={14} /> :
+                status === 'review' || status === 'in_review' ? <ShieldCheck size={14} /> :
+                  status === 'ready_for_proofreading' || status === 'proofreading' || status === 'ready_for_upload' ? <Send size={14} /> :
+                    <Lock size={14} />}
               <div className="flex flex-col">
                 <span className="text-[10px] uppercase font-bold tracking-tight opacity-70">Current Status</span>
                 <span className="text-xs font-bold capitalize">{status.replace(/_/g, ' ')}</span>
@@ -230,6 +240,16 @@ export default function MetadataPanel(props: MetadataPanelProps) {
                 <div className="flex items-center gap-2 p-3 bg-purple-500/5 border border-purple-500/10 rounded-[var(--r-md)] text-[10px] text-purple-600 font-medium">
                   <Info size={12} className="shrink-0" />
                   Awaiting proofreader assignment by Leadership.
+                </div>
+              )}
+
+              {errorMsg && (
+                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-[var(--r-md)] flex items-start gap-2 text-red-600 anim-shake">
+                  <AlertCircle size={14} className="shrink-0 mt-0.5" />
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[10px] font-bold uppercase tracking-tight">System Error</span>
+                    <span className="text-[11px] leading-relaxed">{errorMsg}</span>
+                  </div>
                 </div>
               )}
 
@@ -300,8 +320,8 @@ export default function MetadataPanel(props: MetadataPanelProps) {
                   ) : (
                     <div className="flex items-center gap-2 p-3 bg-amber-500/5 border border-amber-500/10 rounded-[var(--r-md)] text-[10px] text-amber-600 font-medium">
                       <AlertCircle size={12} className="shrink-0" />
-                      {user?.id === author_id 
-                        ? "Under review. You cannot self-approve your own work." 
+                      {user?.id === author_id
+                        ? "Under review. You cannot self-approve your own work."
                         : "Under review. Admin approval required."}
                     </div>
                   )}
@@ -348,7 +368,7 @@ export default function MetadataPanel(props: MetadataPanelProps) {
             <div className="space-y-3 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
               {comments.slice().reverse().map((comment) => (
                 <div key={comment.id} className="flex gap-2">
-                   <div className="flex-shrink-0 mt-0.5">
+                  <div className="flex-shrink-0 mt-0.5">
                     {comment.user?.avatar_url ? (
                       <img src={comment.user.avatar_url} alt="" className="w-5 h-5 rounded-full" />
                     ) : (

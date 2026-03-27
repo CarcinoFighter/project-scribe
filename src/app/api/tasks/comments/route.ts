@@ -42,6 +42,47 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'taskId and content are required' }, { status: 400 });
     }
 
+    const { data: existingAssignment } = await supabaseAdmin
+      .from('work_assignments')
+      .select('id')
+      .eq('id', taskId)
+      .single();
+
+    if (!existingAssignment) {
+      const tables = ['blogs', 'survivor_stories', 'cancer_docs'];
+      let docTitle = 'Document Task';
+      let authorId = payload.userId;
+      let category = 'article';
+
+      for (const t of tables) {
+        const { data: doc } = await supabaseAdmin.from(t).select('title, name, author_id').eq('id', taskId).single();
+        if (doc) {
+          docTitle = doc.title || doc.name || 'Untitled Document';
+          authorId = doc.author_id || authorId;
+          category = t === 'blogs' ? 'blog' : (t === 'survivor_stories' ? 'survivor_story' : 'article');
+          break;
+        }
+      }
+
+      const { error: stubError } = await supabaseAdmin.from('work_assignments').insert({
+        id: taskId,
+        title: docTitle,
+        status: 'proofreading',
+        assigned_to: authorId,
+        assigned_by: payload.userId,
+        category: category,
+        priority: 'normal',
+        due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+
+      if (stubError) {
+        console.error('Failed to create stub assignment:', stubError);
+      }
+    }
+    // -------------------------------------------------------
+
     const { data: comment, error } = await supabaseAdmin
       .from('task_comments')
       .insert({
@@ -55,11 +96,16 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       console.error('Error adding comment:', error);
-      return NextResponse.json({ error: 'Failed to add comment' }, { status: 500 });
+      return NextResponse.json({
+        error: 'Failed to add comment',
+        details: error.message,
+        hint: error.hint,
+        code: error.code
+      }, { status: 500 });
     }
 
     return NextResponse.json({ comment });
-  } catch (err) {
-    return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+  } catch (err: any) {
+    return NextResponse.json({ error: 'Invalid request', details: err.message }, { status: 400 });
   }
 }
