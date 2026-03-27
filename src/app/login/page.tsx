@@ -1,23 +1,25 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Mail, Lock, Loader2, ArrowRight, Eye, EyeOff, Sun, Moon,
+  Mail, Lock, ArrowRight, Eye, EyeOff,
   PenTool, Palette, Code2, Megaphone, Users,
 } from 'lucide-react';
 import { loadSettings, applySettings, saveSettings, THEMES } from '@/components/SettingsModal';
 
 /* ─── Department data ──────────────────────────────────────────── */
 const DEPTS = [
-  { name: "Writers' Block",   Icon: PenTool,    color: '#f59e0b', glow: 'rgba(245,158,11,0.35)'  },
-  { name: 'Design Lab',       Icon: Palette,    color: '#3b82f6', glow: 'rgba(59,130,246,0.35)'  },
-  { name: 'Development',      Icon: Code2,      color: '#10b981', glow: 'rgba(16,185,129,0.35)'  },
-  { name: 'Public Relations', Icon: Megaphone,  color: '#ec4899', glow: 'rgba(236,72,153,0.35)'  },
-  { name: 'Leadership',       Icon: Users,      color: '#8b5cf6', glow: 'rgba(139,92,246,0.35)'  },
+  { name: "Writers' Block",   Icon: PenTool,   abbr: 'WR' },
+  { name: 'Design Lab',       Icon: Palette,   abbr: 'DS' },
+  { name: 'Development',      Icon: Code2,     abbr: 'DV' },
+  { name: 'Public Relations', Icon: Megaphone, abbr: 'PR' },
+  { name: 'Leadership',       Icon: Users,     abbr: 'LD' },
 ];
 
-/* ─── Paired theme maps (mirrors useTheme hook) ─────────────────── */
+const TAPE_ITEMS = ['WRITERS', 'DESIGN', 'DEV', 'PR', 'LEADERSHIP', 'VANTAGE', '2026', '✦'];
+
+/* ─── Theme helpers ─────────────────────────────────────────────── */
 const DARK_TO_LIGHT: Record<string, string> = {
   'default-dark':     'default-light',
   'catppuccin-mocha': 'catppuccin-latte',
@@ -28,12 +30,12 @@ const LIGHT_TO_DARK: Record<string, string> = Object.fromEntries(
   Object.entries(DARK_TO_LIGHT).map(([k, v]) => [v, k])
 );
 
-/* ─── Logo SVG ─────────────────────────────────────────────────── */
-function Logo({ size = 20 }: { size?: number }) {
+/* ─── Logo ─────────────────────────────────────────────────────── */
+function Logo({ size = 20, color = 'currentColor' }: { size?: number; color?: string }) {
   return (
     <svg width={size} height={Math.round(size * 1.2)} viewBox="0 0 20 24" fill="none" aria-hidden>
-      <path d="M9.13307 5.97435C9.21934 5.23291 9.33279 4.80925 9.89802 4.0092C10.9029 2.80263 11.6709 2.67501 12.9912 2.4556L13.0042 2.45344C14.8586 2.34816 15.7395 3.26056 16.1799 4.26653C16.6203 5.27251 16.5553 7.03881 16.4233 7.9863C16.2913 8.93378 15.7627 11.4166 12.7608 13.8614C13.5837 14.1538 13.6573 14.1074 14.65 14.2561C15.6004 13.2384 16.1436 12.4864 17.5128 10.8405C18.882 9.19453 19.661 6.91014 19.8772 5.50646C20.0934 4.10278 20.1438 2.45344 18.9963 1.26031C17.8489 0.0671784 15.5888 -0.131673 14.198 0.067179C12.8072 0.266031 10.3732 1.26031 8.68105 2.6289C6.98888 3.9975 6.20076 5.50646 5.57488 7.5418C4.949 9.57714 5.30938 11.2467 6.08485 13.332C7.40174 16.0707 9.01717 17.9291 10.4196 18.8415C11.822 19.7539 12.8072 20.2451 14.3487 22.842C16.2495 19.8123 16.9991 18.6706 18.4632 16.9465C17.5128 15.7767 16.2842 15.1142 13.8735 14.7825C11.4627 14.4508 10.6865 13.6665 10.2341 13.6478C9.78183 13.6291 9.26057 13.6244 9.09831 13.5776C8.93605 13.5309 8.89093 13.5242 8.76218 13.2384C8.62326 12.7331 8.76218 11.9985 8.76218 11.8932C8.76218 11.7879 8.54197 11.6476 8.54197 11.5072C8.54197 11.3668 8.61607 11.2835 8.77377 11.2031C8.77377 11.2031 8.41448 11.0042 8.41448 10.8405C8.41448 10.6767 8.57673 10.0567 8.54197 9.91637C8.50721 9.776 7.68429 9.60054 7.83497 9.3198C7.98565 9.03906 9.16153 7.60314 9.30692 7.30785C9.45232 7.01256 9.15359 6.6787 9.13307 5.97435Z" fill="var(--accent)"/>
-      <path d="M8.00883 18.0928C5.32942 19.6789 3.54237 20.5984 1.2981 21.2277L0 24C1.2981 23.9064 5.74874 21.7424 9.23739 19.169L8.00883 18.0928Z" fill="var(--accent)"/>
+      <path d="M9.13307 5.97435C9.21934 5.23291 9.33279 4.80925 9.89802 4.0092C10.9029 2.80263 11.6709 2.67501 12.9912 2.4556L13.0042 2.45344C14.8586 2.34816 15.7395 3.26056 16.1799 4.26653C16.6203 5.27251 16.5553 7.03881 16.4233 7.9863C16.2913 8.93378 15.7627 11.4166 12.7608 13.8614C13.5837 14.1538 13.6573 14.1074 14.65 14.2561C15.6004 13.2384 16.1436 12.4864 17.5128 10.8405C18.882 9.19453 19.661 6.91014 19.8772 5.50646C20.0934 4.10278 20.1438 2.45344 18.9963 1.26031C17.8489 0.0671784 15.5888 -0.131673 14.198 0.067179C12.8072 0.266031 10.3732 1.26031 8.68105 2.6289C6.98888 3.9975 6.20076 5.50646 5.57488 7.5418C4.949 9.57714 5.30938 11.2467 6.08485 13.332C7.40174 16.0707 9.01717 17.9291 10.4196 18.8415C11.822 19.7539 12.8072 20.2451 14.3487 22.842C16.2495 19.8123 16.9991 18.6706 18.4632 16.9465C17.5128 15.7767 16.2842 15.1142 13.8735 14.7825C11.4627 14.4508 10.6865 13.6665 10.2341 13.6478C9.78183 13.6291 9.26057 13.6244 9.09831 13.5776C8.93605 13.5309 8.89093 13.5242 8.76218 13.2384C8.62326 12.7331 8.76218 11.9985 8.76218 11.8932C8.76218 11.7879 8.54197 11.6476 8.54197 11.5072C8.54197 11.3668 8.61607 11.2835 8.77377 11.2031C8.77377 11.2031 8.41448 11.0042 8.41448 10.8405C8.41448 10.6767 8.57673 10.0567 8.54197 9.91637C8.50721 9.776 7.68429 9.60054 7.83497 9.3198C7.98565 9.03906 9.16153 7.60314 9.30692 7.30785C9.45232 7.01256 9.15359 6.6787 9.13307 5.97435Z" fill={color}/>
+      <path d="M8.00883 18.0928C5.32942 19.6789 3.54237 20.5984 1.2981 21.2277L0 24C1.2981 23.9064 5.74874 21.7424 9.23739 19.169L8.00883 18.0928Z" fill={color}/>
     </svg>
   );
 }
@@ -48,23 +50,25 @@ export default function LoginPage() {
   const [ready,    setReady]    = useState(false);
   const [isDark,   setIsDark]   = useState(true);
   const [tick,     setTick]     = useState(0);
+  const [time,     setTime]     = useState('');
+  const shakeRef = useRef<HTMLDivElement>(null);
 
-  /* Apply saved theme on mount — same system used everywhere else */
   useEffect(() => {
     const s = loadSettings();
-    const dark = applySettings(s);
-    setIsDark(dark);
+    setIsDark(applySettings(s));
     setReady(true);
-    const id = setInterval(() => setTick(t => (t + 1) % DEPTS.length), 1600);
-    return () => clearInterval(id);
+
+    const deptId  = setInterval(() => setTick(t => (t + 1) % DEPTS.length), 2200);
+    const clockFn = () => setTime(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }));
+    clockFn();
+    const clockId = setInterval(clockFn, 1000);
+    return () => { clearInterval(deptId); clearInterval(clockId); };
   }, []);
 
   const toggleDark = () => {
     const s = loadSettings();
-    const curDark = THEMES[s.theme]?.dark ?? isDark;
-    const nextTheme = curDark
-      ? (DARK_TO_LIGHT[s.theme] ?? 'default-light')
-      : (LIGHT_TO_DARK[s.theme] ?? 'default-dark');
+    const curDark  = THEMES[s.theme]?.dark ?? isDark;
+    const nextTheme = curDark ? (DARK_TO_LIGHT[s.theme] ?? 'default-light') : (LIGHT_TO_DARK[s.theme] ?? 'default-dark');
     const next = { ...s, theme: nextTheme };
     saveSettings(next);
     setIsDark(applySettings(next));
@@ -74,473 +78,388 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true); setError(null);
     try {
-      const res  = await fetch('/api/auth/login', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+      const res  = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Login failed');
       router.push('/'); router.refresh();
     } catch (err: any) {
       setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+      if (shakeRef.current) { shakeRef.current.classList.remove('lp-shake'); void shakeRef.current.offsetWidth; shakeRef.current.classList.add('lp-shake'); }
+    } finally { setLoading(false); }
   };
 
-  const activeDept = DEPTS[tick];
+  const dept = DEPTS[tick];
 
   return (
     <>
       <style>{`
-        @keyframes lp-spin    { to { transform: rotate(360deg); } }
-        @keyframes lp-shake   { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
-        @keyframes lp-shim    { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-        @keyframes lp-blink   { 0%,100%{opacity:1} 50%{opacity:0.3} }
-        @keyframes lp-fade-up { from{opacity:0;transform:translateY(20px) scale(0.99)} to{opacity:1;transform:none} }
-        @keyframes lp-slide-x { from{opacity:0;transform:translateX(-16px)} to{opacity:1;transform:none} }
-        @keyframes lp-spin-cw  { to{transform:rotate(360deg)}  }
-        @keyframes lp-spin-ccw { to{transform:rotate(-360deg)} }
-        @keyframes lp-grad { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Mono:wght@400;500&display=swap');
 
-        .lp-card-ready { animation: lp-fade-up 0.55s cubic-bezier(0.22,1,0.36,1) both; }
-        .lp-hero-anim  { animation: lp-slide-x 0.70s cubic-bezier(0.22,1,0.36,1) both; }
-        .lp-hero-anim:nth-child(2) { animation-delay: 0.06s; }
-        .lp-hero-anim:nth-child(3) { animation-delay: 0.12s; }
-        .lp-hero-anim:nth-child(4) { animation-delay: 0.18s; }
-        .lp-shake { animation: lp-shake 0.34s ease; }
-
-        .lp-em {
-          font-style:italic; font-weight:800; font-size:1.06em;
-          background: linear-gradient(90deg, #f59e0b, #3b82f6, #10b981, #ec4899, #8b5cf6);
-          background-size:300% 300%;
-          -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-          color:transparent;
-          animation: lp-grad 5.5s ease infinite;
+        :root {
+          --ink:   #0a0a0a;
+          --cream: #f5f0e8;
+          --paper: #faf7f2;
+          --mid:   #b8b0a0;
+          --red:   #d92b2b;
+          --rule:  rgba(0,0,0,0.11);
+        }
+        [data-theme*="dark"], html.dark {
+          --ink:   #f0ece4;
+          --cream: #141210;
+          --paper: #1a1714;
+          --mid:   #6a6460;
+          --red:   #e03535;
+          --rule:  rgba(255,255,255,0.09);
         }
 
-        /* Shimmer rim on card panel */
-        .lp-panel::before {
-          content:''; position:absolute; top:0; left:0; right:0; height:1px;
-          background: linear-gradient(90deg,
-            transparent 0%, rgba(143,107,187,0.55) 35%,
-            rgba(200,168,235,0.90) 50%, rgba(143,107,187,0.55) 65%, transparent 100%);
-          background-size:200% 100%;
-          animation: lp-shim 3.6s ease-in-out infinite;
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        @keyframes lp-march   { to { stroke-dashoffset: -20; } }
+        @keyframes lp-shake   { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-5px)} 40%{transform:translateX(5px)} 60%{transform:translateX(-3px)} 80%{transform:translateX(3px)} }
+        @keyframes lp-scroll  { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+        @keyframes lp-rise    { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes lp-blink-r { 0%,100%{opacity:1} 50%{opacity:0} }
+        @keyframes lp-spin    { to{transform:rotate(360deg)} }
+
+        .lp-shake  { animation: lp-shake 0.42s ease; }
+        .lp-rise-0 { animation: lp-rise 0.5s 0.00s cubic-bezier(0.22,1,0.36,1) both; }
+        .lp-rise-1 { animation: lp-rise 0.5s 0.06s cubic-bezier(0.22,1,0.36,1) both; }
+        .lp-rise-2 { animation: lp-rise 0.5s 0.12s cubic-bezier(0.22,1,0.36,1) both; }
+        .lp-rise-3 { animation: lp-rise 0.5s 0.18s cubic-bezier(0.22,1,0.36,1) both; }
+
+        .lp-march line { stroke-dasharray: 4 4; animation: lp-march 0.6s linear infinite; }
+        .lp-tape { display:flex; width:max-content; animation: lp-scroll 22s linear infinite; }
+
+        .lp-inp {
+          width:100%; background:transparent; border:none;
+          border-bottom: 1.5px solid var(--rule);
+          padding: 7px 26px 7px 20px;
+          font-family:'DM Mono',monospace; font-size:12px;
+          color:var(--ink); outline:none;
+          transition:border-color 0.15s; letter-spacing:0.04em;
+        }
+        .lp-inp:focus { border-color: var(--red); }
+        .lp-inp::placeholder { color:var(--mid); opacity:0.7; }
+
+        .lp-btn {
+          display:flex; align-items:center; justify-content:space-between;
+          width:100%; padding: 11px 16px;
+          background:var(--ink); color:var(--cream);
+          border:none; cursor:pointer;
+          font-family:'DM Mono',monospace; font-size:10.5px;
+          font-weight:500; letter-spacing:0.14em; text-transform:uppercase;
+          clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
+          position:relative; overflow:hidden;
+        }
+        .lp-btn::before {
+          content:''; position:absolute; inset:0;
+          background:var(--red); transform:translateX(-105%);
+          transition:transform 0.28s cubic-bezier(0.22,1,0.36,1);
+        }
+        .lp-btn:hover:not(:disabled)::before { transform:translateX(0); }
+        .lp-btn > * { position:relative; z-index:1; }
+        .lp-btn:disabled { opacity:0.38; cursor:not-allowed; }
+
+        .lp-label {
+          font-family:'DM Mono',monospace; font-size:8.5px;
+          font-weight:500; letter-spacing:0.18em; text-transform:uppercase;
+          color:var(--mid); display:block; margin-bottom:5px;
         }
 
-        /* Input focus — uses design-system accent token */
-        .lp-inp:focus {
-          border-color: var(--accent) !important;
-          background: var(--accent-subtle) !important;
-          box-shadow: 0 0 0 3px var(--accent-subtle) !important;
-          outline: none;
+        .lp-ghost {
+          background:none; border:1px solid var(--rule);
+          cursor:pointer; padding:3px 9px;
+          font-family:'DM Mono',monospace; font-size:8.5px;
+          letter-spacing:0.12em; color:var(--mid); text-transform:uppercase;
+          transition:border-color 0.15s, color 0.15s;
         }
-        .lp-inp::placeholder { color: var(--text-4); opacity: 0.55; }
+        .lp-ghost:hover { border-color:var(--ink); color:var(--ink); }
 
-        /* Orbital ring anims */
-        .lp-r1 { transform-origin:250px 250px; animation: lp-spin-cw  88s linear infinite; }
-        .lp-r2 { transform-origin:250px 250px; animation: lp-spin-ccw 55s linear infinite; }
-        .lp-r3 { transform-origin:250px 250px; animation: lp-spin-cw  36s linear infinite; }
-        .lp-r4 { transform-origin:250px 250px; animation: lp-spin-ccw 22s linear infinite; }
-
-        /* CTA button hover */
-        .lp-btn:hover:not(:disabled) {
-          transform: translateY(-1px);
-          box-shadow: 0 8px 32px var(--accent-glow) !important;
+        /* ── Root: fixed full-viewport, no scroll ── */
+        .lp-root {
+          height:100dvh; overflow:hidden;
+          display:grid; grid-template-columns:1.1fr 0.9fr;
+          background:var(--paper);
+          font-family:'DM Mono',monospace;
         }
-        .lp-btn:active:not(:disabled) { transform: translateY(0); }
 
-        /* Mobile layout */
-        @media (max-width: 860px) {
-          .lp-left  { display: none !important; }
-          .lp-root  { grid-template-columns: 1fr !important; }
-          .lp-right { grid-column: 1 / -1; }
-          .lp-mobile-brand { display: flex !important; }
+        /* ── Mobile ≤ 767 px ── */
+        @media (max-width: 767px) {
+          .lp-root { grid-template-columns:1fr; }
+          .lp-left  { display:none !important; }
+          .lp-right { grid-column:1; }
+          .lp-mob-brand  { display:flex !important; }
+          .lp-desk-label { display:none !important; }
+          .lp-mob-tape   { display:flex !important; }
         }
       `}</style>
 
-      {/* Root two-column grid */}
-      <div
-        className="lp-root"
-        style={{
-          minHeight: '100dvh',
-          display: 'grid',
-          gridTemplateColumns: '1.15fr 0.85fr',
-          background: 'var(--bg)',
-          position: 'relative',
-          overflow: 'hidden',
-          transition: 'background 0.4s',
-        }}
-      >
-        {/* ══ LEFT ═════════════════════════════════════════════════ */}
-        <div
-          className="lp-left"
-          style={{
-            position: 'relative',
-            overflow: 'hidden',
-            background: 'var(--bg-alt)',
-            borderRight: '1px solid var(--border)',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-evenly',
-            alignItems: 'flex-start',
-            padding: '36px 44px',
-            minHeight: '100dvh',
-          }}
-        >
-          {/* Corner reticles */}
-          {(['tl','tr','bl','br'] as const).map(pos => (
-            <span key={pos} aria-hidden style={{
-              position: 'absolute',
-              width: 18, height: 18,
-              top:    pos[0]==='t' ? 20 : undefined,
-              bottom: pos[0]==='b' ? 20 : undefined,
-              left:   pos[1]==='l' ? 20 : undefined,
-              right:  pos[1]==='r' ? 20 : undefined,
-              borderColor: 'var(--accent)',
-              opacity: 0.22,
-              borderStyle: 'solid',
-              borderWidth:
-                pos==='tl' ? '1px 0 0 1px' :
-                pos==='tr' ? '1px 1px 0 0' :
-                pos==='bl' ? '0 0 1px 1px' :
-                             '0 1px 1px 0',
-            }}/>
-          ))}
+      <div className="lp-root">
 
-          {/* Orbital */}
+        {/* ══ LEFT ════════════════════════════════════════════════ */}
+        <div className="lp-left" style={{
+          borderRight:'1px solid var(--rule)',
+          display:'flex', flexDirection:'column',
+          overflow:'hidden', height:'100dvh',
+        }}>
+
+          {/* Masthead */}
           <div style={{
-            position: 'absolute', top: '50%', left: '50%',
-            transform: 'translate(-50%, -52%)',
-            width: 'min(500px, 86%)',
-            zIndex: 0, pointerEvents: 'none',
+            borderBottom:'1px solid var(--rule)', padding:'0 24px',
+            display:'grid', gridTemplateColumns:'1fr auto 1fr',
+            alignItems:'center', height:40, flexShrink:0,
           }}>
-            <svg viewBox="0 0 500 500" width="100%" height="100%" overflow="visible" aria-hidden>
-              <g className="lp-r1"><circle cx="250" cy="250" r="170" fill="none" stroke="var(--accent)" strokeWidth="0.5" strokeOpacity="0.13" strokeDasharray="6 10"/></g>
-              <g className="lp-r2"><circle cx="250" cy="250" r="130" fill="none" stroke="var(--accent)" strokeWidth="0.5" strokeOpacity="0.09" strokeDasharray="4 16"/></g>
-              <g className="lp-r3"><circle cx="250" cy="250" r="90"  fill="none" stroke="var(--accent)" strokeWidth="0.5" strokeOpacity="0.14" strokeDasharray="2 10"/></g>
-              <g className="lp-r4"><circle cx="250" cy="250" r="55"  fill="none" stroke="var(--accent)" strokeWidth="0.5" strokeOpacity="0.10" strokeDasharray="3 8"/></g>
-              <circle cx="250" cy="250" r="6" fill="var(--accent)" fillOpacity="0.25"/>
-              <circle cx="250" cy="250" r="3" fill="var(--accent)" fillOpacity="0.65"/>
-              {DEPTS.map((dept, i) => {
-                const angle = (i / DEPTS.length) * 2 * Math.PI - Math.PI / 2;
-                const cx = 250 + 170 * Math.cos(angle);
-                const cy = 250 + 170 * Math.sin(angle);
-                const isActive = tick === i;
-                return (
-                  <g key={dept.name}>
-                    {isActive && (
-                      <circle cx={cx} cy={cy} r="7" fill={dept.color} fillOpacity="0.25">
-                        <animate attributeName="r" from="7" to="28" dur="1.4s" repeatCount="indefinite"/>
-                        <animate attributeName="opacity" from="0.5" to="0" dur="1.4s" repeatCount="indefinite"/>
-                      </circle>
-                    )}
-                    <circle cx={cx} cy={cy}
-                      r={isActive ? 7 : 5}
-                      fill={dept.color}
-                      fillOpacity={isActive ? 0.9 : 0.38}
-                      style={{ transition: 'r 0.4s, fill-opacity 0.4s' }}
-                    />
-                  </g>
-                );
-              })}
-            </svg>
-          </div>
-
-          {/* Brand */}
-          <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Logo size={16}/>
-            <span style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-4)' }}>
-              Carcino Vantage
+            <span className="lp-label" style={{ marginBottom:0 }}>Vol. I · No. 1</span>
+            <div style={{ display:'flex', alignItems:'center', gap:7, color:'var(--ink)' }}>
+              <Logo size={12}/>
+              <span style={{ fontFamily:"'Playfair Display',serif", fontSize:11, fontWeight:700 }}>The Carcino Foundation</span>
+            </div>
+            <span className="lp-label" style={{ marginBottom:0, textAlign:'right', fontVariantNumeric:'tabular-nums' }}>
+              {time || '——:——:——'}
             </span>
           </div>
 
-          {/* Hero */}
-          <div style={{ position: 'relative', zIndex: 2 }}>
-            <div className="lp-hero-anim" style={{
-              fontSize: 10, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase',
-              color: 'var(--accent)', opacity: 0.72, marginBottom: 14,
-              display: 'flex', alignItems: 'center', gap: 10,
-            }}>
-              <span style={{ width: 22, height: 1, background: 'var(--accent)', opacity: 0.6, flexShrink: 0, display:'inline-block' }}/>
-              The Carcino Foundation
-            </div>
+          {/* Triple rule */}
+          <div style={{ padding:'0 24px', flexShrink:0 }}>
+            {[1, 2.5, 1].map((h, i) => (
+              <div key={i} style={{ height:h, background:i===1?'var(--ink)':'var(--rule)', margin:i===1?'2px 0':0 }}/>
+            ))}
+          </div>
 
-            <h1 className="lp-hero-anim" style={{
-              fontSize: 'clamp(30px, 4.2vw, 56px)',
-              fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1.05,
-              color: 'var(--text)', marginBottom: 14,
+          {/* Headline */}
+          <div style={{ padding:'14px 24px 12px', borderBottom:'1px solid var(--rule)', flexShrink:0 }}>
+            <div className="lp-label" style={{ marginBottom:9 }}>✦ Workspace platform — all departments</div>
+            <h1 style={{
+              fontFamily:"'Playfair Display',serif",
+              fontSize:'clamp(30px, 3.8vw, 56px)',
+              fontWeight:900, lineHeight:0.92,
+              letterSpacing:'-0.03em', color:'var(--ink)',
             }}>
-              One workspace.<br/>
-              <span className="lp-em">Every department.</span>
+              One<br/>
+              <span style={{ fontStyle:'italic', color:'var(--red)' }}>workspace,</span><br/>
+              every team.
             </h1>
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:10 }}>
+              <div style={{ flex:1, height:1, background:'var(--rule)' }}/>
+              <span className="lp-label" style={{ marginBottom:0 }}>est. 2026</span>
+              <div style={{ flex:1, height:1, background:'var(--rule)' }}/>
+            </div>
+          </div>
 
-            <p className="lp-hero-anim" style={{
-              fontSize: 13, lineHeight: 1.72, color: 'var(--text-4)',
-              maxWidth: 300, marginBottom: 24,
-            }}>
-              Writers, designers, developers, PR, and leadership — unified in one platform,
-              built for work that matters.
-            </p>
-
-            {/* Dept chips */}
-            <div className="lp-hero-anim" style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-              {DEPTS.map((dept, i) => (
-                <span key={dept.name} style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                  padding: '4px 11px 4px 8px', borderRadius: 99,
-                  fontSize: 10, fontWeight: 600, letterSpacing: '0.01em',
-                  border: '1px solid',
-                  borderColor: tick === i ? dept.color + '44' : dept.color + '1e',
-                  background: tick === i ? dept.color + '14' : dept.color + '08',
-                  color: dept.color,
-                  opacity: tick === i ? 1 : 0.48,
-                  boxShadow: tick === i ? `0 0 10px ${dept.glow}` : 'none',
-                  transition: 'opacity 0.35s, box-shadow 0.35s, background 0.35s, border-color 0.35s',
+          {/* Dept index — flex-1 fills remaining space */}
+          <div style={{
+            padding:'10px 24px', borderBottom:'1px solid var(--rule)',
+            flex:1, display:'flex', flexDirection:'column',
+            justifyContent:'space-between', overflow:'hidden',
+          }}>
+            <div>
+              <div className="lp-label" style={{ marginBottom:8 }}>Departments</div>
+              {DEPTS.map((d, i) => (
+                <div key={d.name} style={{
+                  display:'flex', alignItems:'center', gap:10,
+                  padding:'5px 0', borderTop:'1px solid var(--rule)',
                 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: dept.color, flexShrink: 0 }}/>
-                  {dept.name}
-                </span>
+                  <span style={{
+                    fontFamily:"'Playfair Display',serif", fontSize:9,
+                    fontStyle:'italic', width:18, flexShrink:0,
+                    color:tick===i?'var(--red)':'var(--mid)', transition:'color 0.3s',
+                  }}>
+                    {String(i+1).padStart(2,'0')}
+                  </span>
+                  <d.Icon size={11} strokeWidth={1.8} style={{ color:tick===i?'var(--red)':'var(--mid)', transition:'color 0.3s', flexShrink:0 }}/>
+                  <span style={{
+                    fontSize:10, letterSpacing:'0.06em', flex:1,
+                    color:tick===i?'var(--ink)':'var(--mid)',
+                    fontWeight:tick===i?500:400, transition:'color 0.3s',
+                  }}>
+                    {d.name.toUpperCase()}
+                  </span>
+                  {tick===i && (
+                    <span style={{ display:'flex', alignItems:'center', gap:4, fontSize:8, letterSpacing:'0.1em', color:'var(--red)' }}>
+                      <span style={{ width:4, height:4, borderRadius:'50%', background:'var(--red)', animation:'lp-blink-r 1s step-start infinite' }}/>
+                      LIVE
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+            <svg className="lp-march" width="100%" height="10" style={{ opacity:0.2, marginTop:6 }} aria-hidden>
+              <line x1="0" y1="5" x2="100%" y2="5" stroke="var(--ink)" strokeWidth="1.5"/>
+            </svg>
+          </div>
+
+          {/* Tape */}
+          <div style={{ background:'var(--ink)', overflow:'hidden', height:30, display:'flex', alignItems:'center', flexShrink:0 }}>
+            <div className="lp-tape">
+              {[...TAPE_ITEMS,...TAPE_ITEMS].map((item,i)=>(
+                <span key={i} style={{
+                  fontSize:9, letterSpacing:'0.18em',
+                  color:i%8===7||(i-7)%8===0?'var(--red)':'var(--cream)',
+                  opacity:0.75, padding:'0 16px', whiteSpace:'nowrap',
+                }}>{item}</span>
               ))}
             </div>
           </div>
         </div>
 
-        {/* ══ RIGHT ════════════════════════════════════════════════ */}
-        <div
-          className="lp-right"
-          style={{
-            position: 'relative',
-            background: 'var(--bg)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '48px clamp(24px, 5vw, 56px)',
-            gap: 24,
-          }}
-        >
-          {/* Accent corner glow */}
-          <div aria-hidden style={{
-            position: 'absolute', top: -80, right: -80,
-            width: 320, height: 320, borderRadius: '50%',
-            background: 'radial-gradient(circle, var(--accent-subtle) 0%, transparent 70%)',
-            pointerEvents: 'none',
-          }}/>
+        {/* ══ RIGHT ═══════════════════════════════════════════════ */}
+        <div className="lp-right" style={{
+          background:'var(--paper)',
+          display:'flex', flexDirection:'column',
+          height:'100dvh', overflow:'hidden',
+        }}>
 
-          {/* Theme toggle — reuses existing tb-btn class from globals.css */}
-          <button
-            className="tb-btn"
-            onClick={toggleDark}
-            aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-            style={{ position: 'absolute', top: 18, right: 18, width: 34, height: 34, borderRadius: 8 }}
-          >
-            {isDark ? <Sun size={14} strokeWidth={1.8}/> : <Moon size={14} strokeWidth={1.8}/>}
-          </button>
+          {/* Top bar */}
+          <div style={{
+            borderBottom:'1px solid var(--rule)', height:40, flexShrink:0,
+            display:'flex', alignItems:'center', justifyContent:'space-between',
+            padding:'0 28px',
+          }}>
+            {/* Mobile brand (hidden on desktop via CSS) */}
+            <div className="lp-mob-brand" style={{ display:'none', alignItems:'center', gap:7, color:'var(--ink)' }}>
+              <div style={{ width:20, height:20, background:'var(--red)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <Logo size={10} color="#fff"/>
+              </div>
+              <span style={{ fontFamily:"'Playfair Display',serif", fontSize:12, fontWeight:700 }}>Carcino Vantage</span>
+            </div>
+            {/* Desktop label (hidden on mobile) */}
+            <span className="lp-desk-label lp-label" style={{ marginBottom:0 }}>Access terminal</span>
 
-          {/* Mobile brand */}
-          <div className="lp-mobile-brand" style={{ display: 'none', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-            <Logo size={22}/>
-            <span style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--text)' }}>
-              Carcino Vantage
-            </span>
+            <button className="lp-ghost" onClick={toggleDark} aria-label={isDark?'Light mode':'Dark mode'}>
+              {isDark?'Light':'Dark'}
+            </button>
           </div>
 
-          {/* Card */}
-          <div
-            className={ready ? 'lp-card-ready' : undefined}
-            style={{ width: '100%', maxWidth: 384, opacity: ready ? undefined : 0, position: 'relative', zIndex: 2 }}
-          >
-            {/* Glass panel — consistent with glass-overlay in globals.css */}
-            <div
-              className="lp-panel"
-              style={{
-                background: 'var(--surface-2)',
-                border: '1px solid var(--border-med)',
-                borderRadius: 'var(--r-xl)',
-                padding: '34px 30px 28px',
-                backdropFilter: 'blur(28px)',
-                WebkitBackdropFilter: 'blur(28px)',
-                boxShadow: 'var(--sh-lg)',
-                position: 'relative',
-                overflow: 'hidden',
-              }}
-            >
-              {/* Inner glow overlay */}
-              <div aria-hidden style={{
-                position: 'absolute', inset: 0, pointerEvents: 'none',
-                background: 'radial-gradient(ellipse 80% 38% at 50% 0%, var(--accent-subtle) 0%, transparent 70%)',
-              }}/>
+          {/* Form — vertically centred in remaining space */}
+          <div style={{
+            flex:1, display:'flex', alignItems:'center', justifyContent:'center',
+            padding:'0 clamp(22px,6vw,52px)', overflow:'hidden',
+          }}>
+            <div style={{ width:'100%', maxWidth:380, opacity:ready?1:0, transition:'opacity 0.35s' }}>
 
-              {/* Card header */}
-              <div style={{ marginBottom: 24, position: 'relative', zIndex: 1 }}>
-                <div style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 5,
-                  padding: '3px 10px', borderRadius: 99, marginBottom: 12,
-                  fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase',
-                  background: 'var(--accent-subtle2)',
-                  border: '1px solid rgba(143,107,187,0.25)',
-                  color: 'var(--accent)',
-                }}>
-                  <span style={{
-                    width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)',
-                    animation: 'lp-blink 2s ease-in-out infinite',
-                  }}/>
-                  Workspace Access
+              {/* Header */}
+              <div className="lp-rise-0" style={{ marginBottom:20 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:12 }}>
+                  <div style={{ width:22, height:22, background:'var(--red)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                    <Logo size={10} color="#fff"/>
+                  </div>
+                  <span style={{ fontSize:9.5, letterSpacing:'0.12em', textTransform:'uppercase', color:'var(--ink)', fontWeight:500 }}>
+                    Carcino Vantage
+                  </span>
                 </div>
-                <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.022em', color: 'var(--text)', marginBottom: 5 }}>
-                  Sign in to Vantage
+                <h2 style={{
+                  fontFamily:"'Playfair Display',serif",
+                  fontSize:'clamp(22px,2.8vw,34px)',
+                  fontWeight:700, letterSpacing:'-0.03em', lineHeight:1.05,
+                  color:'var(--ink)', marginBottom:4,
+                }}>
+                  Sign in<span style={{ color:'var(--red)' }}>.</span>
                 </h2>
-                <p style={{ fontSize: 12.5, color: 'var(--text-4)' }}>
-                  Welcome back — let&apos;s change the world.
+                <p style={{ fontSize:10.5, color:'var(--mid)', letterSpacing:'0.03em' }}>
+                  Welcome back — let's change the world
                 </p>
               </div>
 
               {/* Error */}
               {error && (
-                <div role="alert" aria-live="assertive" className="lp-shake" style={{
-                  background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.18)',
-                  borderRadius: 'var(--r-md)', padding: '9px 13px', fontSize: 12, color: '#f87171',
-                  marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8,
-                  position: 'relative', zIndex: 1,
+                <div ref={shakeRef} role="alert" className="lp-shake" style={{
+                  marginBottom:12, padding:'8px 12px',
+                  borderLeft:'3px solid var(--red)',
+                  background:'rgba(217,43,43,0.05)',
+                  fontSize:10.5, color:'var(--red)', letterSpacing:'0.03em',
                 }}>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
-                    <line x1="12" y1="16" x2="12.01" y2="16"/>
-                  </svg>
-                  {error}
+                  ✕ &nbsp;{error}
                 </div>
               )}
 
               <form onSubmit={handleLogin} noValidate>
                 {/* Email */}
-                <div style={{ marginBottom: 11, position: 'relative', zIndex: 1 }}>
-                  <label htmlFor="lp-email" style={{
-                    display: 'block', fontSize: 10, fontWeight: 600, letterSpacing: '0.08em',
-                    textTransform: 'uppercase', marginBottom: 7, color: 'var(--text-4)',
-                  }}>
-                    Email address
-                  </label>
-                  <div style={{ position: 'relative' }}>
-                    <Mail size={14} strokeWidth={1.8} aria-hidden style={{
-                      position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
-                      color: 'var(--text-4)', pointerEvents: 'none',
-                    }}/>
+                <div className="lp-rise-1" style={{ marginBottom:18 }}>
+                  <label htmlFor="lp-email" className="lp-label">Email address</label>
+                  <div style={{ position:'relative' }}>
+                    <Mail size={11} strokeWidth={1.8} aria-hidden style={{ position:'absolute', left:0, top:'50%', transform:'translateY(-50%)', color:'var(--mid)', pointerEvents:'none' }}/>
                     <input
                       id="lp-email" type="email" className="lp-inp"
                       placeholder="you@carcino.work"
-                      value={email} onChange={e => setEmail(e.target.value)}
+                      value={email} onChange={e=>setEmail(e.target.value)}
                       autoComplete="email" required aria-required="true" aria-invalid={!!error}
-                      style={{
-                        width: '100%', background: 'var(--bg-deep)',
-                        border: '1px solid var(--border-med)', borderRadius: 'var(--r-md)',
-                        padding: '11px 12px 11px 38px', fontFamily: 'inherit', fontSize: 13.5,
-                        color: 'var(--text)', transition: 'border-color 0.13s, background 0.13s, box-shadow 0.13s',
-                      }}
                     />
                   </div>
                 </div>
 
                 {/* Password */}
-                <div style={{ marginBottom: 11, position: 'relative', zIndex: 1 }}>
-                  <label htmlFor="lp-pw" style={{
-                    display: 'block', fontSize: 10, fontWeight: 600, letterSpacing: '0.08em',
-                    textTransform: 'uppercase', marginBottom: 7, color: 'var(--text-4)',
-                  }}>
-                    Password
-                  </label>
-                  <div style={{ position: 'relative' }}>
-                    <Lock size={14} strokeWidth={1.8} aria-hidden style={{
-                      position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
-                      color: 'var(--text-4)', pointerEvents: 'none',
-                    }}/>
+                <div className="lp-rise-2" style={{ marginBottom:22 }}>
+                  <label htmlFor="lp-pw" className="lp-label">Password</label>
+                  <div style={{ position:'relative' }}>
+                    <Lock size={11} strokeWidth={1.8} aria-hidden style={{ position:'absolute', left:0, top:'50%', transform:'translateY(-50%)', color:'var(--mid)', pointerEvents:'none' }}/>
                     <input
-                      id="lp-pw" type={showPw ? 'text' : 'password'} className="lp-inp"
+                      id="lp-pw" type={showPw?'text':'password'} className="lp-inp"
                       placeholder="••••••••••"
-                      value={password} onChange={e => setPassword(e.target.value)}
+                      value={password} onChange={e=>setPassword(e.target.value)}
                       autoComplete="current-password" required aria-required="true" aria-invalid={!!error}
-                      style={{
-                        width: '100%', background: 'var(--bg-deep)',
-                        border: '1px solid var(--border-med)', borderRadius: 'var(--r-md)',
-                        padding: '11px 40px 11px 38px', fontFamily: 'inherit', fontSize: 13.5,
-                        color: 'var(--text)', transition: 'border-color 0.13s, background 0.13s, box-shadow 0.13s',
-                      }}
+                      style={{ paddingRight:24 }}
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPw(v => !v)}
-                      aria-label={showPw ? 'Hide password' : 'Show password'}
-                      aria-pressed={showPw}
-                      style={{
-                        position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
-                        background: 'none', border: 'none', cursor: 'pointer',
-                        padding: 4, borderRadius: 4, color: 'var(--text-4)',
-                        display: 'flex', alignItems: 'center', transition: 'color 0.12s',
-                      }}
-                    >
-                      {showPw ? <EyeOff size={14} aria-hidden/> : <Eye size={14} aria-hidden/>}
+                    <button type="button" onClick={()=>setShowPw(v=>!v)}
+                      aria-label={showPw?'Hide password':'Show password'} aria-pressed={showPw}
+                      style={{ position:'absolute', right:0, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', padding:2, color:'var(--mid)', display:'flex', alignItems:'center' }}>
+                      {showPw ? <EyeOff size={11} aria-hidden/> : <Eye size={11} aria-hidden/>}
                     </button>
                   </div>
                 </div>
 
                 {/* Submit */}
-                <button
-                  type="submit"
-                  className="lp-btn"
-                  disabled={loading || !email || !password}
-                  aria-busy={loading}
-                  style={{
-                    width: '100%', marginTop: 18, padding: '12px 16px',
-                    background: 'linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%)',
-                    border: 'none', borderRadius: 'var(--r-md)',
-                    color: '#fff', fontFamily: 'inherit', fontSize: 13.5, fontWeight: 700,
-                    letterSpacing: '-0.01em', cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-                    position: 'relative', zIndex: 1,
-                    boxShadow: '0 4px 20px var(--accent-glow)',
-                    opacity: loading || !email || !password ? 0.48 : 1,
-                    transition: 'transform 0.10s, box-shadow 0.12s, opacity 0.12s',
-                  }}
-                >
-                  {loading
-                    ? <><Loader2 size={15} aria-hidden style={{ animation: 'lp-spin 0.75s linear infinite' }}/><span>Signing in…</span></>
-                    : <><span>Sign in</span><ArrowRight size={14} aria-hidden/></>
-                  }
-                </button>
+                <div className="lp-rise-3">
+                  <button type="submit" className="lp-btn" disabled={loading||!email||!password} aria-busy={loading}>
+                    <span>{loading?'Authenticating…':'Sign in to Vantage'}</span>
+                    {loading
+                      ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation:'lp-spin 0.8s linear infinite' }} aria-hidden><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                      : <ArrowRight size={12} aria-hidden/>
+                    }
+                  </button>
+                </div>
               </form>
 
-              {/* Active dept ticker */}
+              {/* Status */}
               <div style={{
-                marginTop: 20, paddingTop: 16,
-                borderTop: '1px solid var(--border)',
-                display: 'flex', alignItems: 'center', gap: 8,
-                fontSize: 11, color: 'var(--text-4)',
-                position: 'relative', zIndex: 1, overflow: 'hidden',
+                marginTop:16, paddingTop:12, borderTop:'1px solid var(--rule)',
+                display:'flex', alignItems:'center', justifyContent:'space-between',
               }}>
-                <span style={{
-                  width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
-                  background: activeDept.color,
-                  boxShadow: `0 0 8px ${activeDept.glow}`,
-                  transition: 'background 0.4s ease, box-shadow 0.4s ease',
-                }}/>
-                <span>
-                  <span style={{ fontWeight: 600, color: activeDept.color, transition: 'color 0.4s ease' }}>
-                    {activeDept.name}
-                  </span>
-                  {' '}is active on Vantage
+                <span style={{ fontSize:9, letterSpacing:'0.1em', color:'var(--mid)', textTransform:'uppercase', display:'flex', alignItems:'center', gap:5 }}>
+                  <span style={{ width:4, height:4, borderRadius:'50%', background:'var(--red)', display:'inline-block', animation:'lp-blink-r 1.4s step-start infinite' }}/>
+                  {dept.name} — active
                 </span>
+                <span style={{ fontSize:9, letterSpacing:'0.08em', color:'var(--mid)' }}>{dept.abbr}</span>
               </div>
             </div>
+          </div>
 
-            <footer style={{
-              marginTop: 14, textAlign: 'center', fontSize: 10.5,
-              color: 'var(--text-4)', opacity: 0.55,
-            }}>
+          {/* Footer */}
+          <div style={{
+            borderTop:'1px solid var(--rule)', height:30, flexShrink:0,
+            display:'flex', alignItems:'center', padding:'0 28px',
+          }}>
+            <span className="lp-label" style={{ marginBottom:0 }}>
               © 2026 The Carcino Foundation · All rights reserved
-            </footer>
+            </span>
+          </div>
+
+          {/* Mobile-only tape marquee */}
+          <div className="lp-mob-tape" style={{
+            display:'none', background:'var(--ink)',
+            overflow:'hidden', height:28, alignItems:'center', flexShrink:0,
+          }}>
+            <div className="lp-tape">
+              {[...TAPE_ITEMS,...TAPE_ITEMS].map((item,i)=>(
+                <span key={i} style={{
+                  fontSize:8.5, letterSpacing:'0.16em',
+                  color:i%8===7||(i-7)%8===0?'var(--red)':'var(--cream)',
+                  opacity:0.75, padding:'0 14px', whiteSpace:'nowrap',
+                }}>{item}</span>
+              ))}
+            </div>
           </div>
         </div>
+
       </div>
     </>
   );
