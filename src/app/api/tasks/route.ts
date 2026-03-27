@@ -71,7 +71,8 @@ export async function PATCH(req: NextRequest) {
   try {
     const { 
       id, status, submission_media_url, 
-      assigned_to_ids, priority, due_date, title, description 
+      assigned_to_ids, priority, due_date, title, description,
+      proofreader_id
     } = await req.json();
 
     if (!id) {
@@ -87,6 +88,7 @@ export async function PATCH(req: NextRequest) {
     if (due_date !== undefined) updateData.due_date = due_date;
     if (title !== undefined) updateData.title = title;
     if (description !== undefined) updateData.description = description;
+    if (proofreader_id !== undefined) updateData.proofreader_id = proofreader_id;
 
     // Only admins can reassign generally
     if (payload.adminAccess && assigned_to_ids !== undefined) {

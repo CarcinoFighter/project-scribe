@@ -104,6 +104,71 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin, use
     }
   };
 
+  const handleStatusUpdate = async (newStatus: string, comment?: string) => {
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/tasks', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: task.id,
+          status: newStatus
+        })
+      });
+
+      if (res.ok) {
+        if (comment) {
+          await fetch('/api/tasks/comments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              taskId: task.id,
+              content: comment,
+              type: 'status_change'
+            })
+          });
+        }
+        onUpdate();
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleAssignProofreader = async (proofreaderId: string) => {
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/tasks', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: task.id,
+          status: 'proofreading',
+          proofreader_id: proofreaderId
+        })
+      });
+
+      if (res.ok) {
+        await fetch('/api/tasks/comments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            taskId: task.id,
+            content: 'Proofreader assigned.',
+            type: 'status_change'
+          })
+        });
+        onUpdate();
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleReassign = async () => {
     if (newAssigneeIds.length === 0) return;
     
@@ -164,10 +229,14 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin, use
                    {cat.label}
                 </span>
                 <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${
-                  task.status === 'done' ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' : 
-                  task.status === 'in_progress' ? 'text-blue-500 bg-blue-500/10 border-blue-500/20' : 'text-amber-500 bg-amber-500/10 border-amber-500/20'
+                  task.status === 'done' || task.status === 'published' ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' : 
+                  task.status === 'in_progress' ? 'text-blue-500 bg-blue-500/10 border-blue-500/20' : 
+                  task.status === 'ready_for_proofreading' ? 'text-indigo-500 bg-indigo-500/10 border-indigo-500/20' :
+                  task.status === 'proofreading' ? 'text-purple-500 bg-purple-500/10 border-purple-500/20' :
+                  task.status === 'ready_for_upload' ? 'text-pink-500 bg-pink-500/10 border-pink-500/20' :
+                  'text-amber-500 bg-amber-500/10 border-amber-500/20'
                 }`}>
-                  {task.status.replace('_', ' ')}
+                  {task.status.replace(/_/g, ' ')}
                 </span>
               </div>
               <h2 className="text-xl font-bold tracking-tight">{task.title}</h2>
@@ -329,24 +398,86 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin, use
                 </button>
               )}
 
-              {/* Submit Work Section */}
-              {(isAdmin || (task.status !== 'done' && task.status !== 'in_review' && (task.assigned_to_ids?.includes(userId) || task.assigned_to === userId))) && task.status !== 'done' && (
-                <div className="pt-4 mt-4 border-t border-[var(--border-med)] anim-fade-up">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-4)] mb-3">
-                    {isAdmin ? 'Admin Actions' : 'Your Actions'}
-                  </p>
-                  <button 
-                    onClick={() => onOpenSubmission?.(task.id, task.title)}
-                    className="w-full py-2.5 px-3 flex items-center justify-center gap-2 text-xs font-bold text-white bg-[var(--accent)] rounded-[var(--r-md)] shadow-lg shadow-[var(--accent-glow)] hover:scale-[1.02] active:scale-[0.98] transition-all"
-                  >
-                    <Send size={14} />
-                    {isAdmin ? 'Submit Proof on behalf of Assignee' : 'Submit Proof of Work'}
-                  </button>
-                  <p className="text-[10px] text-[var(--text-4)] mt-2 text-center">
-                    Upload media to {isAdmin ? 'complete this task' : 'complete your task'}
-                  </p>
+              {/* Workflow Actions */}
+              <div className="pt-4 mt-4 border-t border-[var(--border-med)] anim-fade-up">
+                <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-4)] mb-3">
+                  Workflow Actions
+                </p>
+                <div className="space-y-2">
+                  {/* Author Actions */}
+                  {(task.assigned_to_ids?.includes(userId) || task.assigned_to === userId) && task.status === 'in_progress' && (
+                    <button 
+                      onClick={() => handleStatusUpdate('ready_for_proofreading', 'Initial draft completed. Ready for proofreading.')}
+                      disabled={submitting}
+                      className="w-full py-2.5 px-3 flex items-center justify-center gap-2 text-xs font-bold text-white bg-emerald-600 rounded-[var(--r-md)] shadow-lg hover:bg-emerald-700 transition-all disabled:opacity-50"
+                    >
+                      <ChevronRight size={14} />
+                      Ready for Proofreading
+                    </button>
+                  )}
+
+                  {/* Leadership Actions - Assign Proofreader */}
+                  {isAdmin && task.status === 'ready_for_proofreading' && (
+                    <div className="space-y-2">
+                      <p className="text-[10px] text-[var(--text-4)] italic">Select a proofreader to move forward</p>
+                      <MultiPersonSelect 
+                        selectedIds={task.proofreader_id ? [task.proofreader_id] : []}
+                        onChange={(ids) => ids[0] && handleAssignProofreader(ids[0])}
+                        maxSelections={1}
+                        placeholder="Choose proofreader..."
+                      />
+                    </div>
+                  )}
+
+                  {/* Proofreader Actions */}
+                  {task.proofreader_id === userId && task.status === 'proofreading' && (
+                    <div className="flex flex-col gap-2">
+                      <button 
+                        onClick={() => handleStatusUpdate('ready_for_upload', 'Proofreading completed. Ready for final upload.')}
+                        disabled={submitting}
+                        className="w-full py-2.5 px-3 flex items-center justify-center gap-2 text-xs font-bold text-white bg-pink-600 rounded-[var(--r-md)] shadow-lg hover:bg-pink-700 transition-all disabled:opacity-50"
+                      >
+                        <ChevronRight size={14} />
+                        Ready for Upload
+                      </button>
+                      <button 
+                        onClick={() => {
+                          const feedback = prompt("Add correction feedback/comments:");
+                          if (feedback) handleStatusUpdate('in_progress', `Changes requested: ${feedback}`);
+                        }}
+                        disabled={submitting}
+                        className="w-full py-2.5 px-3 flex items-center justify-center gap-2 text-xs font-bold text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-[var(--r-md)] hover:bg-amber-500/20 transition-all disabled:opacity-50"
+                      >
+                        <RefreshCw size={14} />
+                        Request Changes
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Final Approval for Admin */}
+                  {isAdmin && task.status === 'ready_for_upload' && (
+                    <button 
+                      onClick={() => handleStatusUpdate('published', 'Final document approved and published.')}
+                      disabled={submitting}
+                      className="w-full py-2.5 px-3 flex items-center justify-center gap-2 text-xs font-bold text-white bg-[var(--accent)] rounded-[var(--r-md)] shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50"
+                    >
+                      <Briefcase size={14} />
+                      Approve & Publish
+                    </button>
+                  )}
+
+                  {/* Standard submission button for tasks */}
+                  {task.category === 'task' && task.status !== 'done' && (isAdmin || task.assigned_to_ids?.includes(userId) || task.assigned_to === userId) && (
+                    <button 
+                      onClick={() => onOpenSubmission?.(task.id, task.title)}
+                      className="w-full py-2.5 px-3 flex items-center justify-center gap-2 text-xs font-bold text-white bg-[var(--accent)] rounded-[var(--r-md)] shadow-lg hover:scale-[1.02] transition-all"
+                    >
+                      <Send size={14} />
+                      {isAdmin ? 'Submit Proof' : 'Submit Proof of Work'}
+                    </button>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
 
             {isReassigning && (

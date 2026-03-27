@@ -15,7 +15,7 @@ export interface Doc {
   title: string;
   excerpt: string;
   words: number;
-  status: 'published' | 'review' | 'draft';
+  status: 'published' | 'review' | 'in_review' | 'draft' | 'in_progress' | 'ready_for_proofreading' | 'proofreading' | 'ready_for_upload';
   date: string;
   readTime: number;
   tags: string[];
@@ -28,7 +28,12 @@ export function StatusPill({ status }: { status: string }) {
   const cfg: Record<string, { bg: string; color: string; border: string }> = {
     published: { bg:'var(--accent-subtle2)', color:'var(--accent)',  border:'rgba(143,107,187,0.20)' },
     review:    { bg:'rgba(245,158,11,0.10)', color:'#f59e0b',        border:'rgba(245,158,11,0.20)'  },
+    in_review: { bg:'rgba(245,158,11,0.10)', color:'#f59e0b',        border:'rgba(245,158,11,0.20)'  },
     draft:     { bg:'var(--bg-deep)',        color:'var(--text-4)',  border:'var(--border-med)'      },
+    in_progress: { bg:'rgba(59,130,246,0.10)', color:'#3b82f6',      border:'rgba(59,130,246,0.20)'  },
+    ready_for_proofreading: { bg:'rgba(16,185,129,0.10)', color:'#10b981', border:'rgba(16,185,129,0.20)' },
+    proofreading: { bg:'rgba(139,92,246,0.10)', color:'#8b5cf6',      border:'rgba(139,92,246,0.20)' },
+    ready_for_upload: { bg:'rgba(236,72,153,0.10)', color:'#ec4899',   border:'rgba(236,72,153,0.20)' },
   };
   const s = cfg[status] || cfg.draft;
   return (

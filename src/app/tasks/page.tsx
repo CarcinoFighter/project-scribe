@@ -68,7 +68,7 @@ interface Assignment {
   id: string;
   title: string;
   description: string;
-  status: 'todo' | 'in_progress' | 'done' | 'in_review';
+  status: 'todo' | 'in_progress' | 'done' | 'in_review' | 'ready_for_proofreading' | 'proofreading' | 'ready_for_upload';
   priority: 'low' | 'normal' | 'high';
   category: string;
   category_icon?: string;
@@ -159,7 +159,7 @@ interface ReviewDoc {
   id: string;
   title: string;
   type: 'blogs' | 'survivor_stories' | 'cancer_docs' | 'tasks';
-  status: 'review' | 'in_review';
+  status: 'review' | 'in_review' | 'ready_for_proofreading' | 'ready_for_upload';
   updated_at: string;
   author?: { id: string; name: string; avatar_url: string | null };
   submission_media_url?: string;
@@ -171,9 +171,11 @@ function StatusBadge({ status }: { status: string }) {
     done: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20',
     in_progress: 'text-blue-500 bg-blue-500/10 border-blue-500/20',
     in_review: 'text-amber-500 bg-amber-500/10 border-amber-500/20',
-    todo: 'text-gray-500 bg-gray-500/10 border-gray-500/20',
+    ready_for_proofreading: 'text-purple-500 bg-purple-500/10 border-purple-500/20',
+    proofreading: 'text-indigo-500 bg-indigo-500/10 border-indigo-500/20',
+    ready_for_upload: 'text-cyan-500 bg-cyan-500/10 border-cyan-500/20',
   };
-  const label = status.replace('_', ' ');
+  const label = status.replace(/_/g, ' ');
   return (
     <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border flex-shrink-0 ${map[status] || map.todo}`}>
       {label}

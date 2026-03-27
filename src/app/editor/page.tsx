@@ -40,7 +40,7 @@ interface Tab {
   title: string;
   content: string;
   slug: string;
-  status: 'draft' | 'review' | 'published';
+  status: 'draft' | 'review' | 'published' | 'ready_for_proofreading' | 'proofreading' | 'ready_for_upload' | 'in_review';
   author_id?: string;
   isSaved: boolean;
   isLoading?: boolean;

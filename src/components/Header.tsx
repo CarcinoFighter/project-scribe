@@ -237,16 +237,28 @@ export default function Header(props: HeaderProps) {
           <button
             className="tb-btn"
             onClick={onOpenMetadata}
-            title={`Status: ${status} (Click to change)`}
+            title={`Status: ${status.replace(/_/g, ' ')} (Click to change)`}
           >
             <div className="relative">
               <Save size={15} strokeWidth={1.8} style={{ 
-                color: status === 'published' ? '#10b981' : status === 'review' ? '#f59e0b' : 'var(--text-3)' 
+                color: status === 'published' ? '#10b981' : 
+                       (status === 'review' || status === 'in_review') ? '#f59e0b' : 
+                       status === 'ready_for_proofreading' ? '#9333ea' :
+                       status === 'proofreading' ? '#4f46e5' :
+                       status === 'ready_for_upload' ? '#0891b2' :
+                       'var(--text-3)' 
               }} />
               {status !== 'draft' && (
                 <div 
                   className="absolute -top-1 -right-1 w-2 h-2 rounded-full border border-[var(--bg)]"
-                  style={{ background: status === 'published' ? '#10b981' : '#f59e0b' }}
+                  style={{ 
+                    background: status === 'published' ? '#10b981' : 
+                                (status === 'review' || status === 'in_review') ? '#f59e0b' : 
+                                status === 'ready_for_proofreading' ? '#9333ea' :
+                                status === 'proofreading' ? '#4f46e5' :
+                                status === 'ready_for_upload' ? '#0891b2' :
+                                '#6b7280'
+                  }}
                 />
               )}
             </div>

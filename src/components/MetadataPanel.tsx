@@ -14,15 +14,16 @@ import {
   ExternalLink,
   ShieldCheck,
   Send,
-  AlertCircle
+  AlertCircle,
+  Clock
 } from 'lucide-react';
 
 interface MetadataPanelProps {
   title: string;
   slug: string;
   setSlug: (s: string) => void;
-  status: 'draft' | 'review' | 'published';
-  setStatus: (s: 'draft' | 'review' | 'published') => void;
+  status: 'draft' | 'review' | 'published' | 'ready_for_proofreading' | 'proofreading' | 'ready_for_upload' | 'in_review';
+  setStatus: (s: 'draft' | 'review' | 'published' | 'ready_for_proofreading' | 'proofreading' | 'ready_for_upload' | 'in_review') => void;
   contentType: 'blogs' | 'survivor_stories' | 'cancer_docs';
   author_id?: string;
   setContentType: (t: 'blogs' | 'survivor_stories' | 'cancer_docs') => void;
@@ -125,33 +126,82 @@ export default function MetadataPanel(props: MetadataPanelProps) {
             {/* Current Status Indicator */}
             <div className={`flex items-center gap-3 px-3 py-2.5 rounded-[var(--r-md)] border ${
               status === 'published' ? 'bg-green-500/10 border-green-500/20 text-green-500' :
-              status === 'review' ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' :
+              status === 'review' || status === 'in_review' ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' :
+              status === 'ready_for_proofreading' ? 'bg-purple-500/10 border-purple-500/20 text-purple-500' :
+              status === 'proofreading' ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-500' :
+              status === 'ready_for_upload' ? 'bg-cyan-500/10 border-cyan-500/20 text-cyan-500' :
               'bg-[var(--bg-deep)] border-[var(--border-med)] text-[var(--text-3)]'
             }`}>
               {status === 'published' ? <Globe size={14} /> : 
-               status === 'review' ? <ShieldCheck size={14} /> : 
+               status === 'review' || status === 'in_review' ? <ShieldCheck size={14} /> : 
+               status === 'ready_for_proofreading' || status === 'proofreading' || status === 'ready_for_upload' ? <Send size={14} /> :
                <Lock size={14} />}
               <div className="flex flex-col">
                 <span className="text-[10px] uppercase font-bold tracking-tight opacity-70">Current Status</span>
-                <span className="text-xs font-bold capitalize">{status.replace('_', ' ')}</span>
+                <span className="text-xs font-bold capitalize">{status.replace(/_/g, ' ')}</span>
               </div>
             </div>
 
             {/* Action Buttons */}
             <div className="flex flex-col gap-2 pt-2">
-              {status === 'draft' && (
+              {(status === 'draft') && (
                 <button
-                  onClick={() => setStatus('review')}
+                  onClick={() => setStatus('ready_for_proofreading')}
                   className="w-full flex items-center justify-center gap-2 py-2.5 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white rounded-[var(--r-md)] text-xs font-bold transition-all shadow-md active:scale-[0.98]"
                 >
                   <Send size={14} />
-                  Submit for Review
+                  Submit for Proofreading
                 </button>
               )}
 
-              {status === 'review' && (
+              {status === 'ready_for_proofreading' && (
+                <div className="flex items-center gap-2 p-3 bg-purple-500/5 border border-purple-500/10 rounded-[var(--r-md)] text-[10px] text-purple-600 font-medium">
+                  <Info size={12} className="shrink-0" />
+                  Awaiting proofreader assignment by Leadership.
+                </div>
+              )}
+
+              {status === 'proofreading' && (
+                <div className="flex flex-col gap-2">
+                   <button
+                    onClick={() => setStatus('ready_for_upload')}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-[var(--r-md)] text-xs font-bold transition-all shadow-md active:scale-[0.98]"
+                  >
+                    <ShieldCheck size={14} />
+                    Ready for Upload
+                  </button>
+                  <button
+                    onClick={() => setStatus('draft')} // Request changes sends it back to draft/in_progress
+                    className="w-full flex items-center justify-center gap-2 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-[var(--r-md)] text-xs font-bold transition-all border border-red-500/20"
+                  >
+                    <AlertCircle size={14} />
+                    Request Changes
+                  </button>
+                </div>
+              )}
+
+              {status === 'ready_for_upload' && (
                 <>
-                  {user?.admin_access && user?.id !== author_id ? (
+                  {user?.department === 'Leadership' || user?.admin_access ? (
+                    <button
+                      onClick={() => setStatus('published')}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-[var(--r-md)] text-xs font-bold transition-all shadow-md active:scale-[0.98]"
+                    >
+                      <Globe size={14} />
+                      Approve & Publish
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-2 p-3 bg-cyan-500/5 border border-cyan-500/10 rounded-[var(--r-md)] text-[10px] text-cyan-600 font-medium">
+                      <Clock size={12} className="shrink-0" />
+                      Awaiting final Leadership approval.
+                    </div>
+                  )}
+                </>
+              )}
+
+              {(status === 'review' || status === 'in_review') && (
+                <>
+                  {(user?.admin_access || user?.department === 'Leadership') && user?.id !== author_id ? (
                     <button
                       onClick={() => setStatus('published')}
                       className="w-full flex items-center justify-center gap-2 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-[var(--r-md)] text-xs font-bold transition-all shadow-md active:scale-[0.98]"
@@ -176,7 +226,7 @@ export default function MetadataPanel(props: MetadataPanelProps) {
                 </>
               )}
 
-              {status === 'published' && user?.admin_access && (
+              {status === 'published' && (user?.admin_access || user?.department === 'Leadership') && (
                 <button
                   onClick={() => setStatus('draft')}
                   className="w-full flex items-center justify-center gap-2 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-[var(--r-md)] text-xs font-bold transition-all border border-red-500/20"
