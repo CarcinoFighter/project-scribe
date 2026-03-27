@@ -14,12 +14,12 @@
 /* ── Light mode tokens ──────────────────────────────────────── */
 :root {
   /* Core palette */
-  --ink:         #0e0c10;
-  --paper:       #f8f5fc;
+   --ink:         #0a0a0f;
+  --paper:       #faf8ff;
   --cream:       #ede8f5;
-  --mid:         #9e97ab;
-  --rule:        rgba(90, 60, 140, 0.13);
-  --accent:      #9875c1;
+  --mid:         #6b6278;
+  --rule:        rgba(90, 60, 140, 0.18);
+  --accent:      #7c5fb0;
   --accent-dim:  rgba(152, 117, 193, 0.12);
   --accent-sub:  rgba(152, 117, 193, 0.07);
   --tape-bg:     #1c1528;
@@ -42,7 +42,7 @@
   --border-strong:   rgba(90, 60, 140, 0.36);
   --text:            var(--ink);
   --text-2:          #2a2333;
-  --text-3:          #5a5266;
+  --text-3:      #4a4458;
   --text-4:          var(--mid);
   --accent-hover:    #7a5eaa;
   --accent-light:    #c4aee4;
@@ -63,12 +63,12 @@
 /* ── Dark mode tokens ───────────────────────────────────────── */
 .dark, [data-theme*="dark"],
 html.dark {
-  --ink:         #eee8f8;
-  --paper:       #110f17;
-  --cream:       #1d1828;
-  --mid:         #6b647a;
-  --rule:        rgba(152, 117, 193, 0.14);
-  --accent:      #b090d8;
+  --ink:         #f5f0ff; 
+   --paper:       #0c0a12;
+  --cream:       #1a1625;
+  --mid:         #a098b0;
+   --rule:        rgba(176, 144, 216, 0.20);
+  --accent:      #c4a8f0;
   --accent-dim:  rgba(176, 144, 216, 0.14);
   --accent-sub:  rgba(176, 144, 216, 0.07);
   --tape-bg:     #0c0a12;
@@ -85,7 +85,7 @@ html.dark {
   --border-strong:   rgba(152, 117, 193, 0.38);
   --text:            var(--ink);
   --text-2:          #cdc7dc;
-  --text-3:          #9a93aa;
+  --text-3:      #b8b0c8;
   --text-4:          var(--mid);
 }
 
@@ -229,7 +229,8 @@ body {
 /* ═══════════════════════════════════════════════════════════════
    HEADER — newspaper masthead with triple rule
    ═══════════════════════════════════════════════════════════════ */
-.db-header {
+.db-header,
+.app-header {
   height: 42px;
   display: flex;
   align-items: center;
@@ -239,10 +240,8 @@ body {
   z-index: 50;
   background: var(--paper);
   border-bottom: 1px solid var(--rule);
-  box-shadow:
-    0 1.5px 0 var(--rule),
-    0 1px   0 var(--ink),
-    0 2.5px 0 var(--rule);
+  /* Remove these box-shadows: */
+  box-shadow: none;
 }
 
 /* Legacy header alias */

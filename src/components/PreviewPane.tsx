@@ -35,23 +35,16 @@ export default function PreviewPane({ content, containerRef }: Props) {
   }, [containerRef]);
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <div style={{ height: 2, background: 'var(--rule)', flexShrink: 0, position: 'relative' }}>
+    <div className="flex flex-col h-full overflow-hidden bg-[var(--cream)]">
+      <div className="h-0.5 bg-[var(--rule)] flex-shrink-0 relative">
         <div 
-          className="progress-bar" 
-          style={{ 
-            width: `${progress}%`, 
-            height: '100%', 
-            position: 'absolute', 
-            inset: 0,
-            backgroundColor: 'var(--accent)',
-            transition: 'width 0.2s ease-out'
-          }} 
+          className="absolute top-0 left-0 h-full bg-[var(--accent)] transition-all duration-200"
+          style={{ width: `${progress}%` }}
         />
       </div>
 
-      <div ref={scrollRef} className="flex-1 overflow-auto p-6 md:p-10" style={{ scrollBehavior: 'smooth' }}>
-        <div className="prose-carcino mx-auto max-w-3xl">
+      <div ref={scrollRef} className="flex-1 overflow-auto px-4 py-6 sm:px-6 sm:py-8 md:px-10 md:py-12" style={{ scrollBehavior: 'smooth' }}>
+        <div className="prose-carcino max-w-none md:max-w-2xl lg:max-w-3xl mx-auto">
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             rehypePlugins={[rehypeHighlight, rehypeSlug]}
@@ -79,8 +72,8 @@ export default function PreviewPane({ content, containerRef }: Props) {
                   />
                 ) : <input type={type} {...props} />,
               table: ({ children }) => (
-                <div className="overflow-x-auto my-6">
-                  <table className="min-w-full border-collapse border border-[var(--rule)]">
+                <div className="overflow-x-auto my-4 md:my-6">
+                  <table className="min-w-full border-collapse border border-[var(--rule)] text-sm md:text-base">
                     {children}
                   </table>
                 </div>
@@ -93,60 +86,37 @@ export default function PreviewPane({ content, containerRef }: Props) {
       </div>
 
       <style jsx global>{`
-        .prose-carcino ul {
-          list-style-type: disc !important;
-          padding-left: 1.6em !important;
-          margin: 1.2em 0 !important;
+        .prose-carcino {
+          font-size: 15px;
+          line-height: 1.7;
         }
-        .prose-carcino ol {
-          list-style-type: decimal !important;
-          padding-left: 1.6em !important;
-          margin: 1.2em 0 !important;
+        @media (min-width: 768px) {
+          .prose-carcino {
+            font-size: 16px;
+          }
         }
-        .prose-carcino li {
-          margin: 0.4em 0 !important;
-          display: list-item !important;
-          line-height: 1.6;
+        .prose-carcino h1 { font-size: 1.8em; margin: 1.2em 0 0.5em; }
+        .prose-carcino h2 { font-size: 1.4em; margin: 1.2em 0 0.5em; }
+        .prose-carcino h3 { font-size: 1.15em; margin: 1.2em 0 0.5em; }
+        @media (min-width: 768px) {
+          .prose-carcino h1 { font-size: 2em; }
+          .prose-carcino h2 { font-size: 1.5em; }
+          .prose-carcino h3 { font-size: 1.25em; }
         }
-        .prose-carcino h1, .prose-carcino h2, .prose-carcino h3 {
-          margin-top: 1.5em;
-          margin-bottom: 0.5em;
-          font-weight: 700;
-          color: var(--ink);
-          font-family: var(--ff-display);
+        .prose-carcino ul { list-style-type: disc; padding-left: 1.5em; margin: 1em 0; }
+        .prose-carcino ol { list-style-type: decimal; padding-left: 1.5em; margin: 1em 0; }
+        .prose-carcino li { margin: 0.3em 0; display: list-item; }
+        .prose-carcino blockquote { border-left: 3px solid var(--accent); padding-left: 1em; color: var(--mid); font-style: italic; margin: 1.5em 0; }
+        .prose-carcino pre { background: var(--cream); padding: 1em; overflow-x: auto; border: 1px solid var(--rule); border-left: 2px solid var(--accent); font-size: 0.85em; }
+        .prose-carcino code { background: var(--cream); padding: 2px 6px; font-family: var(--ff-mono); font-size: 0.9em; }
+        .prose-carcino pre code { background: transparent; padding: 0; }
+        .prose-carcino th, .prose-carcino td { border: 1px solid var(--rule); padding: 6px 10px; }
+        @media (min-width: 768px) {
+          .prose-carcino th, .prose-carcino td { padding: 8px 12px; }
         }
-        .prose-carcino blockquote {
-          border-left: 3px solid var(--accent);
-          padding-left: 1em;
-          color: var(--mid);
-          font-style: italic;
-          margin: 1.5em 0;
-        }
-        .prose-carcino pre {
-          background: var(--cream);
-          padding: 1em;
-          overflow-x: auto;
-          border: 1px solid var(--rule);
-          border-left: 2px solid var(--accent);
-        }
-        .prose-carcino code {
-          background: var(--cream);
-          padding: 2px 6px;
-          font-family: var(--ff-mono);
-          font-size: 0.88em;
-        }
-        .prose-carcino pre code {
-          background: transparent;
-          padding: 0;
-        }
-        .prose-carcino th, .prose-carcino td {
-          border: 1px solid var(--rule);
-          padding: 8px 12px;
-        }
-        .prose-carcino th {
-          background: var(--cream);
-          font-weight: 600;
-        }
+        .prose-carcino th { background: var(--cream); font-weight: 600; }
+        .prose-carcino img { max-width: 100%; height: auto; }
+        .prose-carcino p { margin: 0.8em 0; }
       `}</style>
     </div>
   );

@@ -3,22 +3,21 @@
 import { useState, useCallback, useRef } from 'react';
 import {
   Bold, Italic, Strikethrough, Code, Code2, Quote, Link, Image as ImageIcon,
-  Heading1, Heading2, Heading3, List, LucideIcon, ListOrdered, Minus, Table, ScanLine, MoreHorizontal, Type, WrapText
+  Heading1, Heading2, Heading3, List, LucideIcon, ListOrdered, Minus, Table, ScanLine, MoreHorizontal, ChevronDown
 } from 'lucide-react';
 import clsx from 'clsx';
-
 import type { ViewMode } from '@/types';
 
 export type ToolbarAction =
   | 'bold' | 'italic' | 'strikethrough' | 'code' | 'codeblock'
   | 'quote' | 'link' | 'image' | 'h1' | 'h2' | 'h3'
-  | 'ul' | 'ol' | 'hr' | 'table' | 'focus'
-  | 'view-editor' | 'view-preview';
+  | 'ul' | 'ol' | 'hr' | 'table' | 'focus';
 
 interface Props {
   onAction: (a: ToolbarAction) => void;
   focusMode: boolean;
   viewMode?: ViewMode;
+  isMobile?: boolean;
 }
 
 interface Group {
@@ -38,48 +37,43 @@ const GROUPS: Group[] = [
   {
     label: 'Style',
     items: [
-      { action: 'bold',          icon: Bold,         title: 'Bold (Ctrl+B)'    },
-      { action: 'italic',        icon: Italic,       title: 'Italic (Ctrl+I)' },
-      { action: 'strikethrough', icon: Strikethrough, title: 'Strikethrough'   },
+      { action: 'bold', icon: Bold, title: 'Bold (Ctrl+B)' },
+      { action: 'italic', icon: Italic, title: 'Italic (Ctrl+I)' },
+      { action: 'strikethrough', icon: Strikethrough, title: 'Strikethrough' },
     ]
   },
   {
     label: 'Code',
     items: [
-      { action: 'code',      icon: Code,  title: 'Inline code' },
-      { action: 'codeblock', icon: Code2, title: 'Code block'  },
+      { action: 'code', icon: Code, title: 'Inline code' },
+      { action: 'codeblock', icon: Code2, title: 'Code block' },
     ]
   },
   {
     label: 'Insert',
     items: [
-      { action: 'quote', icon: Quote,     title: 'Blockquote' },
-      { action: 'link',  icon: Link,      title: 'Link'       },
-      { action: 'image', icon: ImageIcon, title: 'Image'      },
+      { action: 'quote', icon: Quote, title: 'Blockquote' },
+      { action: 'link', icon: Link, title: 'Link' },
+      { action: 'image', icon: ImageIcon, title: 'Image' },
     ]
   },
   {
     label: 'Lists',
     items: [
-      { action: 'ul',    icon: List,        title: 'Bullet list'     },
-      { action: 'ol',    icon: ListOrdered, title: 'Numbered list'   },
-      { action: 'hr',    icon: Minus,       title: 'Horizontal rule' },
-      { action: 'table', icon: Table,       title: 'Insert table'    },
-    ]
-  },
-  {
-    label: 'Mode',
-    items: [
-      { action: 'focus', icon: ScanLine, title: 'Focus mode (Ctrl+Shift+F)' },
+      { action: 'ul', icon: List, title: 'Bullet list' },
+      { action: 'ol', icon: ListOrdered, title: 'Numbered list' },
+      { action: 'hr', icon: Minus, title: 'Horizontal rule' },
+      { action: 'table', icon: Table, title: 'Insert table' },
     ]
   },
 ];
 
 const ALL_ITEMS = GROUPS.flatMap(g => g.items);
 
-export default function Toolbar({ onAction, focusMode }: Props) {
+export default function Toolbar({ onAction, focusMode, isMobile }: Props) {
   const [poppingAction, setPoppingAction] = useState<ToolbarAction | null>(null);
   const [showMore, setShowMore] = useState(false);
+  const [activeGroup, setActiveGroup] = useState<string | null>(null);
   const popTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleClick = useCallback((action: ToolbarAction) => {
@@ -87,97 +81,94 @@ export default function Toolbar({ onAction, focusMode }: Props) {
     if (popTimerRef.current) clearTimeout(popTimerRef.current);
     setPoppingAction(action);
     popTimerRef.current = setTimeout(() => setPoppingAction(null), 320);
+    setActiveGroup(null);
   }, [onAction]);
+
+  if (isMobile) {
+    return (
+      <div className="border-t border-[var(--rule)] bg-[var(--paper)] relative z-30">
+        {/* Mobile: Horizontal scrollable toolbar */}
+        <div className="flex items-center gap-1 px-2 py-2 overflow-x-auto no-scrollbar">
+          {ALL_ITEMS.map(({ action, icon: Icon, title }) => {
+            const isFocusActive = action === 'focus' && focusMode;
+            return (
+              <button
+                key={action}
+                onClick={() => handleClick(action)}
+                className={clsx(
+                  'flex items-center justify-center w-10 h-10 flex-shrink-0',
+                  'border border-transparent',
+                  'text-[var(--mid)]',
+                  'active:bg-[var(--accent-sub)] active:text-[var(--accent)]',
+                  isFocusActive && 'text-[var(--accent)] border-[var(--accent)] bg-[var(--accent-sub)]'
+                )}
+                title={title}
+              >
+                <Icon size={18} strokeWidth={1.7} />
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
       id="tour-toolbar"
-      className={clsx(
-        "toolbar-row bg-[var(--paper)] border-b border-[var(--rule)] relative z-30 transition-all",
-        showMore ? "flex-wrap py-3 px-4 h-auto" : "flex items-center px-4 py-2 overflow-x-auto"
-      )}
-      style={{ minHeight: '48px' }}
+      className="border-t md:border-t-0 md:border-b border-[var(--rule)] bg-[var(--paper)] relative z-30"
     >
-      {GROUPS.map((group, gi) => (
-        <div 
-          key={group.label} 
-          className={clsx(
-            "flex items-center",
-            gi >= 4 && !showMore && "hidden md:flex",
-            gi > 0 && "ml-6"
-          )}
-        >
-          {/* Group Label - Editorial style */}
-          <span 
-            className="db-cap hidden lg:block mr-3 opacity-60" 
-            style={{ fontSize: '7.5px', letterSpacing: '0.2em' }}
+      <div className="flex items-center px-2 sm:px-4 py-2 overflow-x-auto no-scrollbar min-h-[48px]">
+        {GROUPS.map((group, gi) => (
+          <div 
+            key={group.label} 
+            className={clsx(
+              "flex items-center flex-shrink-0",
+              gi > 0 && "ml-4 sm:ml-6"
+            )}
           >
-            {group.label}
-          </span>
-          
-          <div className="flex items-center gap-1">
-            {group.items.map(({ action, icon: Icon, title }) => {
-              const isFocusActive = action === 'focus' && focusMode;
-              const isPopping = poppingAction === action;
-              
-              return (
-                <button
-                  key={action}
-                  className={clsx(
-                    'flex items-center justify-center',
-                    'w-8 h-8',
-                    'border border-transparent',
-                    'text-[var(--mid)]',
-                    'transition-all duration-150',
-                    'hover:border-[var(--rule)] hover:text-[var(--ink)]',
-                    isFocusActive && 'active text-[var(--accent)] border-[var(--accent)] bg-[var(--accent-sub)]',
-                    isPopping && 'scale-95 text-[var(--accent)]'
-                  )}
-                  onClick={() => handleClick(action)}
-                  title={title}
-                  aria-label={title}
-                >
-                  <Icon
-                    size={15}
-                    strokeWidth={1.7}
-                    style={{
-                      filter: isFocusActive ? 'drop-shadow(0 0 3px var(--accent-glow))' : undefined,
-                    }}
-                  />
-                </button>
-              );
-            })}
+            <span 
+              className="db-cap hidden xl:block mr-2 sm:mr-3 opacity-50" 
+              style={{ fontSize: '7.5px', letterSpacing: '0.2em' }}
+            >
+              {group.label}
+            </span>
+            
+            <div className="flex items-center gap-0.5 sm:gap-1">
+              {group.items.map(({ action, icon: Icon, title }) => {
+                const isFocusActive = action === 'focus' && focusMode;
+                const isPopping = poppingAction === action;
+                
+                return (
+                  <button
+                    key={action}
+                    onClick={() => handleClick(action)}
+                    className={clsx(
+                      'flex items-center justify-center',
+                      'w-8 h-8 sm:w-9 sm:h-9',
+                      'border border-transparent',
+                      'text-[var(--mid)]',
+                      'transition-all duration-150',
+                      'hover:border-[var(--rule)] hover:text-[var(--ink)]',
+                      isFocusActive && 'active text-[var(--accent)] border-[var(--accent)] bg-[var(--accent-sub)]',
+                      isPopping && 'scale-95 text-[var(--accent)]'
+                    )}
+                    title={title}
+                  >
+                    <Icon
+                      size={16}
+                      strokeWidth={1.7}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+            
+            {gi < GROUPS.length - 1 && (
+              <div className="db-vr ml-4 sm:ml-6" />
+            )}
           </div>
-          
-          {/* Vertical Rule between groups */}
-          {gi < GROUPS.length - 1 && (
-            <div 
-              className={clsx(
-                "db-vr ml-6 hidden md:block",
-                gi >= 3 && !showMore && "lg:block"
-              )} 
-            />
-          )}
-        </div>
-      ))}
-      
-      {/* Mobile More Button */}
-      <button
-        className={clsx(
-          "md:hidden flex items-center justify-center ml-auto",
-          "w-8 h-8 border border-[var(--rule)]",
-          "text-[var(--mid)] hover:text-[var(--ink)] hover:border-[var(--accent)]",
-          showMore && "bg-[var(--accent-sub)] text-[var(--accent)] border-[var(--accent)]"
-        )}
-        onClick={() => setShowMore(!showMore)}
-        title="More options"
-      >
-        <MoreHorizontal size={16} strokeWidth={1.8} />
-      </button>
-
-      {/* Desktop overflow indicator if needed */}
-      <div className="hidden md:flex lg:hidden ml-auto items-center gap-2">
-        <span className="db-cap" style={{ fontSize: '7px', opacity: 0.5 }}>SCROLL →</span>
+        ))}
       </div>
     </div>
   );
