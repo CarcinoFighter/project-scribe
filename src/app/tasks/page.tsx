@@ -435,6 +435,76 @@ function ReviewQueue({
   );
 }
 
+function ProofreaderQueue({ 
+  docs, currentUserId, onToast
+}: { 
+  docs: ReviewDoc[]; 
+  currentUserId: string;
+  onToast: (m: string) => void;
+}) {
+  const router = useRouter();
+  if (docs.length === 0) return null;
+
+  return (
+    <div className="mb-8 anim-fade-in">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl bg-purple-500/10 flex items-center justify-center">
+            <PenTool size={16} className="text-purple-500" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-[var(--text)]">Proofreading Queue</h2>
+            <p className="text-xs text-[var(--text-4)]">Articles assigned to you for proofreading</p>
+          </div>
+        </div>
+        <span className="bg-purple-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+          {docs.length} assigned
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {docs.map((doc) => {
+          const Icon = doc.type === 'blogs' ? BookOpen : doc.type === 'survivor_stories' ? Heart : FileText;
+          const color = doc.type === 'blogs' ? 'text-[#9875c1]' : doc.type === 'survivor_stories' ? 'text-[#10b981]' : 'text-[#3b82f6]';
+          const bg = doc.type === 'blogs' ? 'bg-[#9875c118]' : doc.type === 'survivor_stories' ? 'bg-[#10b98118]' : 'bg-[#3b82f618]';
+
+          return (
+            <div key={doc.id} className="glass-raised grain p-4 rounded-[var(--r-lg)] border border-[var(--border-med)] flex flex-col gap-3 hover:border-[var(--accent-subtle)] transition-colors group">
+              <div className="flex items-start justify-between gap-3">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${bg}`}>
+                  <Icon size={16} className={color} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-[13px] font-bold text-[var(--text)] mb-0.5 truncate group-hover:text-[var(--accent)] cursor-pointer" onClick={() => {
+                    router.push(`/editor?id=${doc.id}&type=${doc.type}`);
+                  }}>
+                    {doc.title}
+                  </h4>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-[var(--text-4)] capitalize">{doc.type.replace('_', ' ')}</span>
+                    <span className="text-[10px] text(--text-4)]">•</span>
+                    <span className="text-[10px] text-[var(--text-4)]">by {doc.author?.name || 'Unknown'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 mt-auto pt-2">
+                <button
+                  onClick={() => router.push(`/editor?id=${doc.id}&type=${doc.type}`)}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-purple-500/10 hover:bg-purple-500 text-purple-500 hover:text-white text-[10px] font-bold uppercase tracking-wider rounded-[var(--r-md)] border border-purple-500/20 transition-all font-mono"
+                >
+                  <PenTool size={12} />
+                  Start Proofreading
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function AssignmentQueue({ 
   docs, onAssign, assigning, isAdmin, onToast
 }: { 
@@ -656,6 +726,7 @@ export default function WorkPage() {
   const [myAssignments, setMyAssignments] = useState<Assignment[]>([]);
   const [allAssignments, setAllAssignments] = useState<Assignment[]>([]);
   const [reviewDocs, setReviewDocs] = useState<ReviewDoc[]>([]);
+  const [proofreaderDocs, setProofreaderDocs] = useState<ReviewDoc[]>([]);
   const [loading, setLoading] = useState(true);
   const [approving, setApproving] = useState<string | null>(null);
   const [showAssignModal, setShowAssignModal] = useState<{ category?: string; department?: string } | null>(null);
@@ -705,6 +776,13 @@ export default function WorkPage() {
           const data = await reviewRes.json();
           setReviewDocs(data.documents || []);
         }
+      }
+
+      // Always check for proofreader assignments for anyone
+      const proofreaderRes = await fetch('/api/tasks/proofreader-queue');
+      if (proofreaderRes.ok) {
+        const data = await proofreaderRes.json();
+        setProofreaderDocs(data.documents || []);
       }
     } catch (err) {
       console.error(err);
@@ -1106,6 +1184,13 @@ export default function WorkPage() {
                     />
                   </>
                 )}
+
+                {/* Proofreader Queue (For assigned proofreaders) */}
+                <ProofreaderQueue 
+                  docs={proofreaderDocs}
+                  currentUserId={user?.id || ''}
+                  onToast={setToast}
+                />
                 {/* Specialized Content Section (Writers' Block) */}
                 {isWritersBlock ? (
                   <div className="anim-fade-in">
