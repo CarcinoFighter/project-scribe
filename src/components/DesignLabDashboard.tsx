@@ -4,26 +4,12 @@ import React, { useState, useEffect } from 'react';
 import { Figma, Link as LinkIcon, AlertCircle, RefreshCw, BarChart2, Eye, Layout } from 'lucide-react';
 import Image from 'next/image';
 
-interface DesignData {
-  id: string;
-  name: string;
-  lastModified: string;
-  thumbnailUrl: string;
-  route: string | null;
-  metrics?: {
-    users: number;
-    views: number;
-    avgSession: number;
-  };
-}
-
 import { StatCard, GenericActivityChart, getWeekLabels } from './DashboardStats';
 
 interface DesignData {
   id: string;
   name: string;
   lastModified: string;
-  thumbnailUrl: string;
   route: string | null;
   metrics?: {
     users: number;
@@ -208,8 +194,8 @@ export default function DesignLabDashboard() {
               {linkedDesignsArr.map(design => (
                 <div key={design.id} className="glass-raised" style={{ borderRadius: 'var(--r-lg)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                   <div style={{ padding: 0 }}>
-                    <div style={{ height: 140, position: 'relative', background: 'var(--bg-deep)' }}>
-                      {design.thumbnailUrl && <img src={design.thumbnailUrl} alt={design.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                    <div style={{ height: 140, position: 'relative', background: 'var(--bg-deep)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Layout size={40} style={{ color: 'var(--border-strong)', opacity: 0.5 }} />
                       <div style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', padding: '4px 8px', borderRadius: 99, color: '#fff', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
                         <LinkIcon size={10} style={{ color: '#1abc9c' }} /> {design.route}
                       </div>
