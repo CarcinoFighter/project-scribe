@@ -230,7 +230,12 @@ export default function Header({
           style={{ top: accountMenuPos.top, right: accountMenuPos.right, width: '220px' }}
           onMouseDown={e => e.stopPropagation()}
         >
-          <AccountMenu user={user} onClose={() => setShowAccountMenu(false)} />
+          <AccountMenu 
+  user={user} 
+  onClose={() => setShowAccountMenu(false)} 
+  onToast={onToast} 
+  onOpenSettings={onOpenSettings} 
+/>
         </div>,
         document.body
       )}
