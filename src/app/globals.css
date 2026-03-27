@@ -99,7 +99,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; padding: 0; }
 body {
-  font-family: 'Google Sans Flex', 'Google Sans', 'DM Sans', system-ui, sans-serif;
+  font-family: 'Google Sans Flex';
   color: var(--text);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
@@ -275,7 +275,7 @@ body {
 .cm-editor.cm-focused   { outline: none !important; }
 .cm-scroller {
   overflow: auto;
-  font-family: var(--editor-font, 'Google Sans Flex', 'DM Sans', sans-serif) !important;
+  font-family: var(--editor-font, 'Google Sans Flex') !important;
   font-size: var(--editor-font-size, 15.5px) !important;
   line-height: var(--editor-line-height, 1.88) !important;
 }
@@ -317,7 +317,7 @@ body {
    PROSE PREVIEW
    ═══════════════════════════════════════════════════════════════ */
 .prose-carcino {
-  font-family: var(--ui-font, 'Google Sans Flex', 'DM Sans', sans-serif);
+  font-family: var(--ui-font, 'Google Sans Flex');
   line-height: 1.88; color: var(--text);
   padding: 36px 52px 100px; max-width: 780px; margin: 0 auto;
 }

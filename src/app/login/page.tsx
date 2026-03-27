@@ -112,7 +112,7 @@ export default function LoginPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:ital,wght@0,700;0,900;1,700&family=DM+Mono:wght@400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:ital,wght@0,700;0,900;1,700&display=swap');
 
         :root {
           --ink:   #0a0a0a;
@@ -175,7 +175,7 @@ export default function LoginPage() {
           border: none;
           border-bottom: 1.5px solid var(--rule);
           padding: 9px 32px 9px 0;
-          font-family: 'DM Mono', monospace;
+          font-family: 'Google Sans Flex';
           font-size: 13px;
           color: var(--ink);
           outline: none;
@@ -195,7 +195,7 @@ export default function LoginPage() {
           color: var(--cream);
           border: none;
           cursor: pointer;
-          font-family: 'DM Mono', monospace;
+          font-family: 'Google Sans Flex';
           font-size: 11px;
           font-weight: 500;
           letter-spacing: 0.14em;
@@ -218,7 +218,7 @@ export default function LoginPage() {
         .lp-submit:disabled { opacity: 0.4; cursor: not-allowed; }
 
         .lp-col-label {
-          font-family: 'DM Mono', monospace;
+          font-family: 'Google Sans Flex';
           font-size: 9px;
           font-weight: 500;
           letter-spacing: 0.18em;
