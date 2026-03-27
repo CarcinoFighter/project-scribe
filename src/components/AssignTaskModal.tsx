@@ -263,12 +263,19 @@ interface TeamMember {
   department: string;
 }
 
+export interface ExistingCategory {
+  key: string;
+  label: string;
+  iconName?: string;
+}
+
 interface AssignTaskModalProps {
   member?: TeamMember | null;
   onClose: () => void;
   onSuccess: () => void;
-  defaultCategory?: 'task' | 'article' | 'blog' | 'survivor_story' | 'awareness_post';
+  defaultCategory?: string;
   defaultDepartment?: string;
+  existingCategories?: ExistingCategory[];
 }
 
 const PRESET_CATEGORIES = [
@@ -289,7 +296,7 @@ const DEPT_HEX: Record<string, string> = {
   'Leadership':      '#6366f1',
 };
 
-export default function AssignTaskModal({ member, onClose, onSuccess, defaultCategory, defaultDepartment }: AssignTaskModalProps) {
+export default function AssignTaskModal({ member, onClose, onSuccess, defaultCategory, defaultDepartment, existingCategories = [] }: AssignTaskModalProps) {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -457,26 +464,82 @@ export default function AssignTaskModal({ member, onClose, onSuccess, defaultCat
           {/* Category Selector */}
           <div className="space-y-2">
             <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-4)]">Category</label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {PRESET_CATEGORIES.map((cat) => {
-                const Icon = cat.icon;
-                const isActive = category === cat.id;
-                return (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => setCategory(cat.id)}
-                    className={`flex items-center gap-2 px-3 py-2.5 rounded-[var(--r-md)] text-xs border transition-all ${
-                      isActive ? 'font-semibold' : 'bg-transparent border-[var(--border-med)] text-[var(--text-3)] hover:bg-[var(--bg-deep)]'
-                    }`}
-                    style={isActive ? { background: `${cat.color}18`, borderColor: `${cat.color}40`, color: cat.color } : {}}
-                  >
-                    <Icon size={13} style={isActive ? { color: cat.color } : {}} />
-                    {cat.label}
-                  </button>
-                );
-              })}
-            </div>
+
+            {/* Existing dept categories (non-WB) or WB presets */}
+            {(() => {
+              const isWB = department === "Writers' Block";
+
+              // For WB: fixed preset list. For others: dynamic existing categories from the dept.
+              const displayCats: Array<{ id: string; label: string; iconComponent: any; color: string; isExisting?: boolean }> =
+                isWB
+                  ? PRESET_CATEGORIES.filter(c => c.id !== 'other').map(c => ({
+                      id: c.id,
+                      label: c.label,
+                      iconComponent: c.icon,
+                      color: c.color,
+                    }))
+                  : existingCategories.map(ec => {
+                      const resolved = ICON_OPTIONS.find(i => i.name === (ec.iconName || ''))?.icon || Briefcase;
+                      return { id: ec.key, label: ec.label, iconComponent: resolved, color: deptColor, isExisting: true };
+                    });
+
+              return (
+                <div className="space-y-2">
+                  {displayCats.length > 0 && (
+                    <>
+                      {!isWB && (
+                        <p className="text-[10px] text-[var(--text-4)] mb-1">
+                          Existing categories in this department:
+                        </p>
+                      )}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {displayCats.map((cat) => {
+                          const Icon = cat.iconComponent;
+                          const isActive = category === cat.id;
+                          const activeColor = isWB ? cat.color : deptColor;
+                          return (
+                            <button
+                              key={cat.id}
+                              type="button"
+                              onClick={() => {
+                                setCategory(cat.id);
+                                // If it's an existing non-WB category with a stored icon, pre-fill customIconName
+                                if (!isWB) {
+                                  const ec = existingCategories.find(e => e.key === cat.id);
+                                  if (ec?.iconName) setCustomIconName(ec.iconName);
+                                }
+                              }}
+                              className={`flex items-center gap-2 px-3 py-2.5 rounded-[var(--r-md)] text-xs border transition-all ${
+                                isActive ? 'font-semibold' : 'bg-transparent border-[var(--border-med)] text-[var(--text-3)] hover:bg-[var(--bg-deep)]'
+                              }`}
+                              style={isActive ? { background: `${activeColor}18`, borderColor: `${activeColor}40`, color: activeColor } : {}}
+                            >
+                              <Icon size={13} style={isActive ? { color: activeColor } : {}} />
+                              {cat.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+
+                  {/* Other… — always shown */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setCategory('other')}
+                      className={`flex items-center gap-2 px-3 py-2.5 rounded-[var(--r-md)] text-xs border transition-all ${
+                        category === 'other' ? 'font-semibold' : 'bg-transparent border-[var(--border-med)] text-[var(--text-3)] hover:bg-[var(--bg-deep)]'
+                      }`}
+                      style={category === 'other' ? { background: `${deptColor}18`, borderColor: `${deptColor}40`, color: deptColor } : {}}
+                    >
+                      <Layers size={13} style={category === 'other' ? { color: deptColor } : {}} />
+                      {isWB || existingCategories.length === 0 ? 'Other…' : '+ New Category'}
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Custom Category — name + icon picker */}

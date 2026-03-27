@@ -769,6 +769,27 @@ export default function WorkPage() {
   
   const activeDept = DEPARTMENTS.find(d => d.key === activeDeptKey) || DEPARTMENTS[0];
 
+  // Derive existing categories for the active department from ALL assignments (not just filtered view)
+  // Use allAssignments so admins see all categories even if not assigned to them
+  const deptExistingCategories = React.useMemo((): Array<{ key: string; label: string; iconName?: string }> => {
+    const source = allAssignments.length > 0 ? allAssignments : myAssignments;
+    const deptTasks = source.filter(a => {
+      if (activeDeptKey === "Writers' Block") return a.department === activeDeptKey || !a.department;
+      return a.department === activeDeptKey;
+    });
+    const seen: Record<string, { key: string; label: string; iconName?: string }> = {};
+    for (const t of deptTasks) {
+      if (!seen[t.category]) {
+        seen[t.category] = {
+          key: t.category,
+          label: t.category.charAt(0).toUpperCase() + t.category.slice(1).replace(/_/g, ' '),
+          iconName: t.category_icon ?? undefined,
+        };
+      }
+    }
+    return Object.values(seen);
+  }, [allAssignments, myAssignments, activeDeptKey]);
+
   useEffect(() => {
     (window as any).openTaskDetails = (task: Assignment) => setSelectedTask(task);
   }, []);
@@ -1117,11 +1138,12 @@ export default function WorkPage() {
       </div>
 
       {showAssignModal !== null && (
-        <AssignTaskModal
+              <AssignTaskModal
           onClose={() => setShowAssignModal(null)}
           onSuccess={() => { setShowAssignModal(null); fetchWork(); }}
           defaultCategory={showAssignModal.category as any}
           defaultDepartment={showAssignModal.department}
+          existingCategories={deptExistingCategories}
         />
       )}
       {submittingTask !== null && (
