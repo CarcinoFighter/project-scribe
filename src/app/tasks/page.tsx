@@ -45,7 +45,7 @@ import {
   Monitor, Moon, Package, Phone, Printer, Radio, RefreshCw, Rss,
   Search, Server, Settings, Slack, Sliders, Smartphone, Speaker, Sun,
   Tag, Terminal, Thermometer, ThumbsUp, TrendingUp, Truck,
-  Twitter, Type, Umbrella, Upload, UserCheck, UserPlus, Volume2,
+  Twitter, Type, Umbrella, Upload, User, UserCheck, UserPlus, Volume2,
   Watch, Wifi, Wind, Wrench, Youtube, ZoomIn,
 } from 'lucide-react';
 import { useUser } from '@/lib/useUser';
@@ -55,6 +55,7 @@ import Toast from '@/components/Toast';
 import TaskSubmissionModal from '@/components/TaskSubmissionModal';
 import MediaViewerModal from '@/components/MediaViewerModal';
 import TaskDetailsModal from '@/components/TaskDetailsModal';
+import MultiPersonSelect from '@/components/MultiPersonSelect';
 import { DEPARTMENTS } from '@/config/departments';
 
 // Custom SVG icons for departments (where we have them in public/icons)
@@ -434,6 +435,82 @@ function ReviewQueue({
   );
 }
 
+function AssignmentQueue({ 
+  docs, onAssign, assigning, isAdmin, onToast
+}: { 
+  docs: ReviewDoc[]; 
+  onAssign: (docId: string, proofreaderId: string) => void; 
+  assigning: string | null;
+  isAdmin: boolean;
+  onToast: (m: string) => void;
+}) {
+  if (docs.length === 0) return null;
+
+  return (
+    <div className="mb-8 anim-fade-in">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl bg-indigo-500/10 flex items-center justify-center">
+            <User size={16} className="text-indigo-500" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-[var(--text)]">Assignment Queue</h2>
+            <p className="text-xs text-[var(--text-4)]">Articles awaiting proofreader assignment</p>
+          </div>
+        </div>
+        <span className="bg-indigo-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+          {docs.length} awaiting
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {docs.map((doc) => {
+          const Icon = doc.type === 'blogs' ? BookOpen : doc.type === 'survivor_stories' ? Heart : FileText;
+          const color = doc.type === 'blogs' ? 'text-[#9875c1]' : doc.type === 'survivor_stories' ? 'text-[#10b981]' : 'text-[#3b82f6]';
+          const bg = doc.type === 'blogs' ? 'bg-[#9875c118]' : doc.type === 'survivor_stories' ? 'bg-[#10b98118]' : 'bg-[#3b82f618]';
+
+          return (
+            <div key={doc.id} className="glass-raised grain p-4 rounded-[var(--r-lg)] border border-[var(--border-med)] flex flex-col gap-3 hover:border-[var(--accent-subtle)] transition-colors group">
+              <div className="flex items-start justify-between gap-3">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${bg}`}>
+                  <Icon size={16} className={color} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-[13px] font-bold text-[var(--text)] mb-0.5 truncate group-hover:text-[var(--accent)]">
+                    {doc.title}
+                  </h4>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-[var(--text-4)] capitalize">{doc.type.replace('_', ' ')}</span>
+                    <span className="text-[10px] text-[var(--text-4)]">•</span>
+                    <span className="text-[10px] text-[var(--text-4)]">by {doc.author?.name || 'Unknown'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2 mt-2">
+                <p className="text-[9px] font-black uppercase tracking-widest text-[var(--text-4)]">Select Proofreader</p>
+                <MultiPersonSelect 
+                  selectedIds={[]}
+                  onChange={(ids) => ids[0] && onAssign(doc.id, ids[0])}
+                  maxSelections={1}
+                  placeholder="Choose member..."
+                />
+              </div>
+
+              {assigning === doc.id && (
+                <div className="flex items-center justify-center gap-2 py-1 text-[10px] text-[var(--accent)] font-bold animate-pulse">
+                  <Loader2 size={10} className="animate-spin" />
+                  Assigning...
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function SectionTable({ 
   section, tasks, onCompleteClick, onDeleteClick, completing, deleting, isAdmin, onAssign, onToast, onInit, onTaskClick, currentUserId
 }: {
@@ -597,6 +674,7 @@ export default function WorkPage() {
   const [submittingTask, setSubmittingTask] = useState<{ id: string; title: string } | null>(null);
   const [viewingMedia, setViewingMedia] = useState<{ url: string; title: string } | null>(null);
   const [selectedTask, setSelectedTask] = useState<Assignment | null>(null);
+  const [assigningProofreader, setAssigningProofreader] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loadingUser && user === null) {
@@ -750,6 +828,45 @@ export default function WorkPage() {
       setToast('An error occurred during approval');
     } finally {
       setApproving(null);
+    }
+  };
+
+  const handleAssignProofreader = async (docId: string, proofreaderId: string) => {
+    setAssigningProofreader(docId);
+    try {
+      const res = await fetch('/api/tasks', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: docId,
+          status: 'proofreading',
+          proofreader_id: proofreaderId
+        })
+      });
+
+      if (res.ok) {
+        // Log activity
+        await fetch('/api/tasks/comments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            taskId: docId,
+            content: 'Proofreader assigned via dashboard.',
+            type: 'status_change'
+          })
+        });
+
+        setToast('Proofreader assigned successfully');
+        setReviewDocs(prev => prev.map(d => d.id === docId ? { ...d, status: 'proofreading' as any } : d));
+        fetchWork();
+      } else {
+        const data = await res.json();
+        setToast(data.error || 'Failed to assign proofreader');
+      }
+    } catch (err) {
+      setToast('An error occurred');
+    } finally {
+      setAssigningProofreader(null);
     }
   };
 
@@ -967,17 +1084,26 @@ export default function WorkPage() {
               </div>
             ) : (
               <>
-                {/* Review Queue (Admins only) */}
+                {/* Leadership Queues (Admins only) */}
                 {isAdmin && view === 'admin' && (
-                  <ReviewQueue 
-                    docs={reviewDocs}
-                    onApprove={handleApprove}
-                    approving={approving}
-                    isAdmin={isAdmin}
-                    currentUserId={user?.id || ''}
-                    onToast={setToast}
-                    onViewMedia={(url, title) => setViewingMedia({ url, title })}
-                  />
+                  <>
+                    <AssignmentQueue 
+                      docs={reviewDocs.filter(d => d.status === 'ready_for_proofreading')}
+                      onAssign={handleAssignProofreader}
+                      assigning={assigningProofreader}
+                      isAdmin={isAdmin}
+                      onToast={setToast}
+                    />
+                    <ReviewQueue 
+                      docs={reviewDocs.filter(d => d.status !== 'ready_for_proofreading')}
+                      onApprove={handleApprove}
+                      approving={approving}
+                      isAdmin={isAdmin}
+                      currentUserId={user?.id || ''}
+                      onToast={setToast}
+                      onViewMedia={(url, title) => setViewingMedia({ url, title })}
+                    />
+                  </>
                 )}
                 {/* Specialized Content Section (Writers' Block) */}
                 {isWritersBlock ? (
