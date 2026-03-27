@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 import { defaultCache } from "@serwist/next/browser";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
-import { Serwist } from "serwist";
+import { Serwist, type RuntimeCaching } from "serwist";
 
 // This declares the value of `injectionPoint` to TypeScript.
 declare global {
@@ -17,7 +17,7 @@ const serwist = new Serwist({
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,
-  runtimeCaching: defaultCache,
+  runtimeCaching: defaultCache as any[],
 });
 
 serwist.addEventListeners();
