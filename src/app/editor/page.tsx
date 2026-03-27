@@ -816,6 +816,7 @@ function EditorContent() {
           <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
             <div className="relative w-full max-w-sm max-h-full" onClick={e => e.stopPropagation()}>
               <MetadataPanel
+                id={activeTab.id}
                 title={activeTab.title}
                 slug={activeTab.slug}
                 setSlug={(s) => updateActiveTab({ slug: s })}

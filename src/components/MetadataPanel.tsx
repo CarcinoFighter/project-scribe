@@ -15,10 +15,12 @@ import {
   ShieldCheck,
   Send,
   AlertCircle,
-  Clock
+  Clock,
+  MessageSquare
 } from 'lucide-react';
 
 interface MetadataPanelProps {
+  id: string;
   title: string;
   slug: string;
   setSlug: (s: string) => void;
@@ -33,12 +35,82 @@ interface MetadataPanelProps {
 
 export default function MetadataPanel(props: MetadataPanelProps) {
   const { 
-    title, slug, setSlug, 
+    id, title, slug, setSlug, 
     status, setStatus, 
     contentType, setContentType,
     onAutoGenerateSlug, author_id, onClose
   } = props;
   const { user } = useUser();
+  const [commentText, setCommentText] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [comments, setComments] = useState<any[]>([]);
+
+  React.useEffect(() => {
+    if (id && id !== 'ls-active' && !id.startsWith('new-')) {
+      fetch(`/api/tasks/comments?taskId=${id}`)
+        .then(res => res.json())
+        .then(data => setComments(data.comments || []))
+        .catch(err => console.error('Error fetching comments:', err));
+    }
+  }, [id]);
+
+  const handleRequestChanges = async () => {
+    if (!commentText.trim()) {
+      alert('Please add a comment explaining the requested changes.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const res = await fetch('/api/tasks/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taskId: id,
+          content: `Changes Requested: ${commentText}`,
+          type: 'status_change'
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setComments(prev => [...prev, data.comment]);
+        setStatus('draft');
+        setCommentText('');
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleReadyForUpload = async () => {
+    setIsSubmitting(true);
+    try {
+      if (commentText.trim()) {
+        const res = await fetch('/api/tasks/comments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            taskId: id,
+            content: `Proofreading Note: ${commentText}`,
+            type: 'comment'
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setComments(prev => [...prev, data.comment]);
+        }
+      }
+      setStatus('ready_for_upload');
+      setCommentText('');
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="glass flex flex-col h-full w-full bg-[var(--surface-0)]/95 shadow-2xl rounded-xl overflow-hidden anim-pop border border-[var(--border-med)] text-left">
@@ -162,21 +234,37 @@ export default function MetadataPanel(props: MetadataPanelProps) {
               )}
 
               {status === 'proofreading' && (
-                <div className="flex flex-col gap-2">
-                   <button
-                    onClick={() => setStatus('ready_for_upload')}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-[var(--r-md)] text-xs font-bold transition-all shadow-md active:scale-[0.98]"
-                  >
-                    <ShieldCheck size={14} />
-                    Ready for Upload
-                  </button>
-                  <button
-                    onClick={() => setStatus('draft')} // Request changes sends it back to draft/in_progress
-                    className="w-full flex items-center justify-center gap-2 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-[var(--r-md)] text-xs font-bold transition-all border border-red-500/20"
-                  >
-                    <AlertCircle size={14} />
-                    Request Changes
-                  </button>
+                <div className="flex flex-col gap-3 p-3 bg-purple-500/5 border border-purple-500/10 rounded-[var(--r-md)]">
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-bold uppercase tracking-widest text-purple-600 flex items-center gap-1.5">
+                      <MessageSquare size={10} />
+                      Proofreading Feedback
+                    </label>
+                    <textarea
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      placeholder="Add notes for the author..."
+                      className="w-full bg-white/50 border border-purple-500/10 rounded-[var(--r-md)] p-2 text-xs text-[var(--text)] focus:outline-none focus:border-purple-500/30 transition-all resize-none min-h-[60px]"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={handleReadyForUpload}
+                      disabled={isSubmitting}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-[var(--r-md)] text-xs font-bold transition-all shadow-md active:scale-[0.98] disabled:opacity-50"
+                    >
+                      <ShieldCheck size={14} />
+                      {isSubmitting ? 'Processing...' : 'Ready for Upload'}
+                    </button>
+                    <button
+                      onClick={handleRequestChanges}
+                      disabled={isSubmitting}
+                      className="w-full flex items-center justify-center gap-2 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-[var(--r-md)] text-xs font-bold transition-all border border-red-500/20 disabled:opacity-50"
+                    >
+                      <AlertCircle size={14} />
+                      {isSubmitting ? 'Processing...' : 'Request Changes'}
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -248,17 +336,47 @@ export default function MetadataPanel(props: MetadataPanelProps) {
           <p className="text-[11px] text-[var(--text-3)] leading-relaxed">
             Changing the status to <strong>Published</strong> will make this document visible to the public via the Carcino API.
           </p>
-          <button className="flex items-center gap-1.5 text-[10px] text-blue-500 font-semibold hover:underline mt-1">
-            <ExternalLink size={10} />
-            Preview Live Site
-          </button>
         </div>
+
+        {/* Activity Feed */}
+        {comments.length > 0 && (
+          <div className="space-y-3 pt-2">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-4)] flex items-center gap-1.5">
+              <Clock size={10} />
+              Recent Activity
+            </label>
+            <div className="space-y-3 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
+              {comments.slice().reverse().map((comment) => (
+                <div key={comment.id} className="flex gap-2">
+                   <div className="flex-shrink-0 mt-0.5">
+                    {comment.user?.avatar_url ? (
+                      <img src={comment.user.avatar_url} alt="" className="w-5 h-5 rounded-full" />
+                    ) : (
+                      <div className="w-5 h-5 rounded-full bg-[var(--bg-deep)] flex items-center justify-center text-[8px] font-bold text-[var(--text-4)] border border-[var(--border-med)]">
+                        {comment.user?.name?.[0] || '?'}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-bold text-[var(--text-2)] truncate">{comment.user?.name}</span>
+                      <span className="text-[8px] text-[var(--text-4)] font-mono whitespace-nowrap">{new Date(comment.created_at).toLocaleDateString()}</span>
+                    </div>
+                    <p className={`text-[11px] leading-relaxed mt-0.5 ${comment.type === 'status_change' ? 'text-[var(--accent)] font-medium italic' : 'text-[var(--text-3)]'}`}>
+                      {comment.content}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="mt-auto p-4 border-t border-[var(--border-med)] bg-[var(--bg-deep)]">
         <div className="flex items-center justify-between text-[10px] text-[var(--text-4)]">
-          <span>Last Synced</span>
-          <span className="font-mono">Never</span>
+          <span>{status === 'published' ? 'Live on Site' : 'Local Draft'}</span>
+          <span className="font-mono">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
         </div>
       </div>
     </div>
