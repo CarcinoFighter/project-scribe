@@ -1,25 +1,14 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTheme } from '@/lib/useTheme';
-import { 
-  Users, 
-  Mail, 
-  MapPin, 
-  Shield, 
-  Search,
-  ChevronRight,
-  Filter,
-  ArrowUpDown,
-  MoreHorizontal,
-  ExternalLink,
-  Github,
-  Twitter,
-  Linkedin
+import {
+  Users, Mail, Shield, Search, Sun, Moon,
+  ArrowLeft, Github, Linkedin, Plus, ChevronDown,
 } from 'lucide-react';
 import { useUser } from '@/lib/useUser';
 import AccountMenu from '@/components/AccountMenu';
@@ -38,327 +27,463 @@ interface TeamMember {
   admin_access: boolean;
 }
 
+const DEPARTMENTS = [
+  "Leadership",
+  "Writers' Block",
+  "Public Relations",
+  "Design Lab",
+  "Development",
+  "Other",
+];
+
+const DEPT_NUM: Record<string, string> = {
+  "Leadership":       "01",
+  "Writers' Block":   "02",
+  "Public Relations": "03",
+  "Design Lab":       "04",
+  "Development":      "05",
+  "Other":            "06",
+};
+
+const TAPE_ITEMS = ['LEADERSHIP', 'WRITERS', 'DESIGN', 'DEV', 'PR', 'TEAM', '2026', '✦'];
+
+/* ── Logo ─────────────────────────────────────────────────── */
+function Logo({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={Math.round(size * 1.2)} viewBox="0 0 20 24" fill="none" aria-hidden>
+      <path d="M9.13307 5.97435C9.21934 5.23291 9.33279 4.80925 9.89802 4.0092C10.9029 2.80263 11.6709 2.67501 12.9912 2.4556L13.0042 2.45344C14.8586 2.34816 15.7395 3.26056 16.1799 4.26653C16.6203 5.27251 16.5553 7.03881 16.4233 7.9863C16.2913 8.93378 15.7627 11.4166 12.7608 13.8614C13.5837 14.1538 13.6573 14.1074 14.65 14.2561C15.6004 13.2384 16.1436 12.4864 17.5128 10.8405C18.882 9.19453 19.661 6.91014 19.8772 5.50646C20.0934 4.10278 20.1438 2.45344 18.9963 1.26031C17.8489 0.0671784 15.5888 -0.131673 14.198 0.067179C12.8072 0.266031 10.3732 1.26031 8.68105 2.6289C6.98888 3.9975 6.20076 5.50646 5.57488 7.5418C4.949 9.57714 5.30938 11.2467 6.08485 13.332C7.40174 16.0707 9.01717 17.9291 10.4196 18.8415C11.822 19.7539 12.8072 20.2451 14.3487 22.842C16.2495 19.8123 16.9991 18.6706 18.4632 16.9465C17.5128 15.7767 16.2842 15.1142 13.8735 14.7825C11.4627 14.4508 10.6865 13.6665 10.2341 13.6478C9.78183 13.6291 9.26057 13.6244 9.09831 13.5776C8.93605 13.5309 8.89093 13.5242 8.76218 13.2384C8.62326 12.7331 8.76218 11.9985 8.76218 11.8932C8.76218 11.7879 8.54197 11.6476 8.54197 11.5072C8.54197 11.3668 8.61607 11.2835 8.77377 11.2031C8.77377 11.2031 8.41448 11.0042 8.41448 10.8405C8.41448 10.6767 8.57673 10.0567 8.54197 9.91637C8.50721 9.776 7.68429 9.60054 7.83497 9.3198C7.98565 9.03906 9.16153 7.60314 9.30692 7.30785C9.45232 7.01256 9.15359 6.6787 9.13307 5.97435Z" fill="currentColor"/>
+      <path d="M8.00883 18.0928C5.32942 19.6789 3.54237 20.5984 1.2981 21.2277L0 24C1.2981 23.9064 5.74874 21.7424 9.23739 19.169L8.00883 18.0928Z" fill="currentColor"/>
+    </svg>
+  );
+}
+
 export default function TeamPage() {
   const router = useRouter();
   const { user: currentUser, loading: userLoading } = useUser();
+  const { isDark, toggleTheme } = useTheme();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [accountMenuPos, setAccountMenuPos] = useState<{ top: number; right: number } | null>(null);
-  const accountBtnRef = React.useRef<HTMLButtonElement>(null);
+  const accountBtnRef = useRef<HTMLButtonElement>(null);
   const [showAssignModal, setShowAssignModal] = useState<TeamMember | null>(null);
-
-  const { isDark } = useTheme();
   const [toast, setToast] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
+  const [activeNav, setActiveNav] = useState('team');
 
   useEffect(() => {
-    if (!userLoading && !currentUser) {
-      router.push('/login');
-    }
+    if (!userLoading && !currentUser) router.push('/login');
   }, [currentUser, userLoading, router]);
 
   useEffect(() => {
-    async function fetchTeam() {
+    (async () => {
       try {
         const res = await fetch('/api/team');
-        if (res.ok) {
-          const data = await res.json();
-          setMembers(data.users);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchTeam();
+        if (res.ok) { const data = await res.json(); setMembers(data.users); }
+      } catch {}
+      finally { setLoading(false); }
+    })();
   }, []);
 
-  // Fixed departments list
-  const DEPARTMENTS = [
-    "Leadership",
-    "Writers' Block",
-    "Public Relations",
-    "Design Lab",
-    "Development",
-    "Other"
-  ];
-
   const filteredMembers = members.filter(m => {
-    let matchesFilter = true;
-    if (filter === 'admin') matchesFilter = m.admin_access;
-    else if (filter !== 'all') matchesFilter = m.department === filter;
-
-    const matchesSearch = !search || 
-      m.name.toLowerCase().includes(search.toLowerCase()) || 
-      m.email?.toLowerCase().includes(search.toLowerCase()) ||
-      m.username.toLowerCase().includes(search.toLowerCase()) ||
-      m.department?.toLowerCase().includes(search.toLowerCase());
-    return matchesFilter && matchesSearch;
+    let ok = true;
+    if (filter === 'admin') ok = m.admin_access;
+    else if (filter !== 'all') ok = m.department === filter;
+    const q = search.toLowerCase();
+    return ok && (!q ||
+      m.name.toLowerCase().includes(q) ||
+      m.email?.toLowerCase().includes(q) ||
+      m.username.toLowerCase().includes(q) ||
+      m.department?.toLowerCase().includes(q)
+    );
   });
 
-  const groupedMembers = DEPARTMENTS.reduce((acc, dept) => {
+  const groupedMembers = DEPARTMENTS.reduce<Record<string, TeamMember[]>>((acc, dept) => {
     const list = filteredMembers.filter(m => {
-      const mDept = m.department || 'Other';
-      if (dept === "Other") return !DEPARTMENTS.slice(0, -1).includes(mDept);
-      return mDept === dept;
+      const d = m.department || 'Other';
+      if (dept === 'Other') return !DEPARTMENTS.slice(0, -1).includes(d);
+      return d === dept;
     });
     if (list.length > 0) acc[dept] = list;
     return acc;
-  }, {} as Record<string, TeamMember[]>);
+  }, {});
+
+  const totalShown = Object.values(groupedMembers).flat().length;
+
+  const NAV_ITEMS = [
+    { id: 'home',  label: 'Dashboard', href: '/' },
+    { id: 'tasks', label: 'Assignments', href: '/tasks' },
+    { id: 'team',  label: 'Team',       href: '/team' },
+  ];
 
   return (
-    <div className={`app-bg min-h-screen flex flex-col ${isDark ? 'dark' : ''}`}>
-      {/* Unified Header */}
-      <header className="app-header anim-slide-down flex items-center px-4 h-[52px] sticky top-0 z-50 glass glass-rim">
-        <div className="flex items-center gap-2 select-none mr-4">
-          <Image src="/logo.svg" alt="Vantage" width={18} height={22} style={{ height: 'auto' }} priority />
-          <span className="font-bold text-[13.5px] text-[var(--text)] tracking-tight">
-            <Link href="/" className="hover:text-[var(--accent)] transition-colors">
-              <span className="hidden sm:inline">Carcino </span>Vantage
-            </Link>
-            <span className="opacity-40 font-medium mx-1">/</span>
-            <span className="text-[var(--text-4)]">Team</span>
-          </span>
-        </div>
-        
-        <div className="flex-1" />
+    <div style={{ minHeight: '100dvh', background: 'var(--paper)', color: 'var(--ink)', display: 'flex', flexDirection: 'column' }}>
 
-        <div className="flex items-center gap-3">
-          <button 
+      {/* ══ HEADER ═══════════════════════════════════════════════ */}
+      <header className="db-header">
+        {/* Brand */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, userSelect: 'none' }}>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink)', textDecoration: 'none' }}>
+            <Logo size={14} />
+            <span style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1 }}>
+              Carcino<span className="hidden sm:inline"> Vantage</span>
+            </span>
+          </Link>
+          <span style={{ color: 'var(--rule)', fontSize: 14, fontFamily: 'var(--ff-mono)' }}>/</span>
+          <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--mid)' }}>Team</span>
+        </div>
+
+        <div className="db-vr" />
+
+        {/* Search */}
+        <div style={{ position: 'relative', flex: 1, maxWidth: 320, display: 'flex', alignItems: 'center' }}>
+          <Search size={11} style={{ position: 'absolute', left: 10, color: 'var(--mid)', pointerEvents: 'none' }} />
+          <input
+            type="text"
+            placeholder="Search name, email, dept…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{
+              width: '100%',
+              background: 'transparent',
+              border: '1px solid var(--rule)',
+              padding: '5px 10px 5px 28px',
+              fontFamily: 'var(--ff-mono)',
+              fontSize: 10,
+              letterSpacing: '0.04em',
+              color: 'var(--ink)',
+              outline: 'none',
+              transition: 'border-color 0.15s',
+            }}
+            onFocus={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
+            onBlur={e => (e.currentTarget.style.borderColor = 'var(--rule)')}
+          />
+        </div>
+
+        <div style={{ flex: 1 }} />
+
+        {/* Right actions */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <button className="db-icon-btn" onClick={toggleTheme} title={isDark ? 'Light' : 'Dark'}>
+            {isDark ? <Sun size={13} strokeWidth={1.8} /> : <Moon size={13} strokeWidth={1.8} />}
+          </button>
+          <div className="db-vr" />
+          <button
             ref={accountBtnRef}
-            className="w-8 h-8 rounded-full overflow-hidden border border-[var(--border-med)] hover:border-[var(--accent)] transition-all flex-shrink-0"
+            className="db-ghost"
+            style={{ gap: 6, padding: '3px 8px 3px 4px' }}
             onClick={() => {
               if (!showAccountMenu && accountBtnRef.current) {
                 const r = accountBtnRef.current.getBoundingClientRect();
-                setAccountMenuPos({ top: r.bottom + 8, right: window.innerWidth - r.right });
+                setAccountMenuPos({ top: r.bottom + 5, right: window.innerWidth - r.right });
               }
-              setShowAccountMenu(!showAccountMenu);
+              setShowAccountMenu(o => !o);
             }}
           >
             {currentUser?.avatar_url ? (
-              <Image src={currentUser.avatar_url} alt="Profile" width={32} height={32} className="object-cover" />
+              <div style={{ width: 20, height: 20, overflow: 'hidden', border: '1px solid var(--rule)' }}>
+                <Image src={currentUser.avatar_url} alt="Profile" width={20} height={20} />
+              </div>
             ) : (
-              <div className="w-full h-full bg-[var(--accent)] flex items-center justify-center text-white text-[10px] font-bold">
-                {currentUser?.name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
+              <div className="db-avatar" style={{ width: 20, height: 20 }}>
+                {currentUser?.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || 'U'}
               </div>
             )}
+            <span className="hidden md:block" style={{ fontFamily: 'var(--ff-mono)', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.06em', color: 'var(--ink)' }}>
+              {currentUser?.name || ''}
+            </span>
+            <ChevronDown size={10} className="hidden sm:block" style={{ color: 'var(--mid)' }} />
           </button>
         </div>
       </header>
 
-      {/* Account Menu Portal */}
-      {showAccountMenu && accountMenuPos && createPortal(
-        <div 
-          className="fixed z-[9999]" 
-          style={{ top: accountMenuPos.top, right: accountMenuPos.right }}
-          onMouseLeave={() => setShowAccountMenu(false)}
-        >
-          <AccountMenu 
-            user={currentUser} 
-            onClose={() => setShowAccountMenu(false)} 
-            onToast={(m) => setToast(m)} 
-          />
-        </div>,
-        document.body
-      )}
+      {/* ══ BODY ══════════════════════════════════════════════════ */}
+      <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
 
-      <div className="flex flex-col md:flex-row flex-1">
-        {/* Mobile nav strip — visible only on small screens */}
-        <div className="md:hidden flex items-center gap-3 px-4 py-2 border-b border-[var(--border)] bg-[var(--bg-alt)] text-[10px] font-medium tracking-wide flex-shrink-0">
-          <Link href="/" className="text-[var(--text-4)] hover:text-[var(--accent)] flex items-center gap-1 transition-colors">
-            <ChevronRight size={12} className="rotate-180" /> Dashboard
-          </Link>
-          <span className="text-[var(--border-strong)]">/</span>
-          <span className="text-[var(--text-3)] font-semibold">Team</span>
-        </div>
-        {/* Sidebar */}
-        <aside className="sidebar-col w-52 p-4 space-y-1 hidden md:block" style={{ position: 'sticky', top: 52, height: 'calc(100vh - 52px)', overflowY: 'auto' }}>
-          <Link href="/" className="flex items-center gap-3 px-3 py-2 text-sm text-[var(--text-4)] hover:text-[var(--text)] rounded-[var(--r-md)] transition-colors">
-            <ChevronRight size={14} className="rotate-180" />
-            Dashboard
-          </Link>
-          <div className="pt-4 pb-2 px-3 text-[10px] font-bold uppercase tracking-widest text-[var(--text-4)]">Directory</div>
-          <button 
-            onClick={() => setFilter('all')}
-            className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-[var(--r-md)] font-semibold text-left transition-all ${filter === 'all' ? 'text-[var(--accent)] bg-[var(--accent-subtle2)]' : 'text-[var(--text-4)] hover:text-[var(--text)] hover:bg-[var(--bg-deep)]'}`}
-          >
-            <Users size={14} />
-            Members
-          </button>
-          <button 
-            onClick={() => setFilter('admin')}
-            className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-[var(--r-md)] transition-all text-left font-semibold ${filter === 'admin' ? 'text-[var(--accent)] bg-[var(--accent-subtle2)]' : 'text-[var(--text-4)] hover:text-[var(--text)] hover:bg-[var(--bg-deep)]'}`}
-          >
-            <Shield size={14} />
-            Admins
-          </button>
+        {/* ── SIDEBAR ──────────────────────────────────────────── */}
+        <aside className="db-sidebar">
+          <div className="db-sidebar-label">Navigate</div>
 
-          <div className="pt-4 pb-2 px-3 text-[10px] font-bold uppercase tracking-widest text-[var(--text-4)]">Departments</div>
-          {DEPARTMENTS.filter(d => d !== 'Other').map(dept => (
-            <button 
-              key={dept}
-              onClick={() => setFilter(dept)}
-              className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-[var(--r-md)] transition-all text-left font-semibold capitalize ${filter === dept ? 'text-[var(--accent)] bg-[var(--accent-subtle2)]' : 'text-[var(--text-4)] hover:text-[var(--text)] hover:bg-[var(--bg-deep)]'}`}
+          {NAV_ITEMS.map((item, i) => (
+            <Link
+              key={item.id}
+              href={item.href}
+              className={`db-nav-item${item.id === activeNav ? ' active' : ''}`}
             >
-              <div className={`w-1.5 h-1.5 rounded-full ${filter === dept ? 'bg-[var(--accent)]' : 'bg-[var(--text-4)]/40'}`} />
-              <span className="truncate">{dept}</span>
+              <span className="db-nav-num">{String(i + 1).padStart(2, '0')}</span>
+              <span style={{ flex: 1 }}>{item.label}</span>
+            </Link>
+          ))}
+
+          <div className="db-sidebar-rule" />
+          <div className="db-sidebar-label">Filter</div>
+
+          {/* All / Admin */}
+          {[{ key: 'all', label: `All (${members.length})` }, { key: 'admin', label: 'Admins' }].map(f => (
+            <button
+              key={f.key}
+              className={`db-nav-item${filter === f.key ? ' active' : ''}`}
+              onClick={() => setFilter(f.key)}
+            >
+              <span className="db-nav-num">{f.key === 'all' ? '—' : <Shield size={9} />}</span>
+              <span style={{ flex: 1 }}>{f.label}</span>
             </button>
           ))}
+
+          <div className="db-sidebar-rule" />
+          <div className="db-sidebar-label">Departments</div>
+
+          {DEPARTMENTS.filter(d => d !== 'Other').map((dept, i) => {
+            const count = members.filter(m => m.department === dept).length;
+            return (
+              <button
+                key={dept}
+                className={`db-nav-item${filter === dept ? ' active' : ''}`}
+                onClick={() => setFilter(dept)}
+              >
+                <span className="db-nav-num" style={{ fontStyle: 'italic', fontFamily: 'var(--ff-display)' }}>
+                  {DEPT_NUM[dept]}
+                </span>
+                <span style={{ flex: 1 }}>{dept}</span>
+                {count > 0 && (
+                  <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 8, background: filter === dept ? 'var(--accent)' : 'var(--accent-dim)', color: filter === dept ? 'var(--paper)' : 'var(--mid)', padding: '1px 5px', letterSpacing: '0.08em' }}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </aside>
 
-        {/* Main Content */}
-        <main className="page-main-content flex-1 p-8 overflow-y-auto">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex items-center justify-between mb-8 anim-fade-up">
+        {/* ── MAIN ─────────────────────────────────────────────── */}
+        <main className="db-main">
+
+          {/* Page title */}
+          <div className="db-rise-0" style={{ marginBottom: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
               <div>
-                <h1 className="text-2xl font-bold text-[var(--text)] tracking-tight">Team Directory</h1>
-                <p className="text-sm text-[var(--text-4)] mt-1">Foundational network of the Carcino Foundation</p>
+                <h1 className="db-page-title">Team<em>.</em></h1>
+                <p className="db-page-sub" style={{ marginTop: 6 }}>
+                  {totalShown} member{totalShown !== 1 ? 's' : ''} — The Carcino Foundation
+                </p>
               </div>
+              {currentUser?.admin_access && (
+                <button className="db-btn">
+                  <Plus size={10} strokeWidth={2.2} />
+                  <span className="hidden sm:inline">Invite</span>
+                </button>
+              )}
             </div>
+          </div>
+          <hr className="db-triple-rule" />
 
-            {/* Controls */}
-            <div className="flex items-center gap-4 mb-10 anim-fade-up delay-75">
-              <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-4)]" size={14} />
-                <input 
-                  type="text" 
-                  placeholder="Search name, email, or department..." 
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 bg-[var(--bg-deep)] border border-[var(--border-med)] rounded-[var(--r-md)] text-xs text-[var(--text)] focus:outline-none focus:border-[var(--accent)]"
-                />
-              </div>
+          {/* Filter bar */}
+          <div className="db-filter-bar db-rise-1">
+            {[
+              { k: 'all',   l: `All (${members.length})` },
+              { k: 'admin', l: 'Admins' },
+              ...DEPARTMENTS.filter(d => d !== 'Other').map(d => ({ k: d, l: d })),
+            ].map(f => (
+              <button
+                key={f.k}
+                className={`db-filter-btn${filter === f.k ? ' active' : ''}`}
+                onClick={() => setFilter(f.k)}
+              >
+                {f.l}
+              </button>
+            ))}
+          </div>
+
+          {/* Members */}
+          {loading ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 0, border: '1px solid var(--rule)', borderBottom: 'none' }}>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} style={{ height: 64, borderBottom: '1px solid var(--rule)', background: i % 2 === 0 ? 'transparent' : 'var(--accent-sub)', opacity: 0.5 }} />
+              ))}
             </div>
-
-            {loading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="glass-raised p-6 rounded-[var(--r-xl)] space-y-4 animate-pulse">
-                    <div className="w-16 h-16 bg-[var(--bg-deep)] rounded-full mx-auto" />
-                    <div className="h-4 bg-[var(--bg-deep)] w-2/3 mx-auto rounded" />
-                    <div className="h-3 bg-[var(--bg-deep)] w-1/3 mx-auto rounded" />
+          ) : totalShown === 0 ? (
+            <div style={{ padding: '48px 0', textAlign: 'center', border: '1px solid var(--rule)' }}>
+              <Users size={28} style={{ color: 'var(--mid)', margin: '0 auto 12px' }} />
+              <p style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--mid)' }}>
+                No members found
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
+              {Object.entries(groupedMembers).map(([dept, deptMembers], si) => (
+                <section key={dept} className="db-rise-1" style={{ animationDelay: `${si * 0.06}s` }}>
+                  {/* Dept header — editorial section rule */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 14 }}>
+                    <span style={{
+                      fontFamily: 'var(--ff-display)',
+                      fontStyle: 'italic',
+                      fontSize: 11,
+                      color: 'var(--accent)',
+                      width: 22,
+                      flexShrink: 0,
+                    }}>
+                      {DEPT_NUM[dept] || String(si + 1).padStart(2, '0')}
+                    </span>
+                    <span className="db-cap" style={{ color: 'var(--ink)', letterSpacing: '0.2em', fontSize: 9 }}>{dept}</span>
+                    <div style={{ flex: 1, height: 1, background: 'var(--rule)' }} />
+                    <span style={{
+                      fontFamily: 'var(--ff-mono)',
+                      fontSize: 8,
+                      fontWeight: 700,
+                      letterSpacing: '0.12em',
+                      background: 'var(--accent)',
+                      color: 'var(--paper)',
+                      padding: '1px 7px',
+                    }}>
+                      {deptMembers.length}
+                    </span>
                   </div>
-                ))}
-              </div>
-            ) : members.length === 0 ? (
-              <div className="col-span-full py-20 text-center glass-raised rounded-[var(--r-xl)] p-12 anim-fade-up">
-                 <div className="w-16 h-16 bg-[var(--bg-deep)] rounded-full flex items-center justify-center mx-auto mb-4 border border-[var(--border-med)]">
-                   <Users size={28} className="text-[var(--text-4)] opacity-50" />
-                 </div>
-                 <h3 className="text-lg font-bold text-[var(--text)]">No members found</h3>
-              </div>
-            ) : (
-              <div className="space-y-12">
-                {Object.entries(groupedMembers).map(([dept, deptMembers], sectionIdx) => (
-                  <div key={dept} className="anim-fade-up" style={{ animationDelay: `${sectionIdx * 0.1}s` }}>
-                    <div className="flex items-center gap-4 mb-6">
-                      <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-[var(--text-4)]">{dept}</h2>
-                      <div className="h-[1px] flex-1 bg-gradient-to-r from-[var(--border-med)] to-transparent" />
-                      <span className="text-[10px] font-bold text-[var(--text-4)] bg-[var(--bg-deep)] px-2 py-0.5 rounded border border-[var(--border)]">{deptMembers.length}</span>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {deptMembers.map((member, i) => (
-                        <div 
-                          key={member.id} 
-                          className="glass-raised grain p-6 rounded-[var(--r-xl)] group hover:-translate-y-0.5 transition-all relative overflow-hidden"
-                        >
-                          <div className="relative z-10">
-                            <div className="relative mb-5">
-                              <div className="w-20 h-20 mx-auto rounded-full overflow-hidden border-2 border-[var(--bg-deep)] shadow-lg shadow-black/10 group-hover:border-[var(--accent-subtle)] transition-colors">
-                                {member.avatar_url ? (
-                                  <Image src={member.avatar_url} alt={member.name} width={80} height={80} className="object-cover" />
-                                ) : (
-                                  <div className="w-full h-full bg-gradient-to-br from-[var(--bg-deep)] to-[var(--surface-2)] flex items-center justify-center text-[var(--text-4)] font-bold text-2xl">
-                                    {member.name?.split(' ').map(n => n[0]).join('') || '?'}
-                                  </div>
-                                )}
-                              </div>
-                              {member.admin_access && (
-                                <div className="absolute top-0 right-[35%] p-1 bg-amber-500 rounded-full text-white shadow-md shadow-amber-500/20" title="Administrator">
-                                  <Shield size={12} />
-                                </div>
-                              )}
-                            </div>
 
-                            <div className="text-center mb-6">
-                              <h3 className="text-base font-bold text-[var(--text)] mb-1 group-hover:text-[var(--accent)] transition-colors">{member.name}</h3>
-                              <p className="text-xs text-[var(--text-4)] font-medium capitalize">{member.position || 'Contributor'}</p>
-                            </div>
-
-                            <div className="flex flex-col gap-2.5 mb-6">
-                              <div className="flex items-center gap-2 text-[11px] text-[var(--text-3)] justify-center bg-white/5 py-1.5 rounded-lg border border-white/5 group-hover:border-[var(--accent-subtle2)] transition-colors">
-                                <Mail size={12} className="text-[var(--accent)]" />
-                                <span className="truncate max-w-[180px]">{member.email || `${member.username}@carcino.org`}</span>
+                  {/* Members grid list — editorial rows */}
+                  <div style={{ border: '1px solid var(--rule)', borderBottom: 'none' }}>
+                    {deptMembers.map((member, mi) => (
+                      <div
+                        key={member.id}
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '52px 1fr auto',
+                          alignItems: 'center',
+                          gap: 16,
+                          padding: '14px 18px',
+                          borderBottom: '1px solid var(--rule)',
+                          transition: 'background 0.12s',
+                          background: 'transparent',
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-sub)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        {/* Avatar */}
+                        <div style={{ position: 'relative' }}>
+                          <div style={{ width: 40, height: 40, overflow: 'hidden', border: '1px solid var(--rule)', flexShrink: 0 }}>
+                            {member.avatar_url ? (
+                              <Image src={member.avatar_url} alt={member.name} width={40} height={40} style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
+                            ) : (
+                              <div style={{ width: '100%', height: '100%', background: 'var(--accent-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--ff-display)', fontWeight: 700, fontSize: 14, color: 'var(--accent)' }}>
+                                {member.name?.split(' ').map(n => n[0]).join('').slice(0, 2) || '?'}
                               </div>
+                            )}
+                          </div>
+                          {member.admin_access && (
+                            <div style={{ position: 'absolute', bottom: -3, right: -3, background: 'var(--accent)', width: 14, height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Admin">
+                              <Shield size={8} style={{ color: 'var(--paper)' }} />
                             </div>
+                          )}
+                        </div>
 
-                            <div className="pt-5 border-t border-[var(--border)] flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <a href={`https://github.com/${member.username}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-4)] hover:text-[var(--text)] transition-colors" title="GitHub">
-                                  <Github size={14} />
-                                </a>
-                                <a href={`https://linkedin.com/in/${member.username}`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-4)] hover:text-[#0A66C2] transition-colors" title="LinkedIn">
-                                  <Linkedin size={14} />
-                                </a>
-                              </div>
-                              
-                              {currentUser?.admin_access && (
-                                <button 
-                                  onClick={() => setShowAssignModal(member)}
-                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--accent-subtle2)] hover:bg-[var(--accent-subtle)] text-[var(--accent)] text-[10px] font-bold uppercase tracking-wider rounded-[var(--r-md)] border border-[var(--accent-subtle)] transition-all"
-                                >
-                                  Assign
-                                </button>
-                              )}
-                            </div>
+                        {/* Info */}
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+                            <span style={{ fontFamily: 'var(--ff-display)', fontSize: 13.5, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--ink)' }}>
+                              {member.name}
+                            </span>
+                            {member.admin_access && (
+                              <span className="db-status" style={{ color: 'var(--accent)', background: 'var(--accent-sub)', border: '1px solid var(--accent)', fontSize: 7, letterSpacing: '0.14em', padding: '1px 5px' }}>
+                                Admin
+                              </span>
+                            )}
+                            <span style={{ width: 4, height: 4, background: member.is_active ? '#3e9a5e' : 'var(--mid)', flexShrink: 0 }} title={member.is_active ? 'Active' : 'Inactive'} />
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+                            <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 9.5, color: 'var(--mid)', letterSpacing: '0.04em' }}>
+                              {member.position || 'Contributor'}
+                            </span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--ff-mono)', fontSize: 9, color: 'var(--mid)' }}>
+                              <Mail size={9} strokeWidth={1.6} />
+                              {member.email || `${member.username}@carcino.org`}
+                            </span>
                           </div>
                         </div>
-                      ))}
-                    </div>
+
+                        {/* Actions */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                          <a
+                            href={`https://github.com/${member.username}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="db-ghost"
+                            style={{ padding: '4px 8px' }}
+                            title="GitHub"
+                          >
+                            <Github size={10} strokeWidth={1.8} />
+                          </a>
+                          <a
+                            href={`https://linkedin.com/in/${member.username}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="db-ghost"
+                            style={{ padding: '4px 8px' }}
+                            title="LinkedIn"
+                          >
+                            <Linkedin size={10} strokeWidth={1.8} />
+                          </a>
+                          {currentUser?.admin_access && (
+                            <button
+                              className="db-btn"
+                              style={{ padding: '5px 12px', fontSize: 8 }}
+                              onClick={() => setShowAssignModal(member)}
+                            >
+                              <Plus size={9} />
+                              Assign
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                </section>
+              ))}
+            </div>
+          )}
         </main>
       </div>
 
+      {/* ══ MOBILE BOTTOM NAV ════════════════════════════════════ */}
+      <nav className="db-mobile-nav">
+        {/* Tape strip */}
+        <div className="db-tape-bar">
+          <div className="db-tape">
+            {[...TAPE_ITEMS, ...TAPE_ITEMS].map((item, i) => (
+              <span key={i} className="db-cap" style={{ color: i % 8 === 7 ? 'var(--accent)' : 'rgba(240,236,228,0.7)', padding: '0 14px' }}>{item}</span>
+            ))}
+          </div>
+        </div>
+        <div className="db-mob-inner">
+          {[
+            { id: 'home',  label: 'Home',  href: '/',      path: 'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z' },
+            { id: 'tasks', label: 'Tasks', href: '/tasks', path: 'M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16' },
+            { id: 'team',  label: 'Team',  href: '/team',  path: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75' },
+          ].map(item => (
+            <Link key={item.id} href={item.href} className={`db-mob-item${item.id === 'team' ? ' active' : ''}`}>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                {item.path.split(' M').map((d, i) => <path key={i} d={i === 0 ? d : 'M' + d} />)}
+              </svg>
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </div>
+      </nav>
+
+      {/* ══ OVERLAYS ═════════════════════════════════════════════ */}
+      {showAccountMenu && accountMenuPos && createPortal(
+        <div style={{ position: 'fixed', top: accountMenuPos.top, right: accountMenuPos.right, zIndex: 9960 }}>
+          <AccountMenu user={currentUser} onClose={() => setShowAccountMenu(false)} onToast={m => setToast(m)} />
+        </div>,
+        document.body
+      )}
       {showAssignModal && (
-        <AssignTaskModal 
+        <AssignTaskModal
           member={showAssignModal}
           onClose={() => setShowAssignModal(null)}
           onSuccess={() => { setShowAssignModal(null); setToast('Task assigned successfully'); }}
         />
       )}
       {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
-
-      {/* Mobile Bottom Navigation */}
-      <nav className="mobile-bottom-nav">
-        <div className="mobile-bottom-nav-inner">
-          {([
-            { id:'home',     label:'Home',    href:'/',    icon:'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z' },
-            { id:'articles', label:'Articles', href:'/',   icon:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8' },
-            { id:'blogs',    label:'Blogs',   href:'/',    icon:'M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z' },
-            { id:'tasks',    label:'Tasks',   href:'/tasks', icon:'M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16' },
-            { id:'team',     label:'Team',    href:'/team', icon:'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75' },
-          ] as const).map(item => {
-            const isActive = item.id === 'team';
-            const inner = (
-              <>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  {item.icon.split(' M').map((d, i) => <path key={i} d={i === 0 ? d : 'M' + d} />)}
-                </svg>
-                <span>{item.label}</span>
-              </>
-            );
-            return <Link key={item.id} href={item.href} className={`mobile-nav-item${isActive ? ' active' : ''}`} style={{ position:'relative' }}>{inner}</Link>;
-          })}
-        </div>
-      </nav>
     </div>
   );
 }
