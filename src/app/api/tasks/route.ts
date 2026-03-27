@@ -72,7 +72,7 @@ export async function PATCH(req: NextRequest) {
     const { 
       id, status, submission_media_url, 
       assigned_to_ids, priority, due_date, title, description,
-      proofreader_id
+      proofreader_id, type 
     } = await req.json();
 
     if (!id) {
@@ -84,39 +84,50 @@ export async function PATCH(req: NextRequest) {
     };
 
     if (status !== undefined) updateData.status = status;
-    if (priority !== undefined) updateData.priority = priority;
-    if (due_date !== undefined) updateData.due_date = due_date;
-    if (title !== undefined) updateData.title = title;
-    if (description !== undefined) updateData.description = description;
     if (proofreader_id !== undefined) updateData.proofreader_id = proofreader_id;
 
-    // Only admins can reassign generally
-    if (payload.adminAccess && assigned_to_ids !== undefined) {
-      updateData.assigned_to_ids = assigned_to_ids;
-    }
+    // Determine target table and filter table-specific columns
+    let table = 'work_assignments';
+    if (type === 'blogs') table = 'blogs';
+    else if (type === 'survivor_stories') table = 'survivor_stories';
+    else if (type === 'cancer_docs') table = 'cancer_docs';
 
-    if (submission_media_url !== undefined) {
-      updateData.submission_media_url = submission_media_url;
-      updateData.submitted_at = new Date().toISOString();
+    // Columns only for work_assignments
+    if (table === 'work_assignments') {
+      if (priority !== undefined) updateData.priority = priority;
+      if (due_date !== undefined) updateData.due_date = due_date;
+      if (title !== undefined) updateData.title = title;
+      if (description !== undefined) updateData.description = description;
+      if (assigned_to_ids !== undefined && payload.adminAccess) {
+        updateData.assigned_to_ids = assigned_to_ids;
+      }
+      if (submission_media_url !== undefined) {
+        updateData.submission_media_url = submission_media_url;
+        updateData.submitted_at = new Date().toISOString();
+      }
     }
 
     let query = supabaseAdmin
-      .from('work_assignments')
+      .from(table)
       .update(updateData)
       .eq('id', id);
 
-    if (!payload.adminAccess) {
-      query = query.or(`assigned_to.eq.${payload.userId},assigned_to_ids.cs.{${payload.userId}}`); // Ensure user can only update their own assignments
+    if (!payload.adminAccess && table === 'work_assignments') {
+      query = query.or(`assigned_to.eq.${payload.userId},assigned_to_ids.cs.{${payload.userId}}`);
     }
 
-    const { data, error } = await query.select().single();
+    const { data, error } = await query.select();
 
     if (error) {
-      console.error('Update assignment error:', error);
+      console.error('Update operation error:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, assignment: data });
+    if (!data || data.length === 0) {
+      return NextResponse.json({ error: 'No records updated' }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, assignment: data[0] });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

@@ -439,7 +439,7 @@ function AssignmentQueue({
   docs, onAssign, assigning, isAdmin, onToast
 }: { 
   docs: ReviewDoc[]; 
-  onAssign: (docId: string, proofreaderId: string) => void; 
+  onAssign: (docId: string, type: string, proofreaderId: string) => void; 
   assigning: string | null;
   isAdmin: boolean;
   onToast: (m: string) => void;
@@ -491,7 +491,7 @@ function AssignmentQueue({
                 <p className="text-[9px] font-black uppercase tracking-widest text-[var(--text-4)]">Select Proofreader</p>
                 <MultiPersonSelect 
                   selectedIds={[]}
-                  onChange={(ids) => ids[0] && onAssign(doc.id, ids[0])}
+                  onChange={(ids) => ids[0] && onAssign(doc.id, doc.type as string, ids[0])}
                   maxSelections={1}
                   placeholder="Choose member..."
                 />
@@ -831,7 +831,7 @@ export default function WorkPage() {
     }
   };
 
-  const handleAssignProofreader = async (docId: string, proofreaderId: string) => {
+  const handleAssignProofreader = async (docId: string, type: string, proofreaderId: string) => {
     setAssigningProofreader(docId);
     try {
       const res = await fetch('/api/tasks', {
@@ -840,7 +840,8 @@ export default function WorkPage() {
         body: JSON.stringify({
           id: docId,
           status: 'proofreading',
-          proofreader_id: proofreaderId
+          proofreader_id: proofreaderId,
+          type: type
         })
       });
 
