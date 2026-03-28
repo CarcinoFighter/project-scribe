@@ -1,10 +1,8 @@
 import type { Metadata, Viewport } from 'next';
-import Script from 'next/script';
 import './globals.css';
 import { ThemeInitializer } from '@/components/ThemeInitializer';
 import PushSubscriber from '@/components/PushSubscriber';
 import { DM_Mono } from 'next/font/google';
-
 const dmMono = DM_Mono({
   subsets: ['latin'],
   weight: ['300', '400', '500'],
@@ -35,26 +33,30 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning className={dmMono.className}>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var settings = JSON.parse(localStorage.getItem('cs-settings') || '{}');
+                  var theme = settings.theme || 'default-dark';
+                  var isDark = theme.includes('dark') || theme.includes('mocha') || theme.includes('solarized');
+                  if (isDark) {
+                    document.documentElement.classList.add('dark');
+                  } else {
+                    document.documentElement.classList.remove('dark');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
           href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:ital,wght@0,100..700;1,100..700&family=JetBrains+Mono:wght@300..700&display=swap"
           rel="stylesheet"
         />
-        <Script id="theme-init" strategy="beforeInteractive">{`
-          (function() {
-            try {
-              var settings = JSON.parse(localStorage.getItem('cs-settings') || '{}');
-              var theme = settings.theme || 'default-dark';
-              var isDark = theme.includes('dark') || theme.includes('mocha') || theme.includes('solarized');
-              if (isDark) {
-                document.documentElement.classList.add('dark');
-              } else {
-                document.documentElement.classList.remove('dark');
-              }
-            } catch (e) {}
-          })();
-        `}</Script>
         {/* iOS Splash Screens */}
         <link rel="apple-touch-startup-image" href="/splash-640x1136.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)" />
         <link rel="apple-touch-startup-image" href="/splash-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" />

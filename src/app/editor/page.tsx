@@ -1,4 +1,5 @@
 'use client';
+
 import { useState, useCallback, useEffect, useRef, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -14,8 +15,7 @@ import ConfirmModal from '@/components/ConfirmModal';
 import MetadataPanel from '@/components/MetadataPanel';
 import SettingsModal, { loadSettings, saveSettings, applySettings, DEFAULT_SETTINGS, THEMES } from '@/components/SettingsModal';
 import type { AppSettings } from '@/components/SettingsModal';
-import { Notif } from '@/components/NotifPanel';
-import { X, Plus, FileText, BookOpen, Heart, Loader2, Eye } from 'lucide-react';
+import { X, Plus, FileText, BookOpen, Heart, Loader2, Menu } from 'lucide-react';
 import { useUser } from '@/lib/useUser';
 import { supabase } from '@/lib/supabase';
 import type { Collaborator } from '@/types';
@@ -34,7 +34,7 @@ const EditorPane = dynamic(() => import('@/components/EditorPane'), {
   ),
 });
 
-// ---------------------------------------------------------------
+// ---------------------------------------------------------------  
 // Types
 // ---------------------------------------------------------------
 interface Tab {
@@ -49,7 +49,7 @@ interface Tab {
   isLoading?: boolean;
 }
 
-// ---------------------------------------------------------------
+// ---------------------------------------------------------------  
 // Templates & Defaults
 // ---------------------------------------------------------------
 const DEFAULT_CONTENT = `# Welcome to Carcino Vantage\n\nA beautiful, distraction-free markdown editor built by The Carcino Foundation.\n`;
@@ -73,17 +73,13 @@ function computeStats(content: string): DocumentStats {
   return { words, chars, lines, sentences, readingTime };
 }
 
+// ---------------------------------------------------------------  
+// TabBar Component - Responsive
 // ---------------------------------------------------------------
-// TabBar Component
-// ---------------------------------------------------------------
-function TabBar({
-  tabs, activeTabId, onSwitch, onClose, onNew,
-}: {
-  tabs: Tab[];
-  activeTabId: string;
-  onSwitch: (id: string) => void;
-  onClose: (id: string) => void;
-  onNew: () => void;
+function TabBar({ 
+  tabs, activeTabId, onSwitch, onClose, onNew 
+}: { 
+  tabs: Tab[], activeTabId: string, onSwitch: (id: string) => void, onClose: (id: string) => void, onNew: () => void 
 }) {
   return (
     <div className="tab-bar flex items-center gap-0 px-2 h-10 border-b border-[var(--rule)] bg-[var(--cream)] overflow-x-auto no-scrollbar">
@@ -91,12 +87,12 @@ function TabBar({
         const isActive = tab.id === activeTabId;
         const Icon = tab.type === 'blogs' ? BookOpen : tab.type === 'survivor_stories' ? Heart : FileText;
         return (
-          <div
+          <div 
             key={tab.id}
             onClick={() => onSwitch(tab.id)}
             className={`group flex items-center h-9 gap-2 px-3 min-w-[100px] sm:min-w-[120px] max-w-[160px] sm:max-w-[200px] border-r border-[var(--rule)] transition-all cursor-pointer select-none flex-shrink-0
-              ${isActive
-                ? 'bg-[var(--paper)] border-t-2 border-t-[var(--accent)]'
+              ${isActive 
+                ? 'bg-[var(--paper)] border-t-2 border-t-[var(--accent)]' 
                 : 'bg-transparent text-[var(--mid)] hover:bg-[var(--accent-sub)]'
               }`}
           >
@@ -108,7 +104,7 @@ function TabBar({
             <span className={`text-[11px] sm:text-[12px] font-medium truncate flex-1 ${isActive ? 'text-[var(--ink)]' : ''}`}>
               {tab.title}
             </span>
-            <button
+            <button 
               onClick={(e) => { e.stopPropagation(); onClose(tab.id); }}
               className={`p-1 opacity-0 group-hover:opacity-100 hover:bg-[var(--accent-dim)] transition-all flex-shrink-0 ${isActive ? 'opacity-100' : ''}`}
             >
@@ -117,7 +113,7 @@ function TabBar({
           </div>
         );
       })}
-      <button
+      <button 
         onClick={onNew}
         className="h-9 w-9 flex items-center justify-center border-r border-[var(--rule)] text-[var(--mid)] hover:bg-[var(--accent-sub)] hover:text-[var(--accent)] transition-all flex-shrink-0"
         title="New Tab"
@@ -128,7 +124,7 @@ function TabBar({
   );
 }
 
-// ---------------------------------------------------------------
+// ---------------------------------------------------------------  
 // Main Editor Implementation
 // ---------------------------------------------------------------
 function EditorContent() {
@@ -138,7 +134,7 @@ function EditorContent() {
   // Tab State
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string>('');
-
+  
   // View State (Shared)
   const [viewMode, setViewMode] = useState<ViewMode>('split');
   const [isDark, setIsDark] = useState(false);
@@ -158,12 +154,6 @@ function EditorContent() {
   const [sidebarDragging, setSidebarDragging] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
-  const [notifs, setNotifs] = useState<Notif[]>([]);
-  const handleMarkAllRead = useCallback(() => {
-    setNotifs(ns => ns.map(n => ({ ...n, read: true })));
-    setToastMsg('All notifications read');
-  }, []);
 
   // Collaboration State
   const { user, loading: userLoading } = useUser();
@@ -246,9 +236,8 @@ function EditorContent() {
     }
   }, [cursorLine, cursorCol, user]);
 
-  // Set default view on mobile + Keyboard / viewport resize tracking
+  // Set default view on mobile + Keyboard resize observer
   const [viewportHeight, setViewportHeight] = useState<string | number>('100dvh');
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   useEffect(() => {
     if (window.matchMedia('(max-width: 767px)').matches) {
@@ -256,38 +245,23 @@ function EditorContent() {
     }
 
     const handler = () => {
-      if (window.visualViewport) {
-        setViewportHeight(window.visualViewport.height);
-        // keyboard height = gap between layout viewport and visual viewport
-        const kh = window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop;
-        setKeyboardHeight(Math.max(0, kh));
-      }
+      if (window.visualViewport) setViewportHeight(window.visualViewport.height);
     };
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', handler);
-      window.visualViewport.addEventListener('scroll', handler);
       handler();
     }
-    return () => {
-      window.visualViewport?.removeEventListener('resize', handler);
-      window.visualViewport?.removeEventListener('scroll', handler);
-    };
+    return () => window.visualViewport?.removeEventListener('resize', handler);
   }, []);
 
-  const [confirm, setConfirm] = useState<{
-    title: string;
-    message: string;
-    confirmLabel?: string;
-    danger?: boolean;
-    onConfirm: () => void;
-  } | null>(null);
+  const [confirm, setConfirm] = useState<{ title: string; message: string; confirmLabel?: string; danger?: boolean; onConfirm: () => void; } | null>(null);
   const [goalCelebrated, setGoalCelebrated] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [appSettings, setAppSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
 
   const appSettingsRef = useRef<AppSettings>(DEFAULT_SETTINGS);
   useEffect(() => { appSettingsRef.current = appSettings; }, [appSettings]);
-
+  
   const editorRef = useRef<EditorAPI | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const splitRef = useRef<HTMLDivElement>(null);
@@ -331,7 +305,7 @@ function EditorContent() {
 
       const id = searchParams.get('id');
       const type = searchParams.get('type') as Tab['type'];
-
+      
       if (id && type) {
         const existing = initialTabs.find(t => t.id === id);
         if (existing) {
@@ -400,7 +374,7 @@ function EditorContent() {
 
     if (id && type) {
       setActiveTabId(id);
-
+      
       setTabs(prev => {
         if (prev.find(t => t.id === id)) return prev;
 
@@ -461,7 +435,7 @@ function EditorContent() {
               tags: [],
             }),
           });
-
+          
           if (res.ok) {
             const data = await res.json();
             setTabs(prev => prev.map(t => {
@@ -477,7 +451,6 @@ function EditorContent() {
         }
       } catch (e) {}
     }, 1500);
-
     return () => { clearTimeout(markUnsaved); clearTimeout(t); };
   }, [activeTab?.content, activeTab?.title, activeTab?.slug, activeTab?.status, activeTabId]);
 
@@ -562,7 +535,7 @@ function EditorContent() {
     setTabs(prev => {
       const idx = prev.findIndex(t => t.id === id);
       if (idx === -1) return prev;
-
+      
       const next = prev.filter(t => t.id !== id);
       if (next.length === 0) {
         const defaultTab: Tab = {
@@ -577,7 +550,7 @@ function EditorContent() {
         setActiveTabId(defaultTab.id);
         return [defaultTab];
       }
-
+      
       if (activeTabId === id) {
         const nextIdx = Math.max(0, idx - 1);
         setActiveTabId(next[nextIdx].id);
@@ -642,25 +615,39 @@ function EditorContent() {
       case 'view-preview': setViewMode('preview'); break;
       case 'theme': {
         const currentTheme = appSettingsRef.current.theme;
-        const darkToLight: Record<string, string> = { 'default-dark': 'default-light', 'catppuccin-mocha': 'catppuccin-latte', 'solarized-dark': 'solarized-light' };
-        const lightToDark: Record<string, string> = Object.fromEntries(Object.entries(darkToLight).map(([k, v]) => [v, k]));
-        const currentIsDark = THEMES[currentTheme]?.dark ?? true;
-        const nextTheme = currentIsDark ? (darkToLight[currentTheme] ?? 'default-light') : (lightToDark[currentTheme] ?? 'default-dark');
+        
+        // Define map for toggling between light and dark variants
+        const themeMap: Record<string, string> = {
+          'default-dark': 'default-light',
+          'default-light': 'default-dark',
+          'catppuccin-mocha': 'catppuccin-latte',
+          'catppuccin-latte': 'catppuccin-mocha',
+          'solarized-dark': 'solarized-light',
+          'solarized-light': 'solarized-dark'
+        };
+
+        const nextTheme = themeMap[currentTheme] || 'default-dark';
         const next = { ...appSettingsRef.current, theme: nextTheme };
-        setAppSettings(next); saveSettings(next); setIsDark(applySettings(next));
+        
+        setAppSettings(next); 
+        saveSettings(next); 
+        
+        // applySettings returns true if the new theme is a dark variant
+        const isNowDark = applySettings(next);
+        setIsDark(isNowDark); 
         break;
       }
       case 'search': editorRef.current?.openSearch(); break;
       case 'open': {
         const input = document.createElement('input');
-        input.type = 'file';
+        input.type = 'file'; 
         input.accept = '.md,.markdown,.txt,.docx';
         input.onchange = async (e) => {
           const file = (e.target as HTMLInputElement).files?.[0];
           if (!file) return;
-
+          
           const isDocx = file.name.toLowerCase().endsWith('.docx');
-          const fileId = `file-${typeof crypto !== 'undefined' ? crypto.randomUUID().slice(0, 8) : Date.now()}`;
+          const id = `file-${typeof crypto !== 'undefined' ? crypto.randomUUID().slice(0, 8) : Date.now()}`;
           const title = file.name.replace(/\.[^/.]+$/, '');
 
           if (isDocx) {
@@ -669,9 +656,9 @@ function EditorContent() {
               const arrayBuffer = ev.target?.result as ArrayBuffer;
               try {
                 const content = await convertDocxToMarkdown(arrayBuffer);
-                setTabs(prev => [...prev, { id: fileId, type: 'blogs', title, content, slug: '', status: 'draft', isSaved: true }]);
-                setActiveTabId(fileId);
-              } catch {
+                setTabs(prev => [...prev, { id, type: 'blogs', title, content, slug: '', status: 'draft', isSaved: true }]);
+                setActiveTabId(id);
+              } catch (err) {
                 alert('Failed to convert Word document.');
               }
             };
@@ -680,22 +667,20 @@ function EditorContent() {
             const reader = new FileReader();
             reader.onload = (ev) => {
               const content = ev.target?.result as string;
-              setTabs(prev => [...prev, { id: fileId, type: 'blogs', title, content, slug: '', status: 'draft', isSaved: true }]);
-              setActiveTabId(fileId);
+              setTabs(prev => [...prev, { id, type: 'blogs', title, content, slug: '', status: 'draft', isSaved: true }]);
+              setActiveTabId(id);
             };
             reader.readAsText(file);
           }
         };
-        input.click();
-        break;
+        input.click(); break;
       }
       case 'export-md': {
         const tab = tabs.find(t => t.id === activeTabId);
         if (!tab) break;
         const blob = new Blob([tab.content], { type: 'text/markdown' });
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-        a.download = `${tab.title}.md`; a.click(); URL.revokeObjectURL(a.href);
-        break;
+        a.download = `${tab.title}.md`; a.click(); URL.revokeObjectURL(a.href); break;
       }
       case 'tour': setShowTour(true); break;
       default:
@@ -714,93 +699,50 @@ function EditorContent() {
 
   return (
     <div className={`editor-layout ${zenMode ? 'zen-mode' : ''}`} style={{ height: viewportHeight }}>
-      {/* == HEADER ========================================================== */}
       <Header
-        user={user}
-        notifs={notifs}
-        unreadCount={notifs.filter(n => !n.read).length}
+      user={user}
+        fileName={activeTab.title}
+        setFileName={(n) => updateActiveTab({ title: n, slug: n.toLowerCase().replace(/\s+/g, '-') })}
         isDark={isDark}
-        onToggleTheme={() => handleCommand('theme')}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        isSaved={activeTab.isSaved}
+        status={activeTab.status}
+        zenMode={zenMode}
+        focusMode={focusMode}
+        onNew={handleAddNew}
+        onOpenFile={() => handleCommand('open')}
+        onExportMd={() => handleCommand('export-md')}
+        onExportHtml={() => handleCommand('export-html')}
         onOpenSearch={() => editorRef.current?.openSearch()}
+        onOpenTour={() => setShowTour(true)}
+        onOpenCmd={() => setShowCmd(true)}
+        onToggleZen={() => setZenMode(!zenMode)}
+        onToggleFocus={() => setFocusMode(!focusMode)}
         onOpenSettings={() => setShowSettings(true)}
-        onMarkAllRead={handleMarkAllRead}
+        onToggleTheme={() => handleCommand('theme')}
+        onOpenMetadata={() => setShowMetadata(true)}
         onToast={setToastMsg}
-      >
-        {/* Editor-specific actions */}
-        <div className="flex items-center gap-2 flex-1">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className={`db-icon-btn ${sidebarOpen ? 'active' : ''}`}
-            title="Toggle Sidebar"
-          >
-            <X size={13} style={{ transform: sidebarOpen ? 'none' : 'rotate(45deg)' }} />
-          </button>
-          
-          <div className="db-vr" />
-
-          <div className="flex items-center gap-2 overflow-hidden">
-            <input
-              type="text"
-              value={activeTab.title}
-              onChange={(e) => updateActiveTab({ title: e.target.value, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })}
-              className="bg-transparent border-none text-[13px] font-bold text-[var(--ink)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] px-1 truncate"
-              style={{ fontFamily: 'var(--ff-display)' }}
-            />
-            {activeTab.isSaved ? (
-              <span className="text-[10px] text-[var(--mid)] font-mono uppercase tracking-tighter opacity-50">Saved</span>
-            ) : (
-              <span className="text-[10px] text-[var(--accent)] font-mono uppercase tracking-tighter flex items-center gap-1">
-                <span className="w-1 h-1 bg-[var(--accent)] rounded-full animate-pulse" /> Modified
-              </span>
-            )}
-          </div>
-
-          <div style={{ flex: 1 }} />
-
-          <div className="hidden md:flex items-center gap-1 bg-[var(--accent-sub)] p-0.5 border border-[var(--rule)]">
-            <button
-              onClick={() => setViewMode('editor')}
-              className={`db-filter-btn px-2 py-0.5 text-[9px] ${viewMode === 'editor' ? 'active' : ''}`}
-            >
-              WRITE
-            </button>
-            <button
-              onClick={() => setViewMode('preview')}
-              className={`db-filter-btn px-2 py-0.5 text-[9px] ${viewMode === 'preview' ? 'active' : ''}`}
-            >
-              READ
-            </button>
-            <button
-              onClick={() => setViewMode('split')}
-              className={`db-filter-btn px-2 py-0.5 text-[9px] ${viewMode === 'split' ? 'active' : ''}`}
-            >
-              SPLIT
-            </button>
-          </div>
-
-          <button
-            onClick={() => setZenMode(!zenMode)}
-            className={`db-icon-btn ${zenMode ? 'active' : ''}`}
-            title="Zen Mode"
-          >
-            <Eye size={13} />
-          </button>
-        </div>
-      </Header>
+        collaborators={collaborators}
+        mobileMenuOpen={mobileMenuOpen}
+        setMobileMenuOpen={setMobileMenuOpen}
+      />
 
       <div className="w-full h-px bg-[var(--rule)] flex-shrink-0" />
 
       <div className={`hidden md:block ${zenMode ? 'hidden' : ''}`}>
-        <TabBar
-          tabs={tabs}
-          activeTabId={activeTabId}
-          onSwitch={setActiveTabId}
-          onClose={handleCloseTab}
-          onNew={handleAddNew}
+        <TabBar 
+          tabs={tabs} 
+          activeTabId={activeTabId} 
+          onSwitch={setActiveTabId} 
+          onClose={handleCloseTab} 
+          onNew={handleAddNew} 
         />
       </div>
 
-      {/* Mobile Tab Bar */}
+      {/* Mobile Tab Bar - Simplified */}
       <div className="md:hidden border-b border-[var(--rule)] bg-[var(--cream)] overflow-x-auto flex">
         {tabs.map((tab) => {
           const isActive = tab.id === activeTabId;
@@ -819,68 +761,64 @@ function EditorContent() {
         </button>
       </div>
 
-      <div ref={splitRef} className="editor-body relative">
-        {/* Outline Sidebar */}
-        {sidebarOpen && (
-          <OutlineSidebar
-            content={activeTab.content}
-            isOpen={sidebarOpen}
-            activeLineNumber={activeLine}
-            onHeadingClick={(line) => { editorRef.current?.scrollToLine(line); setSidebarOpen(false); }}
-            onClose={() => setSidebarOpen(false)}
-            width={isMobile ? 280 : sidebarWidth}
-          />
-        )}
+<div ref={splitRef} className="editor-body relative">
+  {/* Only render sidebar when open */}
+  {sidebarOpen && (
+    <OutlineSidebar
+      content={activeTab.content}
+      isOpen={sidebarOpen}
+      activeLineNumber={activeLine}
+      onHeadingClick={(line) => { editorRef.current?.scrollToLine(line); setSidebarOpen(false); }}
+      onClose={() => setSidebarOpen(false)}
+      width={isMobile ? 280 : sidebarWidth}
+    />
+  )}
+  
+  {sidebarOpen && !isMobile && (
+    <div
+      className="hidden md:block"
+      style={{
+        width: 5, 
+        flexShrink: 0, 
+        cursor: 'col-resize', 
+        position: 'relative',
+        background: sidebarDragging ? 'var(--accent-dim)' : 'transparent',
+        borderRight: `1px solid ${sidebarDragging ? 'var(--accent)' : 'var(--rule)'}`,
+        zIndex: 21,
+      }}
+      onMouseDown={(e) => {
+        e.preventDefault();
+        setSidebarDragging(true);
+        const startX = e.clientX;
+        const startW = sidebarWidth;
+        const move = (m: MouseEvent) => {
+          const rect = splitRef.current?.getBoundingClientRect();
+          if (rect) {
+            const next = Math.min(Math.max(startW + (m.clientX - startX), 160), 420);
+            setSidebarWidth(next);
+          }
+        };
+        const up = () => {
+          setSidebarDragging(false);
+          window.removeEventListener('mousemove', move);
+          window.removeEventListener('mouseup', up);
+        };
+        window.addEventListener('mousemove', move);
+        window.addEventListener('mouseup', up);
+      }}
+    />
+  )}
 
-        {/* Sidebar resize handle */}
-        {sidebarOpen && !isMobile && (
-          <div
-            className="hidden md:block"
-            style={{
-              width: 5,
-              flexShrink: 0,
-              cursor: 'col-resize',
-              position: 'relative',
-              background: sidebarDragging ? 'var(--accent-dim)' : 'transparent',
-              borderRight: `1px solid ${sidebarDragging ? 'var(--accent)' : 'var(--rule)'}`,
-              zIndex: 21,
-            }}
-            onMouseDown={(e) => {
-              e.preventDefault();
-              setSidebarDragging(true);
-              const startX = e.clientX;
-              const startW = sidebarWidth;
-              const move = (m: MouseEvent) => {
-                const rect = splitRef.current?.getBoundingClientRect();
-                if (rect) {
-                  const next = Math.min(Math.max(startW + (m.clientX - startX), 160), 420);
-                  setSidebarWidth(next);
-                }
-              };
-              const up = () => {
-                setSidebarDragging(false);
-                window.removeEventListener('mousemove', move);
-                window.removeEventListener('mouseup', up);
-              };
-              window.addEventListener('mousemove', move);
-              window.addEventListener('mouseup', up);
-            }}
-          />
-        )}
-
-        <div className="flex flex-col md:flex-col flex-1 overflow-hidden min-w-0">
-          {/* Desktop toolbar — sits above editor pane */}
-          <div className="hidden md:block">
-            <Toolbar onAction={handleCommand} focusMode={focusMode} viewMode={viewMode} isMobile={false} />
-          </div>
+        <div className="flex flex-col-reverse md:flex-col flex-1 overflow-hidden min-w-0">
+          <Toolbar onAction={handleCommand} focusMode={focusMode} viewMode={viewMode} isMobile={isMobile} />
 
           <div className="flex flex-1 overflow-hidden relative">
-            <div
+            <div 
               className="border-r border-[var(--rule)] min-w-0"
-              style={{
-                width: isMobile
-                  ? (viewMode === 'preview' ? '0%' : '100%')
-                  : (viewMode === 'split' ? `${splitPct}%` : (viewMode === 'editor' ? '100%' : '0%')),
+              style={{ 
+                width: isMobile 
+                  ? (viewMode === 'preview' ? '0%' : '100%') 
+                  : (viewMode === 'split' ? `${splitPct}%` : (viewMode === 'editor' ? '100%' : '0%')), 
                 overflow: 'hidden',
                 display: isMobile && viewMode === 'preview' ? 'none' : 'block'
               }}
@@ -894,37 +832,31 @@ function EditorContent() {
                 onCursorChange={(l, c) => { setCursorLine(l); setCursorCol(c); setActiveLine(l); }}
                 onReady={(api) => { editorRef.current = api; }}
               />
-              {/* Spacer so content isn't hidden behind the fixed mobile toolbar */}
-              {isMobile && <div style={{ height: 44 }} />}
             </div>
 
             {!isMobile && viewMode === 'split' && (
-              <div
+              <div 
                 className={`split-handle ${dragging ? 'active' : ''}`}
                 style={{ left: `${splitPct}%` }}
-                onMouseDown={() => {
+                onMouseDown={(e) => {
                   setDragging(true);
                   const move = (m: MouseEvent) => {
                     const rect = splitRef.current?.getBoundingClientRect();
                     if (rect) setSplitPct(Math.min(Math.max((m.clientX - rect.left) / rect.width * 100, 20), 80));
                   };
-                  const up = () => {
-                    setDragging(false);
-                    window.removeEventListener('mousemove', move);
-                    window.removeEventListener('mouseup', up);
-                  };
+                  const up = () => { setDragging(false); window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); };
                   window.addEventListener('mousemove', move);
                   window.addEventListener('mouseup', up);
                 }}
               />
             )}
 
-            <div
+            <div 
               className="bg-[var(--cream)] prose-editor min-w-0"
-              style={{
-                flex: isMobile
-                  ? (viewMode === 'editor' ? 0 : 1)
-                  : (viewMode === 'preview' ? 1 : (viewMode === 'split' ? 1 : 0)),
+              style={{ 
+                flex: isMobile 
+                  ? (viewMode === 'editor' ? 0 : 1) 
+                  : (viewMode === 'preview' ? 1 : (viewMode === 'split' ? 1 : 0)), 
                 overflow: 'hidden',
                 display: isMobile && viewMode === 'editor' ? 'none' : 'block',
                 width: isMobile && viewMode === 'editor' ? '0%' : 'auto'
@@ -937,25 +869,9 @@ function EditorContent() {
           </div>
         </div>
 
-        {/* Mobile toolbar — fixed just above the keyboard */}
-        {isMobile && (
-          <div
-            className="md:hidden"
-            style={{
-              position: 'fixed',
-              left: 0,
-              right: 0,
-              bottom: keyboardHeight,
-              zIndex: 60,
-            }}
-          >
-            <Toolbar onAction={handleCommand} focusMode={focusMode} viewMode={viewMode} isMobile={true} />
-          </div>
-        )}
-
         {showMetadata && (
           <div className="db-overlay" onClick={() => setShowMetadata(false)}>
-            <div
+            <div 
               className="db-modal"
               style={{ maxWidth: isMobile ? 'calc(100vw - 32px)' : '400px', margin: isMobile ? '16px' : 'auto' }}
               onClick={e => e.stopPropagation()}
@@ -1004,14 +920,11 @@ function EditorContent() {
 
       {showCmd && <CommandPalette isDark={isDark} onClose={() => setShowCmd(false)} onCommand={handleCommand} isMobile={isMobile} />}
       {showTour && <GuidedTour onClose={() => setShowTour(false)} isMobile={isMobile} />}
-
+      
       {confirm && (
         <div className="db-overlay">
-          <div
-            className="db-modal"
-            style={{ maxWidth: isMobile ? 'calc(100vw - 32px)' : '480px', margin: isMobile ? '16px' : 'auto', borderLeft: '3px solid #b03030' }}
-          >
-            <ConfirmModal
+          <div className="db-modal" style={{ maxWidth: isMobile ? 'calc(100vw - 32px)' : '480px', margin: isMobile ? '16px' : 'auto', borderLeft: '3px solid #b03030' }}>
+             <ConfirmModal
               title={confirm.title}
               message={confirm.message}
               confirmLabel={confirm.confirmLabel}
@@ -1023,19 +936,13 @@ function EditorContent() {
         </div>
       )}
 
-      {toastMsg && <Toast message={toastMsg} onDismiss={() => setToastMsg(null)} />}
+      {toastMsg && (
+        <Toast message={toastMsg} onDismiss={() => setToastMsg(null)} />
+      )}
 
       {showSettings && (
         <div className="db-overlay">
-          <div
-            className="db-modal"
-            style={{
-              maxWidth: isMobile ? 'calc(100vw - 32px)' : '600px',
-              margin: isMobile ? '16px' : 'auto',
-              maxHeight: isMobile ? 'calc(100vh - 32px)' : '90vh',
-              overflow: 'auto',
-            }}
-          >
+          <div className="db-modal" style={{ maxWidth: isMobile ? 'calc(100vw - 32px)' : '600px', margin: isMobile ? '16px' : 'auto', maxHeight: isMobile ? 'calc(100vh - 32px)' : '90vh', overflow: 'auto' }}>
             <SettingsModal
               settings={appSettings}
               onClose={() => setShowSettings(false)}
