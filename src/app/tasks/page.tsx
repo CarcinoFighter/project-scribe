@@ -56,7 +56,16 @@ import TaskSubmissionModal from '@/components/TaskSubmissionModal';
 import MediaViewerModal from '@/components/MediaViewerModal';
 import TaskDetailsModal from '@/components/TaskDetailsModal';
 import MultiPersonSelect from '@/components/MultiPersonSelect';
+import Header from '@/components/Header';
+import { Notif } from '@/components/NotifPanel';
+import { Sidebar } from '@/components/Sidebar';
 import { DEPARTMENTS } from '@/config/departments';
+import {
+  loadSettings,
+  saveSettings,
+  applySettings,
+  type AppSettings,
+} from '@/components/SettingsModal';
 
 // Custom SVG icons for departments (where we have them in public/icons)
 const DEPT_CUSTOM_ICON: Record<string, string> = {
@@ -168,25 +177,17 @@ interface ReviewDoc {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    done: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20',
-    in_progress: 'text-blue-500 bg-blue-500/10 border-blue-500/20',
-    in_review: 'text-amber-500 bg-amber-500/10 border-amber-500/20',
-    ready_for_proofreading: 'text-purple-500 bg-purple-500/10 border-purple-500/20',
-    proofreading: 'text-indigo-500 bg-indigo-500/10 border-indigo-500/20',
-    ready_for_upload: 'text-cyan-500 bg-cyan-500/10 border-cyan-500/20',
-  };
   const label = status.replace(/_/g, ' ');
   return (
-    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border flex-shrink-0 ${map[status] || map.todo}`}>
+    <span className={`db-status ${status}`}>
       {label}
     </span>
   );
 }
 
 function PriorityDot({ priority }: { priority: string }) {
-  const colors: Record<string, string> = { high: 'bg-red-500', normal: 'bg-amber-400', low: 'bg-emerald-500' };
-  return <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${colors[priority] || 'bg-gray-400'}`} title={priority} />;
+  const bg = priority === 'high' ? 'var(--red, #b03030)' : priority === 'normal' ? 'var(--mid)' : 'var(--rule)';
+  return <div style={{ width: 4, height: 4, background: bg }} title={priority} />;
 }
 
 function TaskRow({ task, onCompleteClick, onDeleteClick, completing, deleting, isAdmin, showEditor, onInit, onTaskClick, currentUserId }: {
@@ -211,9 +212,9 @@ function TaskRow({ task, onCompleteClick, onDeleteClick, completing, deleting, i
   };
 
   return (
-    <div className={`flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3 border-b border-[var(--border)] last:border-b-0 hover:bg-[var(--bg-deep)] transition-colors group ${isDone ? 'opacity-55' : ''}`}>
+    <div className={`db-card flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3 border-b border-[var(--border)] last:border-b-0 group ${isDone ? 'opacity-55' : ''}`}>
       <div className="flex items-center gap-3 flex-1 min-w-0">
-        <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${isDone ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>
+        <div className={`w-7 h-7 flex items-center justify-center flex-shrink-0 ${isDone ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>
           {isDone ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
         </div>
         
@@ -249,19 +250,19 @@ function TaskRow({ task, onCompleteClick, onDeleteClick, completing, deleting, i
                 {task.assignees.slice(0, 3).map((member, idx) => (
                   <div 
                     key={member.id} 
-                    className="w-5 h-5 rounded-full border border-[var(--bg)] bg-gradient-to-br from-[var(--accent)] to-[var(--accent-hover)] flex items-center justify-center text-white text-[8px] font-bold flex-shrink-0 relative transition-transform hover:-translate-y-0.5 overflow-hidden"
+                    className="db-avatar"
                     style={{ zIndex: 10 - idx }}
                     title={member.name}
                   >
                     {member.avatar_url ? (
-                      <Image src={member.avatar_url} alt={member.name} width={20} height={20} className="rounded-full" />
+                      <img src={member.avatar_url} alt={member.name} width={20} height={20} />
                     ) : (
                       member.name?.split(' ').map(n => n[0]).join('').slice(0,2)
                     )}
                   </div>
                 ))}
                 {task.assignees.length > 3 && (
-                  <div className="w-5 h-5 rounded-full border border-[var(--bg)] bg-[var(--surface-2)] flex items-center justify-center text-[var(--text-4)] text-[7px] font-bold z-0">
+                  <div className="db-avatar" style={{ background: 'var(--surface-2)', color: 'var(--text-4)' }}>
                     +{task.assignees.length - 3}
                   </div>
                 )}
@@ -283,10 +284,13 @@ function TaskRow({ task, onCompleteClick, onDeleteClick, completing, deleting, i
             <button
               onClick={() => onCompleteClick(task)}
               disabled={completing === task.id || deleting === task.id}
-              className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 text-[10px] font-bold uppercase tracking-wider rounded-[var(--r-md)] border border-emerald-500/20 transition-all disabled:opacity-50 flex-shrink-0"
+              className="db-btn px-2.5 py-1"
+              style={{ background: 'var(--accent-sub)', color: 'var(--accent)', clipPath: 'none' }}
             >
-              {completing === task.id ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
-              <span>{task.category === 'task' ? 'Submit' : 'Done'}</span>
+              <div className="flex items-center gap-1">
+                {completing === task.id ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
+                <span>{task.category === 'task' ? 'Submit' : 'Done'}</span>
+              </div>
             </button>
           )}
 
@@ -294,10 +298,10 @@ function TaskRow({ task, onCompleteClick, onDeleteClick, completing, deleting, i
             <button
               onClick={(e) => { e.stopPropagation(); onDeleteClick(task); }}
               disabled={deleting === task.id || completing === task.id}
-              className="flex items-center gap-1 px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[10px] font-bold uppercase tracking-wider rounded-[var(--r-md)] border border-red-500/20 transition-all disabled:opacity-50 flex-shrink-0"
+              className="db-icon-btn"
               title="Delete task"
             >
-              {deleting === task.id ? <Loader2 size={10} className="animate-spin" /> : <Trash2 size={10} />}
+              {deleting === task.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
             </button>
           )}
 
@@ -305,15 +309,17 @@ function TaskRow({ task, onCompleteClick, onDeleteClick, completing, deleting, i
             task.document_id ? (
               <button
                 onClick={handleTitleClick}
-                className="flex items-center gap-1 px-2.5 py-1 bg-[var(--accent-subtle2)] hover:bg-[var(--accent-subtle)] text-[var(--accent)] text-[10px] font-bold uppercase tracking-wider rounded-[var(--r-md)] border border-[var(--accent-subtle)] transition-all flex-shrink-0"
+                className="db-btn px-3 py-1"
               >
-                Edit
-                <ChevronR size={10} />
+                <div className="flex items-center gap-1">
+                  <span>Edit</span>
+                  <ChevronR size={10} />
+                </div>
               </button>
             ) : (
               <button
                 onClick={() => onInit(task.id)}
-                className="flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 text-[10px] font-bold uppercase tracking-wider rounded-[var(--r-md)] border border-amber-500/20 transition-all flex-shrink-0"
+                className="db-ghost"
                 title="Create internal document for this assignment"
               >
                 Init
@@ -344,7 +350,7 @@ function ReviewQueue({
     <div className="mb-8 anim-fade-in">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center">
+          <div className="w-8 h-8 bg-amber-500/10 flex items-center justify-center">
             <ShieldCheck size={16} className="text-amber-500" />
           </div>
           <div>
@@ -352,8 +358,8 @@ function ReviewQueue({
             <p className="text-xs text-[var(--text-4)]">Documents awaiting administrator approval</p>
           </div>
         </div>
-        <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-          {docs.length} pending
+        <span className="db-status review">
+          {docs.length} PENDING
         </span>
       </div>
 
@@ -368,9 +374,9 @@ function ReviewQueue({
           const bg = doc.type === 'blogs' ? 'bg-[#9875c118]' : doc.type === 'survivor_stories' ? 'bg-[#10b98118]' : doc.type === 'tasks' ? 'bg-amber-500/10' : 'bg-[#3b82f618]';
 
           return (
-            <div key={doc.id} className="glass-raised grain p-4 rounded-[var(--r-lg)] border border-[var(--border-med)] flex flex-col gap-3 hover:border-[var(--accent-subtle)] transition-colors group">
+            <div key={doc.id} className="db-card p-4 border border-[var(--border-med)] flex flex-col gap-3 group">
               <div className="flex items-start justify-between gap-3">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${bg}`}>
+                <div className={`w-8 h-8 flex items-center justify-center flex-shrink-0 ${bg}`}>
                   <Icon size={16} className={color} />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -391,11 +397,11 @@ function ReviewQueue({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-deep)] rounded-[var(--r-md)] border border-[var(--border-med)]">
+              <div className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-deep)] border border-[var(--border-med)]">
                 {doc.author?.avatar_url ? (
-                  <Image src={doc.author.avatar_url} alt={doc.author.name || ''} width={18} height={18} className="rounded-full" />
+                  <img src={doc.author.avatar_url} alt={doc.author.name || ''} width={18} height={18} />
                 ) : (
-                  <div className="w-[18px] h-[18px] rounded-full bg-[var(--accent-subtle)] flex items-center justify-center text-[7px] font-bold text-[var(--accent)]">
+                  <div className="w-[18px] h-[18px] bg-[var(--accent-subtle)] flex items-center justify-center text-[7px] font-bold text-[var(--accent)]">
                     {doc.author?.name?.[0] || 'U'}
                   </div>
                 )}
@@ -412,19 +418,24 @@ function ReviewQueue({
                     }
                   }}
                   disabled={doc.type === 'tasks' && !doc.submission_media_url}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-[var(--bg-alt)] hover:bg-[var(--surface-0)] text-[var(--text-3)] text-[10px] font-bold uppercase tracking-wider rounded-[var(--r-md)] border border-[var(--border-med)] transition-all"
+                  className="flex-1 db-ghost"
                 >
-                  <Eye size={12} />
-                  View
+                  <div className="flex items-center gap-1.5 justify-center">
+                    <Eye size={12} />
+                    View
+                  </div>
                 </button>
                 <button
                   onClick={() => onApprove(doc)}
                   disabled={approving === doc.id || cannotApprove}
                   title={cannotApprove ? 'You cannot approve your own work' : 'Approve and Publish'}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-green-500/10 hover:bg-green-500 text-green-500 hover:text-white text-[10px] font-bold uppercase tracking-wider rounded-[var(--r-md)] border border-green-500/20 transition-all ${cannotApprove ? 'opacity-30 grayscale cursor-not-allowed' : ''}`}
+                  className={`flex-1 db-btn bg-green-500/10 hover:bg-green-500 text-green-500 hover:text-white border border-green-500/20 ${cannotApprove ? 'opacity-30 grayscale cursor-not-allowed' : ''}`}
+                  style={{ clipPath: 'none' }}
                 >
-                  {approving === doc.id ? <Loader2 size={12} className="animate-spin" /> : <ShieldCheck size={12} />}
-                  Approve
+                  <div className="flex items-center gap-1.5 justify-center">
+                    {approving === doc.id ? <Loader2 size={12} className="animate-spin" /> : <ShieldCheck size={12} />}
+                    Approve
+                  </div>
                 </button>
               </div>
             </div>
@@ -449,7 +460,7 @@ function ProofreaderQueue({
     <div className="mb-8 anim-fade-in">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-purple-500/10 flex items-center justify-center">
+          <div className="w-8 h-8 bg-purple-500/10 flex items-center justify-center">
             <PenTool size={16} className="text-purple-500" />
           </div>
           <div>
@@ -457,8 +468,8 @@ function ProofreaderQueue({
             <p className="text-xs text-[var(--text-4)]">Articles assigned to you for proofreading</p>
           </div>
         </div>
-        <span className="bg-purple-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-          {docs.length} assigned
+        <span className="db-status proof">
+          {docs.length} ASSIGNED
         </span>
       </div>
 
@@ -469,9 +480,9 @@ function ProofreaderQueue({
           const bg = doc.type === 'blogs' ? 'bg-[#9875c118]' : doc.type === 'survivor_stories' ? 'bg-[#10b98118]' : 'bg-[#3b82f618]';
 
           return (
-            <div key={doc.id} className="glass-raised grain p-4 rounded-[var(--r-lg)] border border-[var(--border-med)] flex flex-col gap-3 hover:border-[var(--accent-subtle)] transition-colors group">
+            <div key={doc.id} className="db-card p-4 border border-[var(--border-med)] flex flex-col gap-3 group">
               <div className="flex items-start justify-between gap-3">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${bg}`}>
+                <div className={`w-8 h-8 flex items-center justify-center flex-shrink-0 ${bg}`}>
                   <Icon size={16} className={color} />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -482,7 +493,7 @@ function ProofreaderQueue({
                   </h4>
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] text-[var(--text-4)] capitalize">{doc.type.replace('_', ' ')}</span>
-                    <span className="text-[10px] text(--text-4)]">•</span>
+                    <span className="text-[10px] text-[var(--text-4)]">•</span>
                     <span className="text-[10px] text-[var(--text-4)]">by {doc.author?.name || 'Unknown'}</span>
                   </div>
                 </div>
@@ -491,10 +502,13 @@ function ProofreaderQueue({
               <div className="flex items-center gap-2 mt-auto pt-2">
                 <button
                   onClick={() => router.push(`/editor?id=${doc.id}&type=${doc.type}`)}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-purple-500/10 hover:bg-purple-500 text-purple-500 hover:text-white text-[10px] font-bold uppercase tracking-wider rounded-[var(--r-md)] border border-purple-500/20 transition-all font-mono"
+                  className="flex-1 db-btn bg-purple-500/10 hover:bg-purple-500 text-purple-500 hover:text-white border border-purple-500/20"
+                  style={{ clipPath: 'none' }}
                 >
-                  <PenTool size={12} />
-                  Start Proofreading
+                  <div className="flex items-center gap-1.5 justify-center">
+                    <PenTool size={12} />
+                    Start Proofreading
+                  </div>
                 </button>
               </div>
             </div>
@@ -520,7 +534,7 @@ function AssignmentQueue({
     <div className="mb-8 anim-fade-in">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-indigo-500/10 flex items-center justify-center">
+          <div className="w-8 h-8 bg-indigo-500/10 flex items-center justify-center">
             <User size={16} className="text-indigo-500" />
           </div>
           <div>
@@ -528,8 +542,8 @@ function AssignmentQueue({
             <p className="text-xs text-[var(--text-4)]">Articles awaiting proofreader assignment</p>
           </div>
         </div>
-        <span className="bg-indigo-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-          {docs.length} awaiting
+        <span className="db-status todo">
+          {docs.length} AWAITING
         </span>
       </div>
 
@@ -540,9 +554,9 @@ function AssignmentQueue({
           const bg = doc.type === 'blogs' ? 'bg-[#9875c118]' : doc.type === 'survivor_stories' ? 'bg-[#10b98118]' : 'bg-[#3b82f618]';
 
           return (
-            <div key={doc.id} className="glass-raised grain p-4 rounded-[var(--r-lg)] border border-[var(--border-med)] flex flex-col gap-3 hover:border-[var(--accent-subtle)] transition-colors group">
+            <div key={doc.id} className="db-card p-4 border border-[var(--border-med)] flex flex-col gap-3 group">
               <div className="flex items-start justify-between gap-3">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${bg}`}>
+                <div className={`w-8 h-8 flex items-center justify-center flex-shrink-0 ${bg}`}>
                   <Icon size={16} className={color} />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -603,26 +617,26 @@ function SectionTable({
   const done = tasks.filter((t: Assignment) => t.status === 'done');
 
   return (
-    <div className="glass-raised grain rounded-[var(--r-lg)] border border-[var(--border-med)] overflow-hidden mb-4">
+    <div className="db-card border border-[var(--border-med)] overflow-hidden mb-4">
       <div
-        className="flex items-center gap-3 px-4 py-3 bg-[var(--bg-deep)] cursor-pointer select-none"
+        className="flex items-center gap-3 px-4 py-3 bg-[var(--bg-deep)] cursor-pointer select-none border-b border-[var(--border)]"
         onClick={() => setExpanded(e => !e)}
       >
-        <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${section.color}18` }}>
+        <div className="w-7 h-7 flex items-center justify-center flex-shrink-0" style={{ background: `${section.color}18` }}>
           <Icon size={14} style={{ color: section.color }} />
         </div>
         <span className="text-sm font-bold text-[var(--text)] flex-1">{section.label}</span>
 
         {tasks.length > 0 && (
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: `${section.color}18`, color: section.color }}>
-            {pending.length} pending
+          <span className="db-status" style={{ background: `${section.color}18`, color: section.color, border: 'none' }}>
+            {pending.length} PENDING
           </span>
         )}
 
         {isAdmin && (
           <button
             onClick={e => { e.stopPropagation(); onAssign(section.key); }}
-            className="p-1 rounded-md hover:bg-[var(--surface-2)] text-[var(--text-4)] hover:text-[var(--accent)] transition-colors"
+            className="db-icon-btn p-1"
             title={`Assign ${section.label}`}
           >
             <Plus size={14} />
@@ -633,7 +647,7 @@ function SectionTable({
       </div>
 
       {expanded && (
-        <div>
+        <div className="anim-fade-in">
           {tasks.length === 0 ? (
             <div className="py-8 text-center text-[var(--text-4)]">
               <Icon size={22} className="mx-auto mb-2 opacity-30" style={{ color: section.color }} />
@@ -698,22 +712,23 @@ function SectionTable({
 function DepartmentPlaceholder({ dept, onToast }: { dept: typeof DEPARTMENTS[0], onToast: (m: string) => void }) {
   const Icon = dept.icon;
   return (
-    <div className={`rounded-[var(--r-lg)] border ${dept.border} overflow-hidden mb-4`}>
-      <div className="flex items-center gap-3 px-4 py-3" style={{ background: 'var(--bg-deep)' }}>
-        <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${dept.bg}`}>
+    <div className="db-card border border-[var(--border-med)] overflow-hidden mb-4">
+      <div className="flex items-center gap-3 px-4 py-3 bg-[var(--bg-deep)] border-b border-[var(--border)]">
+        <div className="w-7 h-7 flex items-center justify-center flex-shrink-0" style={{ background: `${dept.color}18` }}>
           <Icon size={14} className={dept.color} />
         </div>
-        <span className="text-sm font-bold text-[var(--text)] flex-1">{dept.label}</span>
+        <span className="text-sm font-bold text-[var(--text)] flex-1">{dept.label} BOARD</span>
         <button 
           onClick={() => onToast('Department tables coming soon')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--r-md)] text-xs font-bold border transition-colors ${dept.border} ${dept.color} ${dept.bg} hover:opacity-80`}
+          className="db-ghost px-3 py-1.5"
         >
           <Plus size={12} />
           Add Table
         </button>
       </div>
-      <div className="py-8 text-center text-[var(--text-4)] border-t border-[var(--border)]">
-        <p className="text-xs">No tables configured for this department yet.</p>
+      <div className="py-12 text-center text-[var(--text-4)] border-t border-[var(--rule)]">
+        <Icon size={28} className="mx-auto mb-3 opacity-20" />
+        <p className="text-xs font-medium italic">This department board is currently under construction.</p>
       </div>
     </div>
   );
@@ -732,10 +747,7 @@ export default function WorkPage() {
   const [showAssignModal, setShowAssignModal] = useState<{ category?: string; department?: string } | null>(null);
   const [activeDeptKey, setActiveDeptKey] = useState("Writers' Block");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { isDark } = useTheme();
-  const [showAccountMenu, setShowAccountMenu] = useState(false);
-  const [accountMenuPos, setAccountMenuPos] = useState<{ top: number; right: number } | null>(null);
-  const accountBtnRef = useRef<HTMLButtonElement>(null);
+  const { isDark, toggleTheme } = useTheme();
   
   const isWritersBlock = activeDeptKey === "Writers' Block";
   const [completing, setCompleting] = useState<string | null>(null);
@@ -746,12 +758,29 @@ export default function WorkPage() {
   const [viewingMedia, setViewingMedia] = useState<{ url: string; title: string } | null>(null);
   const [selectedTask, setSelectedTask] = useState<Assignment | null>(null);
   const [assigningProofreader, setAssigningProofreader] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [settings, setSettings] = useState<AppSettings>(() => loadSettings());
+  const [counts, setCounts] = useState<{ articles: number; blogs: number }>({ articles: 0, blogs: 0 });
+  const [starredDocs, setStarredDocs] = useState<any[]>([]);
+  const [notifs, setNotifs] = useState<Notif[]>([]);
+
+  const handleMarkAllRead = useCallback(() => {
+    setNotifs(ns => ns.map(n => ({ ...n, read: true })));
+    setToast('All notifications read');
+  }, []);
 
   useEffect(() => {
     if (!loadingUser && user === null) {
       router.push('/login');
     }
   }, [user, loadingUser, router]);
+
+  // Apply saved settings on mount (theme, accent colour, fonts, etc.)
+  useEffect(() => {
+    const s = loadSettings();
+    setSettings(s);
+    applySettings(s);
+  }, []);
 
   const fetchWork = useCallback(async () => {
     setLoading(true);
@@ -990,176 +1019,156 @@ export default function WorkPage() {
 
   useEffect(() => {
     (window as any).openTaskDetails = (task: Assignment) => setSelectedTask(task);
+    
+    // Fetch counts for sidebar
+    const fetchCounts = async () => {
+      try {
+        const r = await fetch('/api/documents');
+        if (r.ok) {
+          const d = await r.json();
+          const docs = d.documents || [];
+          setCounts({
+            articles: docs.filter((doc: any) => doc.type === 'cancer_docs' || doc.type === 'survivor_stories').length,
+            blogs: docs.filter((doc: any) => doc.type === 'blogs').length
+          });
+          setStarredDocs(docs.filter((doc: any) => doc.starred));
+        }
+      } catch {}
+    };
+    fetchCounts();
   }, []);
 
+  const isFullSidebar  = isWritersBlock || activeDeptKey === 'Leadership';
+
   return (
-    <div className={`app-bg min-h-screen flex flex-col ${isDark ? 'dark' : ''}`}>
-      {/* Navigation / Header (Unified Style) */}
-        <header 
-          className="h-[52px] border-b border-[var(--border-med)] bg-[var(--surface-0)] backdrop-blur-xl px-4 flex items-center justify-between sticky top-0 z-[200] shadow-sm anim-slide-down"
-          style={{ 
-            boxShadow: 'inset 0 -1px 0 var(--border), 0 1px 12px rgba(0,0,0,0.06)' 
-          }}
-        >
-          <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <Image src="/logo.svg" alt="Carcino" width={16} height={20} style={{ height: 'auto' }} priority />
-              <span className="text-[12.5px] font-bold text-[var(--text-4)] uppercase tracking-tight">
-                <span className="hidden sm:inline">Carcino </span>Vantage
-              </span>
-            </Link>
-
-            <div className="w-[1px] h-4 bg-[var(--border-med)] mx-0.5" />
-
-            {/* Department Selector Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="flex items-center gap-1.5 p-1 px-2.5 hover:bg-[var(--bg-deep)] rounded-[var(--r-md)] border border-transparent hover:border-[var(--border-med)] text-[var(--text-3)] transition-all"
-                title="Switch Department"
-              >
-                <Layers size={13} strokeWidth={2.2} className="text-[var(--accent)]" />
-                <span className="text-[12px] font-bold tracking-tight">{activeDeptKey}</span>
-                <ChevronR size={10} className={`ml-1 opacity-40 transition-transform ${isMenuOpen ? 'rotate-90' : 'rotate-0'}`} />
-              </button>
-
-              {isMenuOpen && (
-                <>
-                  <div className="fixed inset-0 z-[250]" onClick={() => setIsMenuOpen(false)} />
-                  <div className="absolute top-full left-0 mt-2 w-52 p-1.5 bg-[var(--bg-alt)] border border-[var(--border-strong)] rounded-[var(--r-lg)] shadow-2xl z-[300] anim-scale-up">
-                    <div className="p-2 border-b border-[var(--border-med)] mb-1.5">
-                       <div className="flex items-center gap-2">
-                        <Layers size={11} strokeWidth={2.5} className="text-[var(--accent)]" />
-                        <span className="text-[9px] font-black uppercase tracking-widest text-[var(--text-4)]">Select Department</span>
-                      </div>
-                    </div>
-                    <div className="space-y-0.5">
-                      {DEPARTMENTS.map(dept => {
-                        const isActive = activeDeptKey === dept.key;
-                        const Icon = dept.icon;
-                        return (
-                          <button
-                            key={dept.key}
-                            onClick={() => { setActiveDeptKey(dept.key); setIsMenuOpen(false); }}
-                            className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-[var(--r-md)] text-[12.5px] font-bold text-left transition-all ${isActive ? 'text-[var(--accent)] bg-[var(--accent-subtle2)]' : 'text-[var(--text-4)] hover:text-[var(--text)] hover:bg-[var(--bg-deep)]'}`}
-                          >
-                            <Icon size={13} className={isActive ? dept.color : 'text-current'} />
-                            {dept.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {isAdmin && (
-              <button 
-                onClick={() => setShowAssignModal({ department: activeDeptKey })}
-                className="hidden sm:flex p-1.5 rounded-lg hover:bg-[var(--accent-subtle)] text-[var(--text-4)] hover:text-[var(--accent)] transition-all"
-                title="Assign Task"
-              >
-                <Plus size={16} strokeWidth={2} />
-              </button>
-            )}
-            
-            <div className="w-[1px] h-4 bg-[var(--border-med)] mx-1" />
-
-            <button
-              ref={accountBtnRef}
-              onClick={() => {
-                const r = accountBtnRef.current?.getBoundingClientRect();
-                if (r) setAccountMenuPos({ top: r.bottom + 6, right: window.innerWidth - r.right });
-                setShowAccountMenu(!showAccountMenu);
-              }}
-              className="p-0.5 rounded-full hover:ring-2 hover:ring-[var(--accent-subtle)] transition-all"
-            >
-              {user?.avatar_url ? (
-                <div className="w-6 h-6 rounded-full overflow-hidden border border-[var(--border-med)]">
-                  <Image src={user.avatar_url} alt="Profile" width={24} height={24} />
-                </div>
-              ) : (
-                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--accent-hover)] flex items-center justify-center text-white text-[9px] font-bold">
-                  {user?.name?.split(' ').map((n: any) => n[0]).join('').slice(0, 2) || 'S'}
-                </div>
-              )}
-            </button>
-          </div>
-        </header>
-
-        {/* Account Menu Portal */}
-        {showAccountMenu && accountMenuPos && (
-          <div 
-            className="fixed z-[9999]" 
-            style={{ top: accountMenuPos.top, right: accountMenuPos.right }}
-            onMouseLeave={() => setShowAccountMenu(false)}
+    <div className={`db-root ${isDark ? 'dark' : ''}`}>
+      {/* == HEADER ========================================================== */}
+      <Header
+        user={user}
+        notifs={notifs}
+        unreadCount={notifs.filter(n => !n.read).length}
+        isDark={isDark}
+        onToggleTheme={toggleTheme}
+        onOpenSearch={() => { /* Use global search or page search? For now, we'll keep it consistent */ }}
+        onOpenSettings={() => setShowSettings(true)}
+        onMarkAllRead={handleMarkAllRead}
+        onToast={(m) => setToast(m)}
+      >
+        {/* Department Selector — specific to Tasks page */}
+        <div className="relative">
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="db-ghost px-2 py-1 flex items-center gap-1.5"
           >
-            <AccountMenu 
-              user={user} 
-              onClose={() => setShowAccountMenu(false)} 
-              onToast={(m) => setToast(m)} 
-            />
-          </div>
-        )}
+            <Layers size={13} className="text-[var(--accent)]" />
+            <span className="text-[11px] font-bold uppercase tracking-tight">{activeDeptKey}</span>
+            <ChevronR size={10} className={`ml-1 transition-transform ${isMenuOpen ? 'rotate-90' : 'rotate-0'}`} />
+          </button>
 
-        <div className="flex flex-col flex-1 overflow-hidden">
-        {/* Main Content */}
-        <main className="page-main-content flex-1 p-6 overflow-y-auto">
+          {isMenuOpen && (
+            <>
+              <div className="fixed inset-0 z-[250]" onClick={() => setIsMenuOpen(false)} />
+              <div className="absolute top-full left-0 mt-1 w-52 bg-[var(--paper)] border border-[var(--rule)] shadow-xl z-[300]" style={{ borderTop: '2px solid var(--accent)' }}>
+                <div className="p-2 border-b border-[var(--rule)]">
+                  <span className="db-cap">Select Board</span>
+                </div>
+                <div className="p-1">
+                  {DEPARTMENTS.map(dept => {
+                    const isActive = activeDeptKey === dept.key;
+                    return (
+                      <button
+                        key={dept.key}
+                        onClick={() => { setActiveDeptKey(dept.key); setIsMenuOpen(false); }}
+                        className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-[11px] font-bold text-left hover:bg-[var(--accent-sub)] ${isActive ? 'text-[var(--accent)]' : 'text-[var(--mid)]'}`}
+                      >
+                        <dept.icon size={13} className={isActive ? dept.color : 'text-current'} />
+                        {dept.label.toUpperCase()}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="db-vr hidden sm:block" />
+
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <div className="hidden sm:flex items-center bg-[var(--accent-sub)] p-0.5 border border-[var(--rule)]">
+              <button 
+                onClick={() => setView('my')}
+                className={`db-filter-btn px-3 py-1 ${view === 'my' ? 'active' : ''}`}
+              >
+                My Assignments
+              </button>
+              <button 
+                onClick={() => setView('admin')}
+                className={`db-filter-btn px-3 py-1 ${view === 'admin' ? 'active' : ''}`}
+              >
+                Team Board
+              </button>
+            </div>
+          )}
+        </div>
+      </Header>
+
+      <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+        {/* Sidebar */}
+        <Sidebar 
+          activeNav="tasks"
+          isFullSidebar={isFullSidebar}
+          counts={{
+            articles: counts.articles,
+            blogs: counts.blogs,
+            tasks: (isAdmin && view === 'admin' ? allAssignments : myAssignments).filter(t => t.status !== 'done').length
+          }}
+          starredDocs={starredDocs}
+          onNavClick={(id) => {
+             if (id === 'home') router.push('/');
+             if (id === 'articles') router.push('/');
+             if (id === 'blogs') router.push('/');
+          }}
+        />
+
+        {/* -- MAIN ---------------------------------------------------------- */}
+        <main className="db-main">
           <div className="max-w-5xl mx-auto">
 
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-              <div>
-                <h1 className="text-xl font-bold text-[var(--text)] tracking-tight">
-                  {isAdmin ? (view === 'admin' ? 'All Assignments' : 'My Assignments') : 'Assignments'}
-                </h1>
-                <p className="text-sm text-[var(--text-4)] mt-0.5">
-                  {isAdmin 
-                    ? (view === 'admin' ? 'All tasks assigned across the team, organized by department' : 'Your editorial tasks and content assignments')
-                    : 'Your active editorial tasks and content assignments'}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                {isAdmin && (
-                  <div className="flex p-1 bg-[var(--bg-deep)] rounded-[var(--r-lg)] border border-[var(--border-med)] shadow-sm">
-                    <button 
-                      onClick={() => setView('my')}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-[var(--r-md)] text-xs font-bold transition-all ${view === 'my' ? 'bg-[var(--surface-2)] text-[var(--accent)] shadow-sm border border-[var(--border-med)]' : 'text-[var(--text-4)]'}`}
-                    >
-                      My
-                    </button>
-                    <button 
-                      onClick={() => setView('admin')}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-[var(--r-md)] text-xs font-bold transition-all ${view === 'admin' ? 'bg-[var(--surface-2)] text-[var(--accent)] shadow-sm border border-[var(--border-med)]' : 'text-[var(--text-4)]'}`}
-                    >
-                      All
-                    </button>
-                  </div>
-                )}
+            {/* Editorial Page Title */}
+            <div className="mb-8 anim-fade-in">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-3 border-b-2 border-[var(--ink)]">
+                <div>
+                  <p className="db-page-sub mb-1">Board · {activeDeptKey}</p>
+                  <h1 className="db-page-title">
+                    {isAdmin ? (view === 'admin' ? 'TEAM' : 'MY') : 'ASSIGNMENT'} <em>BOARD</em>
+                  </h1>
+                </div>
                 
-                {isAdmin && (
-                  <button
-                    onClick={() => setShowAssignModal({ department: activeDeptKey })}
-                    className="flex bg-[var(--accent)] text-white px-4 py-2 rounded-[var(--r-md)] text-sm font-semibold items-center gap-2 shadow-lg shadow-[var(--accent-glow)] hover:scale-[1.02] active:scale-[0.98] transition-all"
-                  >
-                    <Plus size={14} />
-                    <span className="hidden sm:inline">Assign Task</span>
-                    <span className="sm:hidden">Assign</span>
-                  </button>
-                )}
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--accent-sub)] border border-[var(--rule)]">
+                    <span className="db-cap text-[var(--accent)] font-bold">{assignments.length}</span>
+                    <span className="db-cap">Total Tasks</span>
+                  </div>
+                  {isAdmin && (
+                    <button
+                       onClick={() => setShowAssignModal({ department: activeDeptKey })}
+                       className="db-btn"
+                    >
+                      <Plus size={12} strokeWidth={2.5} />
+                      NEW TASK
+                    </button>
+                  )}
+                </div>
               </div>
+              <div className="h-px bg-[var(--rule)] mt-1 opacity-50" />
             </div>
-
-
 
             {loading ? (
               <div className="py-20 flex flex-col items-center justify-center gap-4 text-[var(--text-4)]">
-                <div className="w-8 h-8 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
-                <span className="text-sm">Loading assignments...</span>
+                <div className="w-8 h-8 border-2 border-[var(--accent)] border-t-transparent animate-spin" />
+                <span className="db-cap">Loading assignments...</span>
               </div>
             ) : (
               <>
@@ -1194,22 +1203,22 @@ export default function WorkPage() {
                 {/* Specialized Content Section (Writers' Block) */}
                 {isWritersBlock ? (
                   <div className="anim-fade-in">
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between mb-4 mt-8 pb-2 border-b-2 border-[var(--ink)]">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                          <PenTool size={16} className="text-amber-500" />
+                        <div className="w-8 h-8 bg-[var(--accent-sub)] flex items-center justify-center">
+                          <PenTool size={16} className="text-[var(--accent)]" />
                         </div>
                         <div>
-                          <h2 className="text-base font-bold text-[var(--text)]">Editorial Workflow</h2>
-                          <p className="text-xs text-[var(--text-4)]">Articles, blogs, and community stories</p>
+                          <h2 className="db-page-sub font-bold text-[var(--ink)]">Editorial Workflow</h2>
+                          <p className="db-cap text-[8px]">Articles, blogs, and community stories</p>
                         </div>
                       </div>
                       <button 
                         onClick={() => setShowAssignModal({ department: "Writers' Block" })}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--r-md)] text-xs font-bold border border-amber-500/20 text-amber-600 bg-amber-500/10 hover:bg-amber-500/20 transition-colors"
+                        className="db-ghost px-3 py-1 text-[10px]"
                       >
-                        <Plus size={12} />
-                        Add Category / Task
+                        <Plus size={10} />
+                        ADD CATEGORY
                       </button>
                     </div>
 
@@ -1256,10 +1265,10 @@ export default function WorkPage() {
                   </div>
                 ) : (
                   <div className="anim-fade-in">
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between mb-4 mt-8 pb-2 border-b-2 border-[var(--ink)]">
                       <div className="flex items-center gap-3">
                         {DEPT_CUSTOM_ICON[activeDeptKey] ? (
-                          <div className={`w-8 h-8 rounded-xl ${activeDept.bg} flex items-center justify-center p-1.5`}>
+                          <div className={`w-8 h-8 ${activeDept.bg} flex items-center justify-center p-1.5`}>
                             <Image
                               src={DEPT_CUSTOM_ICON[activeDeptKey]}
                               alt={activeDept.label}
@@ -1269,21 +1278,21 @@ export default function WorkPage() {
                             />
                           </div>
                         ) : (
-                          <div className={`w-8 h-8 rounded-xl ${activeDept.bg} flex items-center justify-center`}>
+                          <div className={`w-8 h-8 ${activeDept.bg} flex items-center justify-center`}>
                             <activeDept.icon size={16} className={activeDept.color} />
                           </div>
                         )}
                         <div>
-                          <h2 className="text-base font-bold text-[var(--text)]">{activeDept.label} Board</h2>
-                          <p className="text-xs text-[var(--text-4)]">Active projects and tasks for {activeDept.label}</p>
+                          <h2 className="db-page-sub font-bold text-[var(--ink)]">{activeDept.label} Board</h2>
+                          <p className="db-cap text-[8px]">Active projects and tasks for {activeDept.label}</p>
                         </div>
                       </div>
                       <button 
                         onClick={() => setShowAssignModal({ department: activeDeptKey })}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--r-md)] text-xs font-bold border transition-colors ${activeDept.border} ${activeDept.color} ${activeDept.bg} hover:opacity-80`}
+                         className={`db-ghost px-3 py-1 text-[10px] ${activeDept.color}`}
                       >
-                        <Plus size={12} />
-                        Add Category / Task
+                        <Plus size={10} />
+                        ADD CATEGORY
                       </button>
                     </div>
 
@@ -1352,7 +1361,7 @@ export default function WorkPage() {
       </div>
 
       {showAssignModal !== null && (
-              <AssignTaskModal
+        <AssignTaskModal
           onClose={() => setShowAssignModal(null)}
           onSuccess={() => { setShowAssignModal(null); fetchWork(); }}
           defaultCategory={showAssignModal.category as any}
@@ -1395,28 +1404,23 @@ export default function WorkPage() {
 
       {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
 
-
-
-      {/* Mobile Bottom Navigation */}
-      <nav className="mobile-bottom-nav">
-        <div className="mobile-bottom-nav-inner">
-          {([
-            { id:'home',     label:'Home',    href:'/',    icon:'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z' },
-            { id:'articles', label:'Articles', href:'/',   icon:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8' },
-            { id:'blogs',    label:'Blogs',   href:'/',    icon:'M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z' },
-            { id:'tasks',    label:'Tasks',   href:'/tasks', icon:'M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16' },
-            { id:'team',     label:'Team',    href:'/team', icon:'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75' },
-          ] as const).map(item => {
+      <nav className="db-mobile-nav">
+        <div className="db-mob-inner">
+          {[
+            { id: 'home',     label: 'Overview',    icon: Home,      href: '/'      },
+            { id: 'articles', label: 'Articles',    icon: FileText,  href: '/'      },
+            { id: 'blogs',    label: 'Blog Posts',  icon: BookOpen,  href: '/'      },
+            { id: 'tasks',    label: 'Assignments', icon: Briefcase, href: '/tasks' },
+            { id: 'team',     label: 'Team',        icon: Users,     href: '/team'  },
+          ].map(item => {
             const isActive = item.id === 'tasks';
             const inner = (
               <>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  {item.icon.split(' M').map((d, i) => <path key={i} d={i === 0 ? d : 'M' + d} />)}
-                </svg>
+                <item.icon size={17} strokeWidth={1.8} />
                 <span>{item.label}</span>
               </>
             );
-            return <Link key={item.id} href={item.href} className={`mobile-nav-item${isActive ? ' active' : ''}`} style={{ position:'relative' }}>{inner}</Link>;
+            return <Link key={item.id} href={item.href} className={`db-mob-item${isActive ? ' active' : ''}`}>{inner}</Link>;
           })}
         </div>
       </nav>

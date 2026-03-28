@@ -13,23 +13,23 @@
 
 /* ── Light mode tokens ──────────────────────────────────────── */
 :root {
-  /* Core palette */
-   --ink:         #0a0a0f;
-  --paper:       #faf8ff;
-  --cream:       #ede8f5;
-  --mid:         #6b6278;
-  --rule:        rgba(90, 60, 140, 0.18);
-  --accent:      #7c5fb0;
-  --accent-dim:  rgba(152, 117, 193, 0.12);
-  --accent-sub:  rgba(152, 117, 193, 0.07);
-  --tape-bg:     #1c1528;
+  /* Design system tokens linked to settings variables */
+  --ink:           var(--text);
+  --paper:         var(--bg);
+  --cream:         var(--bg-alt);
+  --mid:           var(--text-4);
+  --rule:          var(--border);
+  --accent:        var(--accent, #9875c1);
+  --accent-dim:    var(--accent-subtle);
+  --accent-sub:    var(--accent-subtle2);
+  --tape-bg:       var(--bg-deep);
 
   /* Typography */
-  --ff-display:  'Google Sans Flex', Georgia, serif;
-  --ff-ui:       'Google Sans Flex', sans-serif;
-  --ff-mono:     'DM Mono', monospace;
+  --ff-display:    'Google Sans Flex', Georgia, serif;
+  --ff-ui:         'Google Sans Flex', sans-serif;
+  --ff-mono:       'DM Mono', monospace;
 
-  /* Legacy aliases — keep for editor components */
+  /* Legacy aliases — keep for compatibility */
   --bg:              var(--paper);
   --bg-alt:          var(--cream);
   --bg-deep:         #e2dced;
@@ -42,7 +42,7 @@
   --border-strong:   rgba(90, 60, 140, 0.36);
   --text:            var(--ink);
   --text-2:          #2a2333;
-  --text-3:      #4a4458;
+  --text-3:          #4a4458;
   --text-4:          var(--mid);
   --accent-hover:    #7a5eaa;
   --accent-light:    #c4aee4;
@@ -63,30 +63,12 @@
 /* ── Dark mode tokens ───────────────────────────────────────── */
 .dark, [data-theme*="dark"],
 html.dark {
-  --ink:         #f5f0ff; 
-   --paper:       #0c0a12;
-  --cream:       #1a1625;
-  --mid:         #a098b0;
-   --rule:        rgba(176, 144, 216, 0.20);
-  --accent:      #c4a8f0;
-  --accent-dim:  rgba(176, 144, 216, 0.14);
-  --accent-sub:  rgba(176, 144, 216, 0.07);
-  --tape-bg:     #0c0a12;
-
-  --bg:              var(--paper);
-  --bg-alt:          var(--cream);
-  --bg-deep:         #0a0810;
-  --surface-0:       var(--paper);
-  --surface-1:       var(--cream);
-  --surface-2:       #2a2535;
-  --surface-sidebar: var(--cream);
-  --border:          var(--rule);
-  --border-med:      rgba(152, 117, 193, 0.22);
-  --border-strong:   rgba(152, 117, 193, 0.38);
-  --text:            var(--ink);
-  --text-2:          #cdc7dc;
-  --text-3:      #b8b0c8;
-  --text-4:          var(--mid);
+  /* Dark mode mappings are automatic via ThemeInitializer's variables,
+     but we keep these for child selector overrides if needed. */
+  --sh-xs: 0 1px 3px rgba(0,0,0,0.3);
+  --sh-sm: 0 2px 10px rgba(0,0,0,0.4);
+  --sh-md: 0 4px 22px rgba(0,0,0,0.5);
+  --sh-lg: 0 8px 40px rgba(0,0,0,0.6);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -229,6 +211,7 @@ body {
 /* ═══════════════════════════════════════════════════════════════
    HEADER — newspaper masthead with triple rule
    ═══════════════════════════════════════════════════════════════ */
+/* Single header — clean and unified */
 .db-header,
 .app-header {
   height: 42px;
@@ -240,25 +223,7 @@ body {
   z-index: 50;
   background: var(--paper);
   border-bottom: 1px solid var(--rule);
-  /* Remove these box-shadows: */
   box-shadow: none;
-}
-
-/* Legacy header alias */
-.app-header {
-  height: 42px;
-  display: flex;
-  align-items: center;
-  padding: 0 22px;
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  background: var(--paper);
-  border-bottom: 1px solid var(--rule);
-  box-shadow:
-    0 1.5px 0 var(--rule),
-    0 1px   0 var(--ink),
-    0 2.5px 0 var(--rule);
 }
 .glass, .glass-rim {
   background: var(--paper);
@@ -947,3 +912,150 @@ body {
 /* Focus mode */
 .focus-mode .editor-sidebar,
 .focus-mode .outline-sidebar { display: none !important; }
+
+/* ─────────────────────────────────────────────────────────────
+   DASHBOARD & SIDEBAR LAYOUT (Unified)
+   ───────────────────────────────────────────────────────────── */
+.db-root {
+  font-family: var(--ff-ui);
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.db-sidebar {
+  width: 210px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--rule);
+  padding: 14px 0;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 42px; /* Matches header height */
+  height: calc(100vh - 42px);
+  overflow-y: auto;
+  background: var(--paper);
+}
+
+.db-sidebar-label {
+  padding: 0 20px 7px;
+  font-family: var(--ff-ui);
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--mid);
+  opacity: 0.65;
+}
+
+.db-nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 20px;
+  border: none;
+  border-left: 2px solid transparent;
+  border-top: 1px solid var(--rule);
+  background: transparent;
+  color: var(--mid);
+  cursor: pointer;
+  font-family: var(--ff-ui);
+  font-size: 9.5px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+  width: 100%;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+  text-decoration: none;
+}
+.db-nav-item:hover { color: var(--ink); background: var(--accent-sub); }
+.db-nav-item.active {
+  color: var(--accent);
+  border-left-color: var(--accent);
+  background: var(--accent-dim);
+  font-weight: 500;
+}
+
+.db-nav-num {
+  font-family: var(--ff-display);
+  font-style: italic;
+  font-size: 10px;
+  width: 18px;
+  flex-shrink: 0;
+  color: var(--mid);
+  transition: color 0.12s;
+}
+.db-nav-item.active .db-nav-num,
+.db-nav-item:hover .db-nav-num { color: var(--accent); }
+
+.db-sidebar-rule {
+  height: 1px;
+  background: var(--rule);
+  margin: 10px 0;
+}
+
+.db-starred-row {
+  display: flex; align-items: center; gap: 7px;
+  padding: 5px 20px;
+  background: none; border: none;
+  cursor: pointer; width: 100%;
+  font-family: var(--ff-ui); font-size: 9.5px; letter-spacing: 0.04em;
+  color: var(--mid); text-align: left;
+  transition: color 0.12s;
+  text-decoration: none;
+  border-top: 1px solid var(--rule);
+}
+.db-starred-row:hover { color: var(--ink); }
+
+.db-goal {
+  margin: 4px 16px 0;
+  padding: 9px 12px;
+  border: 1px solid var(--rule);
+  border-left: 2px solid var(--accent);
+  background: var(--accent-sub);
+}
+
+.db-main {
+  flex: 1;
+  padding: 28px 32px;
+  overflow-y: auto;
+  min-width: 0;
+  background: var(--paper);
+}
+
+.db-page-title {
+  font-family: var(--ff-display);
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 0.95;
+  color: var(--ink);
+  margin: 0;
+}
+.db-page-title em { font-style: italic; color: var(--accent); }
+
+.db-page-sub {
+  font-family: var(--ff-ui);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  color: var(--mid);
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.db-mobile-nav {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--paper);
+  border-top: 1px solid var(--rule);
+  box-shadow: 0 -1.5px 0 var(--ink), 0 -3px 0 var(--rule);
+  z-index: 40;
+}
+@media (max-width: 860px) {
+  .db-sidebar { display: none; }
+  .db-mobile-nav { display: block; }
+  .db-main { padding: 20px; }
+}
+

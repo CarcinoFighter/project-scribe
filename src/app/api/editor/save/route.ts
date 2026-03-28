@@ -39,7 +39,8 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (fetchError) {
-      // Document not found in target table, check other tables for migration
+      // Document not found in target table — check other tables for a cross-table migration
+      let foundInOtherTable = false;
       const otherTables = ['blogs', 'survivor_stories', 'cancer_docs'].filter(t => t !== table);
       for (const ot of otherTables) {
         const { data: found } = await supabaseAdmin.from(ot).select('author_id, status').eq('id', id).single();
@@ -48,12 +49,17 @@ export async function POST(req: NextRequest) {
           oldTableToCleanup = ot;
           currentAuthorId = found.author_id;
           isNewDoc = true; // Treat as insert into new table
+          foundInOtherTable = true;
           break;
         }
       }
+      // Not found anywhere — treat as a brand-new insert to avoid a zero-row UPDATE
+      if (!foundInOtherTable) {
+        isNewDoc = true;
+      }
     } else if (existing) {
       currentAuthorId = existing.author_id;
-      
+
       // Validation: Only admins can publish
       if (status === 'published' && existing.status !== 'published') {
         if (!payload.adminAccess) {
@@ -68,7 +74,7 @@ export async function POST(req: NextRequest) {
   } else {
     // For NEW documents, ensure they don't start as published if they are not admin
     if (status === 'published' && !payload.adminAccess) {
-       return NextResponse.json({ error: 'Only administrators can create published content.' }, { status: 403 });
+      return NextResponse.json({ error: 'Only administrators can create published content.' }, { status: 403 });
     }
   }
 

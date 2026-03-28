@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ArrowRight, ArrowLeft, Sparkles } from 'lucide-react';
 
@@ -38,15 +38,54 @@ interface TourProps {
 export default function GuidedTour({ onClose, isMobile }: TourProps) {
   const [step, setStep] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
+  const [modalPos, setModalPos] = useState({ top: 0, left: 0, placement: 'center' as 'top' | 'bottom' | 'center' });
+  const modalRef = useRef<HTMLDivElement>(null);
 
   const currentSteps = isMobile ? MOBILE_STEPS : DESKTOP_STEPS;
   const current = currentSteps[step];
 
+  const handleClose = useCallback(() => {
+    localStorage.setItem('cs-toured', 'true');
+    onClose();
+  }, [onClose]);
+
   const measureTarget = useCallback(() => {
-    if (!current.targetId || isMobile) { setRect(null); return; }
+    if (!current.targetId || isMobile) { 
+      setRect(null); 
+      setModalPos({ top: 0, left: 0, placement: 'center' });
+      return; 
+    }
     const el = document.getElementById(current.targetId);
-    if (el) setRect(el.getBoundingClientRect());
-    else setRect(null);
+    if (el) {
+      const r = el.getBoundingClientRect();
+      setRect(r);
+      
+      // Calculate modal position
+      const mWidth = 380; 
+      const mHeight = 240; 
+      const pad = 20;
+
+      let top = r.bottom + pad;
+      let left = Math.max(pad, Math.min(r.left, window.innerWidth - mWidth - pad));
+      let placement: 'top' | 'bottom' | 'center' = 'bottom';
+
+      // If no space below, try above
+      if (top + mHeight > window.innerHeight) {
+        top = r.top - mHeight - pad;
+        placement = 'top';
+      }
+
+      // If status bar, specifically try placing above
+      if (current.targetId === 'tour-statusbar') {
+        top = r.top - mHeight - pad;
+        placement = 'top';
+      }
+
+      setModalPos({ top, left, placement });
+    } else {
+      setRect(null);
+      setModalPos({ top: 0, left: 0, placement: 'center' });
+    }
   }, [current.targetId, isMobile]);
 
   useEffect(() => {
@@ -55,7 +94,7 @@ export default function GuidedTour({ onClose, isMobile }: TourProps) {
     return () => window.removeEventListener('resize', measureTarget);
   }, [measureTarget]);
 
-  const next = () => { if (step < currentSteps.length - 1) setStep(s => s + 1); else onClose(); };
+  const next = () => { if (step < currentSteps.length - 1) setStep(s => s + 1); else handleClose(); };
   const prev = () => { if (step > 0) setStep(s => s - 1); };
 
   const PAD = 6;
@@ -73,13 +112,14 @@ export default function GuidedTour({ onClose, isMobile }: TourProps) {
                   y={rect.top - PAD}
                   width={rect.width + PAD * 2}
                   height={rect.height + PAD * 2}
+                  rx="4"
                   fill="black"
                   className="transition-all duration-500"
                 />
               )}
             </mask>
           </defs>
-          <rect width="100%" height="100%" fill="rgba(10,6,20,0.60)" mask="url(#tour-mask)" />
+          <rect width="100%" height="100%" fill="rgba(6,2,14,0.72)" mask="url(#tour-mask)" style={{ backdropFilter: 'blur(1px)' }} />
         </svg>
       )}
 
@@ -91,35 +131,58 @@ export default function GuidedTour({ onClose, isMobile }: TourProps) {
             left: rect.left - PAD,
             width: rect.width + PAD * 2,
             height: rect.height + PAD * 2,
+            borderRadius: '4px',
+            boxShadow: '0 0 0 4px rgba(var(--accent-rgb), 0.1)',
           }}
         />
       )}
 
       <div 
-        className="fixed z-[9999] db-modal db-rise-0" 
+        ref={modalRef}
+        className="fixed z-[9999] db-modal db-rise-0 transition-position duration-500" 
         style={{ 
           width: isMobile ? 'calc(100vw - 32px)' : '380px',
           maxWidth: '90vw',
-          top: isMobile ? '50%' : (rect ? Math.min(rect.bottom + 20, window.innerHeight - 300) : '50%'),
-          left: isMobile ? '50%' : (rect ? Math.min(rect.left, window.innerWidth - 400) : '50%'),
+          top: isMobile ? '50%' : (rect ? modalPos.top : '50%'),
+          left: isMobile ? '50%' : (rect ? modalPos.left : '50%'),
           transform: isMobile ? 'translate(-50%, -50%)' : (rect ? 'none' : 'translate(-50%, -50%)'),
+          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
         }}
       >
+        {/* Pointer Arrow */}
+        {rect && !isMobile && (
+          <div 
+            className="absolute transition-all duration-500"
+            style={{
+              left: Math.max(20, Math.min(rect.left - modalPos.left + rect.width/2 - 8, 360)),
+              top: modalPos.placement === 'bottom' ? '-8px' : 'auto',
+              bottom: modalPos.placement === 'top' ? '-8px' : 'auto',
+              width: 0,
+              height: 0,
+              borderLeft: '8px solid transparent',
+              borderRight: '8px solid transparent',
+              borderBottom: modalPos.placement === 'bottom' ? '8px solid var(--paper)' : 'none',
+              borderTop: modalPos.placement === 'top' ? '8px solid var(--paper)' : 'none',
+              filter: 'drop-shadow(0 -4px 4px rgba(0,0,0,0.1))',
+            }}
+          />
+        )}
+
         <div className="flex items-center justify-between mb-4">
-          <div className="w-10 h-10 flex items-center justify-center text-xl font-bold bg-[var(--accent-sub)] text-[var(--accent)]">
+          <div className="w-10 h-10 flex items-center justify-center text-xl font-bold bg-[var(--accent-sub)] text-[var(--accent)] border border-[var(--accent-dim)]">
             {current.emoji}
           </div>
           <div className="flex items-center gap-2">
-            <span className="db-cap">
+            <span className="db-cap" style={{ fontSize: '10px', opacity: 0.6 }}>
               {step + 1} / {currentSteps.length}
             </span>
-            <button onClick={onClose} className="db-icon-btn" style={{ width: '28px', height: '28px' }}>
+            <button onClick={handleClose} className="db-icon-btn" style={{ width: '28px', height: '28px' }}>
               <X size={14} strokeWidth={2} />
             </button>
           </div>
         </div>
 
-        <div className="flex gap-1.5 mb-4">
+        <div className="flex gap-1.5 mb-5">
           {currentSteps.map((_, i) => (
             <button
               key={i}
@@ -130,30 +193,30 @@ export default function GuidedTour({ onClose, isMobile }: TourProps) {
         </div>
 
         <div className="db-rise-0" key={step}>
-          <h3 className="db-page-title" style={{ fontSize: '17px', marginBottom: '8px' }}>
+          <h3 className="db-page-title" style={{ fontSize: '18px', marginBottom: '8px', letterSpacing: '0.01em' }}>
             {current.title}
           </h3>
-          <p style={{ fontSize: '13px', lineHeight: 1.6, color: 'var(--mid)' }}>
+          <p style={{ fontSize: '13.5px', lineHeight: 1.6, color: 'var(--mid)' }}>
             {current.body}
           </p>
         </div>
 
-        <div className="flex items-center justify-between mt-6">
-          <button onClick={onClose} className="db-ghost" style={{ padding: '4px 8px', fontSize: '12px' }}>
+        <div className="flex items-center justify-between mt-8">
+          <button onClick={handleClose} className="db-ghost" style={{ padding: '4px 8px', fontSize: '12px', opacity: 0.7 }}>
             Skip tour
           </button>
 
           <div className="flex items-center gap-2">
             {step > 0 && (
               <button onClick={prev} className="db-ghost">
-                <ArrowLeft size={14} strokeWidth={2} />
+                <ArrowLeft size={16} strokeWidth={2} />
               </button>
             )}
-            <button onClick={next} className="db-btn">
+            <button onClick={next} className="db-btn px-4">
               {step === currentSteps.length - 1 ? (
-                <><Sparkles size={14} /> Get writing</>
+                <><Sparkles size={16} className="mr-2" /> Get writing</>
               ) : (
-                <>Next <ArrowRight size={14} /></>
+                <>Next <ArrowRight size={16} className="ml-2" /></>
               )}
             </button>
           </div>

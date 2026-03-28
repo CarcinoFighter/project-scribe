@@ -12,6 +12,13 @@ import {
 import { useUser } from '@/lib/useUser';
 import { useTheme } from '@/lib/useTheme';
 import ImageCropModal from '@/components/ImageCropModal';
+import SettingsModal, {
+  loadSettings,
+  saveSettings,
+  applySettings,
+  type AppSettings,
+} from '@/components/SettingsModal';
+import { Settings } from 'lucide-react';
 
 /* ── Logo ─────────────────────────────────────────────────── */
 function Logo({ size = 16 }: { size?: number }) {
@@ -61,6 +68,15 @@ export default function ProfilePage() {
   const [showCropModal, setShowCropModal] = useState(false);
   const [tempImage, setTempImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [settings, setSettings] = useState<AppSettings>(() => loadSettings());
+
+  // Apply saved settings on mount
+  useEffect(() => {
+    const s = loadSettings();
+    setSettings(s);
+    applySettings(s);
+  }, []);
 
   useEffect(() => {
     if (user) { setName(user.name || ''); setAvatarUrl(user.avatar_url || ''); }
@@ -150,6 +166,9 @@ export default function ProfilePage() {
 
         <button className="db-icon-btn" onClick={toggleTheme} title={isDark ? 'Light' : 'Dark'}>
           {isDark ? <Sun size={13} strokeWidth={1.8} /> : <Moon size={13} strokeWidth={1.8} />}
+        </button>
+        <button className="db-icon-btn" onClick={() => setShowSettings(true)} title="Settings">
+          <Settings size={13} strokeWidth={1.8} />
         </button>
         <div className="db-vr" />
         <Link href="/" className="db-ghost" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
@@ -407,6 +426,17 @@ export default function ProfilePage() {
           image={tempImage}
           onCrop={handleCropComplete}
           onCancel={() => { setShowCropModal(false); setTempImage(null); }}
+        />
+      )}
+      {showSettings && (
+        <SettingsModal
+          settings={settings}
+          onClose={() => setShowSettings(false)}
+          onChange={next => {
+            setSettings(next);
+            saveSettings(next);
+            applySettings(next);
+          }}
         />
       )}
     </div>
