@@ -52,6 +52,7 @@ import { useUser } from '@/lib/useUser';
 import AccountMenu from '@/components/AccountMenu';
 import AssignTaskModal from '@/components/AssignTaskModal';
 import Toast from '@/components/Toast';
+import CommandPalette from '@/components/CommandPalette';
 import TaskSubmissionModal from '@/components/TaskSubmissionModal';
 import MediaViewerModal from '@/components/MediaViewerModal';
 import TaskDetailsModal from '@/components/TaskDetailsModal';
@@ -741,6 +742,7 @@ export default function WorkPage() {
   const [myAssignments, setMyAssignments] = useState<Assignment[]>([]);
   const [allAssignments, setAllAssignments] = useState<Assignment[]>([]);
   const [reviewDocs, setReviewDocs] = useState<ReviewDoc[]>([]);
+  const [showCmd, setShowCmd] = useState(false);
   const [proofreaderDocs, setProofreaderDocs] = useState<ReviewDoc[]>([]);
   const [loading, setLoading] = useState(true);
   const [approving, setApproving] = useState<string | null>(null);
@@ -1049,6 +1051,7 @@ export default function WorkPage() {
         unreadCount={notifs.filter(n => !n.read).length}
         isDark={isDark}
         onToggleTheme={toggleTheme}
+        onOpenCmd={() => setShowCmd(true)}
         onOpenSearch={() => { /* Use global search or page search? For now, we'll keep it consistent */ }}
         onOpenSettings={() => setShowSettings(true)}
         onMarkAllRead={handleMarkAllRead}
