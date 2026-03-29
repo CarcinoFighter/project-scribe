@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Home, FileText, BookOpen, Briefcase, Users } from 'lucide-react';
+import { Home, FileText, BookOpen, Briefcase, Users, Layers } from 'lucide-react';
 
 interface MobileNavProps {
   activeNav: string;
@@ -15,11 +15,10 @@ const TAPE_ITEMS = ['WRITERS', 'DESIGN', 'DEV', 'PR', 'LEADERSHIP', 'VANTAGE', '
 export default function MobileNav({ activeNav, pendingTasksCount = 0, isFullSidebar = true }: MobileNavProps) {
   const NAV_ITEMS = ([
     { id: 'home',     label: 'Overview',    icon: Home,      href: '/' },
-    { id: 'articles', label: 'Articles',    icon: FileText,  href: '/?nav=articles' },
-    { id: 'blogs',    label: 'Blog Posts',  icon: BookOpen,  href: '/?nav=blogs' },
+    { id: 'queues',   label: 'Queues',      icon: Layers,    href: '/queues' },
     { id: 'tasks',    label: 'Assignments', icon: Briefcase, href: '/tasks' },
     { id: 'team',     label: 'Team',        icon: Users,     href: '/team' },
-  ] as const).filter(item => isFullSidebar || (item.id !== 'articles' && item.id !== 'blogs'));
+  ] as const).filter(item => isFullSidebar || (item.id !== 'queues'));
 
   return (
     <nav className="db-mobile-nav">

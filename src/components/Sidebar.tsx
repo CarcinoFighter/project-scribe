@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
-  Home, FileText, BookOpen, Briefcase, Users, Star, Target, PenTool, ArrowRight 
+  Home, FileText, BookOpen, Briefcase, Users, Star, Target, PenTool, ArrowRight, Layers 
 } from 'lucide-react';
 
 export interface SidebarProps {
@@ -36,11 +36,12 @@ export function Sidebar({
 
   const NAV_ITEMS = ([
     { id: 'home',     label: 'Overview',    icon: Home,      count: null,                 href: '/'      },
+    { id: 'queues',   label: 'Queues',      icon: Layers,    count: null,                 href: '/queues' },
     { id: 'articles', label: 'Articles',    icon: FileText,  count: counts.articles,      href: null     },
     { id: 'blogs',    label: 'Blog Posts',  icon: BookOpen,  count: counts.blogs,         href: null     },
     { id: 'tasks',    label: 'Assignments', icon: Briefcase, count: counts.tasks || null, href: '/tasks' },
     { id: 'team',     label: 'Team',        icon: Users,     count: null,                 href: '/team'  },
-  ] as const).filter(item => isFullSidebar || (item.id !== 'articles' && item.id !== 'blogs'));
+  ] as const).filter(item => isFullSidebar || (item.id !== 'articles' && item.id !== 'blogs' && item.id !== 'queues'));
 
   const handleNav = (item: typeof NAV_ITEMS[number]) => {
     if (item.href) {
