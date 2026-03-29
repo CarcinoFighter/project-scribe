@@ -22,6 +22,41 @@ export function ApplicationsDashboard() {
   const [startX, setStartX] = useState(0);
   const [scrollLeftState, setScrollLeftState] = useState(0);
 
+  const renderCellContent = (cell: any) => {
+    if (typeof cell !== 'string') return String(cell || '');
+    
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = cell.split(urlRegex);
+    
+    if (parts.length === 1) return cell;
+    
+    return (
+      <>
+        {parts.map((part, i) => {
+          if (part.match(urlRegex)) {
+            return (
+              <a
+                key={i}
+                href={part}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ 
+                  color: 'var(--accent)', 
+                  textDecoration: 'underline',
+                  textUnderlineOffset: '2px',
+                  fontWeight: 500
+                }}
+              >
+                {part}
+              </a>
+            );
+          }
+          return part;
+        })}
+      </>
+    );
+  };
+
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!scrollRef.current) return;
     setIsDragging(true);
@@ -226,7 +261,7 @@ export function ApplicationsDashboard() {
                     whiteSpace: 'normal',
                     verticalAlign: 'top'
                   }}>
-                    {cell}
+                    {renderCellContent(cell)}
                   </td>
                 ))}
                 {row.length < headers.length && 
