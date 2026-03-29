@@ -24,6 +24,7 @@ import SettingsModal, {
   applySettings,
   type AppSettings,
 } from '@/components/SettingsModal';
+import { ApplicationsDashboard } from '@/components/ApplicationsDashboard';
 
 
 interface TeamMember {
@@ -78,7 +79,13 @@ export default function TeamPage() {
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState<AppSettings>(() => loadSettings());
 
-  const [filter, setFilter] = useState<string>('all');
+  const [filter, setFilter] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('filter') || 'all';
+    }
+    return 'all';
+  });
   const [search, setSearch] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState<TeamMember | null>(null);
@@ -106,6 +113,14 @@ export default function TeamPage() {
     setSettings(s);
     applySettings(s);
   }, []);
+
+  useEffect(() => {
+    if (filter) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('filter', filter);
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [filter]);
 
   useEffect(() => {
     (async () => {
@@ -314,6 +329,20 @@ export default function TeamPage() {
             </button>
           ))}
 
+          {currentUser?.department === 'Leadership' && (
+            <>
+              <div className="db-sidebar-rule" />
+              <div className="db-sidebar-label">Recruitment</div>
+              <button
+                className={`db-nav-item${filter === 'applications' ? ' active' : ''}`}
+                onClick={() => setFilter('applications')}
+              >
+                <span className="db-nav-num">00</span>
+                <span style={{ flex: 1 }}>Applications</span>
+              </button>
+            </>
+          )}
+
           <div className="db-sidebar-rule" />
           <div className="db-sidebar-label">Departments</div>
 
@@ -346,9 +375,12 @@ export default function TeamPage() {
           <div className="db-rise-0" style={{ marginBottom: 6 }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
               <div>
-                <h1 className="db-page-title">Team<em>.</em></h1>
+                <h1 className="db-page-title">{filter === 'applications' ? 'Applications' : 'Team'}<em>.</em></h1>
                 <p className="db-page-sub" style={{ marginTop: 6 }}>
-                  {totalShown} member{totalShown !== 1 ? 's' : ''} — The Carcino Foundation
+                  {filter === 'applications' 
+                    ? 'Global Recruitment Bureau — Internship Responses'
+                    : `${totalShown} member${totalShown !== 1 ? 's' : ''} — The Carcino Foundation`
+                  }
                 </p>
               </div>
               {currentUser?.admin_access && (
@@ -375,6 +407,7 @@ export default function TeamPage() {
             {[
               { k: 'all', l: `All (${members.length})` },
               { k: 'admin', l: 'Admins' },
+              ...(currentUser?.department === 'Leadership' ? [{ k: 'applications', l: 'Applications' }] : []),
               ...DEPARTMENTS.filter(d => d !== 'Other').map(d => ({ k: d, l: d })),
             ].map(f => (
               <button
@@ -400,6 +433,8 @@ export default function TeamPage() {
                 <div key={i} style={{ height: 64, borderBottom: '1px solid var(--rule)', background: i % 2 === 0 ? 'transparent' : 'var(--accent-sub)', opacity: 0.5 }} />
               ))}
             </div>
+          ) : filter === 'applications' ? (
+            <ApplicationsDashboard />
           ) : totalShown === 0 ? (
             <div style={{ padding: '48px 0', textAlign: 'center', border: '1px solid var(--rule)' }}>
               <Users size={28} style={{ color: 'var(--mid)', margin: '0 auto 12px' }} />
