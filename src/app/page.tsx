@@ -311,7 +311,7 @@ function SortFilterBar({ sortBy, setSortBy, filter, setFilter, total }: { sortBy
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN DASHBOARD
 // ─────────────────────────────────────────────────────────────────────────────
-export default function Dashboard() {
+function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading: userLoading } = useUser();
@@ -795,5 +795,20 @@ export default function Dashboard() {
         />
       )}
     </div>
+  );
+}
+
+export default function Dashboard() {
+  return (
+    <Suspense fallback={
+      <div className="app-bg flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center gap-2">
+          <div className="w-12 h-[1px] bg-[var(--accent)] animate-pulse" />
+          <span className="db-cap text-[8px] tracking-[0.3em]" style={{ color: 'var(--mid)', letterSpacing: '0.3em' }}>LOADING VANTAGE</span>
+        </div>
+      </div>
+    }>
+      <DashboardContent />
+    </Suspense>
   );
 }
