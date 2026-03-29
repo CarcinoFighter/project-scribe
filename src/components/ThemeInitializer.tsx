@@ -14,18 +14,32 @@ export function ThemeInitializer() {
     const settings = loadSettings();
     applySettings(settings);
 
+    // Store PWA install prompt globally
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      (window as any).deferredPrompt = e;
+      window.dispatchEvent(new Event('install-prompt-ready'));
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt as EventListener);
+
     // Fade out the PWA splash screen
     const splash = document.getElementById('pwa-splash');
+    let hideTimer: NodeJS.Timeout;
+    let timer: NodeJS.Timeout;
     if (splash) {
-      const timer = setTimeout(() => {
+      timer = setTimeout(() => {
         splash.style.opacity = '0';
-        const hideTimer = setTimeout(() => {
+        hideTimer = setTimeout(() => {
           splash.style.display = 'none';
         }, 700);
-        return () => clearTimeout(hideTimer);
       }, 1500); // Allow time for loading bar animation
-      return () => clearTimeout(timer);
     }
+    
+    return () => {
+      if (timer) clearTimeout(timer);
+      if (hideTimer) clearTimeout(hideTimer);
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt as EventListener);
+    };
   }, []);
 
   return null; // This component doesn't render anything

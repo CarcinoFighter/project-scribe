@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Settings, Edit3, LogOut, Sun, Moon, FileText } from 'lucide-react';
+import { User, Settings, Edit3, LogOut, Sun, Moon, FileText, Download } from 'lucide-react';
 import Image from 'next/image';
 
 interface AccountMenuProps {
@@ -17,6 +17,27 @@ interface AccountMenuProps {
 export default function AccountMenu({ user, onClose, onToast, onOpenSettings, isDark, onToggleTheme }: AccountMenuProps) {
   const router = useRouter();
 
+  const [canInstall, setCanInstall] = useState(false);
+
+  useEffect(() => {
+    const checkPrompt = () => setCanInstall(!!(window as any).deferredPrompt);
+    checkPrompt();
+    window.addEventListener('install-prompt-ready', checkPrompt);
+    return () => window.removeEventListener('install-prompt-ready', checkPrompt);
+  }, []);
+
+  const handleInstall = () => {
+    const promptEvent = (window as any).deferredPrompt;
+    if (promptEvent) {
+      promptEvent.prompt();
+      promptEvent.userChoice.then(() => {
+        (window as any).deferredPrompt = null;
+        setCanInstall(false);
+        onClose();
+      });
+    }
+  };
+
   const items = [
     { icon: User,     label: 'Profile',     action: () => { onClose(); router.push('/profile'); } },
     ...(user?.department === 'Leadership' || user?.admin_access ? [
@@ -24,6 +45,9 @@ export default function AccountMenu({ user, onClose, onToast, onOpenSettings, is
     ] : []),
     { icon: Settings, label: 'Settings',    action: () => { onClose(); onOpenSettings?.(); } },
     { icon: isDark ? Sun : Moon, label: `Switch to ${isDark ? 'Light' : 'Dark'}`, action: () => { onClose(); onToggleTheme?.(); } },
+    ...(canInstall ? [
+      { icon: Download, label: 'Install App', action: handleInstall }
+    ] : []),
     { icon: Edit3,    label: 'Open Editor', action: () => { onClose(); router.push('/editor'); } },
   ];
 

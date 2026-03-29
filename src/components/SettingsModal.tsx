@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Palette, Type, Monitor, Eye, Sliders, Keyboard, Check } from 'lucide-react';
+import { requestPushSubscription } from '@/lib/usePushSubscription';
 
 /* ─────────────────────────────────────────────────────────── */
 /*  Types                                                       */
@@ -807,6 +808,11 @@ export default function SettingsModal({ settings, onClose, onChange }: {
                     >{n}</button>
                   ))}
                 </div>
+              </Row>
+              <Row label="Push notifications" hint="Enable push notifications for updates (required on mobile)">
+                <button type="button" onClick={() => requestPushSubscription().catch(console.error)}
+                  style={{ padding: '6px 14px', borderRadius: 'var(--r-sm)', border: '1px solid var(--accent)', background: 'var(--accent)', color: 'var(--paper)', fontSize: 11, fontWeight: 600, cursor: 'pointer', outline: 'none', letterSpacing: '0.04em' }}
+                >Enable</button>
               </Row>
             </>}
 

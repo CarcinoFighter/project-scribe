@@ -506,6 +506,18 @@ body {
   overflow: hidden;
 }
 
+@media (max-width: 640px) {
+  .db-notif-panel {
+    position: fixed;
+    top: 50px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: calc(100% - 32px);
+    max-width: 340px;
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════════
    COMMAND PALETTE
    ═══════════════════════════════════════════════════════════════ */
