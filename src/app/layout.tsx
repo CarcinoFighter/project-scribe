@@ -3,6 +3,7 @@ import './globals.css';
 import { ThemeInitializer } from '@/components/ThemeInitializer';
 import PushSubscriber from '@/components/PushSubscriber';
 import { DM_Mono } from 'next/font/google';
+
 const dmMono = DM_Mono({
   subsets: ['latin'],
   weight: ['300', '400', '500'],
@@ -13,8 +14,12 @@ const dmMono = DM_Mono({
 export const metadata: Metadata = {
   title: 'Vantage',
   description: 'A Beautiful Markdown Editor for Writers.',
-  icons: { icon: '/logo.svg', apple: '/logo.svg' },
-  manifest: '/manifest.json?v=3',
+  icons: {
+    icon: '/logo.svg',
+    // ── FIX 3: iOS Safari ignores SVG for apple-touch-icon — must be PNG ──
+    apple: '/pwa-icon-512.png',
+  },
+  manifest: '/manifest.json?v=4',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',

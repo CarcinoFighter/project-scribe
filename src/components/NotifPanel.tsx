@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
-import { Bell, BellOff, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Bell, BellOff, BellRing, ChevronRight } from 'lucide-react';
+import { requestPushSubscription } from '@/lib/usePushSubscription';
 
 export interface Notif {
   id: string;
@@ -20,8 +21,27 @@ interface NotifPanelProps {
 export default function NotifPanel({ notifs, onMarkAllRead, onClose }: NotifPanelProps) {
   const unread = notifs.filter(n => !n.read).length;
 
+  // ── FIX 2: track push permission state ──
+  const [pushState, setPushState] = useState<'granted' | 'denied' | 'default' | 'unsupported'>('unsupported');
+  const [enabling, setEnabling] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!('Notification' in window)) { setPushState('unsupported'); return; }
+    setPushState(Notification.permission as 'granted' | 'denied' | 'default');
+  }, []);
+
+  const handleEnablePush = async () => {
+    setEnabling(true);
+    const ok = await requestPushSubscription();
+    setPushState(ok ? 'granted' : (Notification.permission as any));
+    setEnabling(false);
+  };
+
   return (
-    <div className="db-notif-panel db-rise-0">
+    // Note: width/positioning is now handled by the portal wrapper in Header.tsx
+    <div className="db-notif-panel db-rise-0" style={{ width: 300 }}>
+
       {/* Masthead row */}
       <div style={{ padding: '9px 14px', borderBottom: '1px solid var(--rule)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -41,6 +61,47 @@ export default function NotifPanel({ notifs, onMarkAllRead, onClose }: NotifPane
           </button>
         )}
       </div>
+
+      {/* ── FIX 2: Push notification enable banner ── */}
+      {pushState !== 'granted' && pushState !== 'unsupported' && pushState !== 'denied' && (
+        <div style={{
+          padding: '8px 14px',
+          borderBottom: '1px solid var(--rule)',
+          background: 'var(--accent-sub)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+        }}>
+          <BellRing size={11} strokeWidth={1.8} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+          <span style={{ fontFamily: 'var(--ff-ui)', fontSize: 9, color: 'var(--mid)', flex: 1 }}>
+            Enable push notifications to get alerts
+          </span>
+          <button
+            className="db-ghost"
+            onClick={handleEnablePush}
+            disabled={enabling}
+            style={{ padding: '2px 7px', fontSize: 8, flexShrink: 0, opacity: enabling ? 0.6 : 1 }}
+          >
+            {enabling ? 'Enabling…' : 'Enable'}
+          </button>
+        </div>
+      )}
+
+      {/* Denied notice */}
+      {pushState === 'denied' && (
+        <div style={{
+          padding: '8px 14px',
+          borderBottom: '1px solid var(--rule)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+        }}>
+          <BellOff size={11} strokeWidth={1.8} style={{ color: 'var(--mid)', flexShrink: 0 }} />
+          <span style={{ fontFamily: 'var(--ff-ui)', fontSize: 9, color: 'var(--mid)' }}>
+            Push blocked. Enable in browser site settings.
+          </span>
+        </div>
+      )}
 
       {/* Items */}
       <div style={{ maxHeight: 270, overflowY: 'auto' }}>

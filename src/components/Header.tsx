@@ -9,11 +9,15 @@ import {
   Search, Bell, Moon, Sun, Plus, ChevronDown,
   Settings, Menu, X, Columns, LayoutTemplate, Eye,
   Maximize2, ScanLine, Download, FolderOpen, PanelLeft,
+  // Install icon
+  Smartphone,
 } from 'lucide-react';
 import type { ViewMode, Collaborator } from '@/types';
 import AccountMenu from './AccountMenu';
 import NotifPanel, { Notif } from './NotifPanel';
 import CommandPalette from './CommandPalette';
+import { usePWAInstall } from '@/lib/usePWAInstall';
+
 interface HeaderProps {
   user: any;
   isDark: boolean;
@@ -114,15 +118,26 @@ export default function Header({
   const [showNotifPanel, setShowNotifPanel] = useState(false);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [accountMenuPos, setAccountMenuPos] = useState<{ top: number; right: number } | null>(null);
+  // ── FIX 1: track notif panel portal position (same pattern as AccountMenu) ──
+  const [notifPanelPos, setNotifPanelPos] = useState<{ top: number; right: number } | null>(null);
 
-  const notifRef = useRef<HTMLDivElement>(null);
+  // ── FIX 3: PWA install ──
+  const { canInstall, install } = usePWAInstall();
+
+  const notifBtnRef = useRef<HTMLButtonElement>(null);
+  const notifPanelRef = useRef<HTMLDivElement>(null);
   const accountRef = useRef<HTMLDivElement>(null);
   const accountBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
       const target = e.target as Node;
-      if (notifRef.current && !notifRef.current.contains(target)) setShowNotifPanel(false);
+      // Check both the button and the portal panel
+      const clickedInsideNotif =
+        (notifBtnRef.current && notifBtnRef.current.contains(target)) ||
+        (notifPanelRef.current && notifPanelRef.current.contains(target));
+      if (!clickedInsideNotif) setShowNotifPanel(false);
+
       if (accountRef.current && !accountRef.current.contains(target)) setShowAccountMenu(false);
     };
     document.addEventListener('mousedown', handleOutsideClick);
@@ -136,6 +151,20 @@ export default function Header({
     }
     setShowAccountMenu(!showAccountMenu);
     setShowNotifPanel(false);
+  };
+
+  // ── FIX 1: calculate portal position from the button rect ──
+  const handleNotifClick = () => {
+    if (!showNotifPanel && notifBtnRef.current) {
+      const rect = notifBtnRef.current.getBoundingClientRect();
+      // Right-align panel with the button but clamp so it never goes off-screen
+      const panelWidth = 300;
+      const rightFromEdge = window.innerWidth - rect.right;
+      const clampedRight = Math.max(8, rightFromEdge); // at least 8px from the right edge
+      setNotifPanelPos({ top: rect.bottom + 7, right: clampedRight });
+    }
+    setShowNotifPanel(!showNotifPanel);
+    setShowAccountMenu(false);
   };
 
   if (zenMode) return null;
@@ -348,39 +377,64 @@ export default function Header({
             </div>
           )}
 
-          {/* Notifications */}
-          <div ref={notifRef} style={{ position: 'relative' }}>
+          {/* ── FIX 3: PWA Install button (only shown when browser fires beforeinstallprompt) ── */}
+          {canInstall && (
             <button
-              className={`db-icon-btn${showNotifPanel ? ' active' : ''}`}
-              onClick={() => { setShowNotifPanel(!showNotifPanel); setShowAccountMenu(false); }}
-              title="Notifications"
+              className="db-icon-btn hidden sm:flex"
+              onClick={install}
+              title="Install app"
             >
-              <Bell size={13} strokeWidth={1.8} />
-              {unreadCount > 0 && (
-                <span className="db-badge" style={{ animation: 'db-blink 2.2s step-start infinite' }} />
-              )}
+              <Smartphone size={13} strokeWidth={1.8} />
             </button>
-            {showNotifPanel && onMarkAllRead && (
+          )}
+
+          {/* ── FIX 1: Notifications — button + portal-rendered panel ── */}
+          <button
+            ref={notifBtnRef}
+            className={`db-icon-btn${showNotifPanel ? ' active' : ''}`}
+            onClick={handleNotifClick}
+            title="Notifications"
+          >
+            <Bell size={13} strokeWidth={1.8} />
+            {unreadCount > 0 && (
+              <span className="db-badge" style={{ animation: 'db-blink 2.2s step-start infinite' }} />
+            )}
+          </button>
+
+          {/* Render the notif panel via portal so it escapes any overflow/stacking context */}
+          {showNotifPanel && onMarkAllRead && notifPanelPos && createPortal(
+            <div
+              ref={notifPanelRef}
+              style={{
+                position: 'fixed',
+                top: notifPanelPos.top,
+                right: notifPanelPos.right,
+                zIndex: 9960,
+                // Ensure it never overflows the viewport on small screens
+                maxWidth: 'calc(100vw - 16px)',
+              }}
+            >
               <NotifPanel
                 notifs={notifs}
                 onMarkAllRead={onMarkAllRead}
                 onClose={() => setShowNotifPanel(false)}
               />
-            )}
-          </div>
+            </div>,
+            document.body
+          )}
 
           {/* Theme toggle */}
-          <button 
-  onClick={onToggleTheme} 
-  className="p-2 transition-colors hover:bg-[var(--accent-sub)] text-[var(--mid)] hover:text-[var(--accent)] hidden sm:flex" 
-  title="Toggle Theme"
->
-  {isDark ? (
-    <Sun size={17} className="text-yellow-500" />
-  ) : (
-    <Moon size={17} />
-  )}
-</button>
+          <button
+            onClick={onToggleTheme}
+            className="p-2 transition-colors hover:bg-[var(--accent-sub)] text-[var(--mid)] hover:text-[var(--accent)] hidden sm:flex"
+            title="Toggle Theme"
+          >
+            {isDark ? (
+              <Sun size={17} className="text-yellow-500" />
+            ) : (
+              <Moon size={17} />
+            )}
+          </button>
 
           {/* Settings */}
           <button className="db-icon-btn hidden sm:flex" onClick={onOpenSettings} title="Settings">
@@ -425,11 +479,11 @@ export default function Header({
 
             {showAccountMenu && accountMenuPos && createPortal(
               <div style={{ position: 'fixed', top: accountMenuPos.top, right: accountMenuPos.right, zIndex: 9960 }}>
-                <AccountMenu 
-                  user={user} 
-                  onClose={() => setShowAccountMenu(false)} 
-                  onToast={onToast} 
-                  onOpenSettings={onOpenSettings} 
+                <AccountMenu
+                  user={user}
+                  onClose={() => setShowAccountMenu(false)}
+                  onToast={onToast}
+                  onOpenSettings={onOpenSettings}
                   isDark={isDark}
                   onToggleTheme={onToggleTheme}
                 />
@@ -455,8 +509,8 @@ export default function Header({
                     className={`flex-1 py-2 border ${viewMode === m ? 'border-[var(--accent)] bg-[var(--accent-sub)]' : 'border-[var(--rule)]'}`}
                   >
                     {i === 0 ? <LayoutTemplate size={16} className="mx-auto" />
-                     : i === 1 ? <Columns size={16} className="mx-auto" />
-                     : <Eye size={16} className="mx-auto" />}
+                      : i === 1 ? <Columns size={16} className="mx-auto" />
+                        : <Eye size={16} className="mx-auto" />}
                   </button>
                 ))}
               </div>
@@ -475,12 +529,18 @@ export default function Header({
               </button>
             )}
             {/* Theme Toggle */}
-        <button className="db-icon-btn" onClick={onToggleTheme} title={isDark ? 'Light mode' : 'Dark mode'}>
-          {isDark ? <Sun size={13} strokeWidth={1.8} /> : <Moon size={13} strokeWidth={1.8} />}
-        </button>
+            <button className="db-icon-btn" onClick={onToggleTheme} title={isDark ? 'Light mode' : 'Dark mode'}>
+              {isDark ? <Sun size={13} strokeWidth={1.8} /> : <Moon size={13} strokeWidth={1.8} />}
+            </button>
             {setSidebarOpen && (
               <button onClick={() => { setSidebarOpen(!sidebarOpen); setMobileMenuOpen(false); }} className="db-ghost justify-center text-xs">
                 <PanelLeft size={14} className="mr-2" /> Sidebar
+              </button>
+            )}
+            {/* ── FIX 3: Install button in mobile menu ── */}
+            {canInstall && (
+              <button onClick={() => { install(); setMobileMenuOpen(false); }} className="db-ghost justify-center text-xs col-span-2">
+                <Smartphone size={14} className="mr-2" /> Install App
               </button>
             )}
           </div>
