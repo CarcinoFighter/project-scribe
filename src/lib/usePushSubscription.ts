@@ -19,7 +19,12 @@ export async function requestPushSubscription(): Promise<boolean> {
   if (Notification.permission === 'denied') return false;
 
   try {
-    const registration = await navigator.serviceWorker.ready;
+    // Get current registration without waiting indefinitely if missing (e.g. dev mode)
+    const registration = await navigator.serviceWorker.getRegistration();
+    if (!registration) {
+      console.warn('[push] No active service worker registration found.');
+      return false;
+    }
 
     // Check if already subscribed
     const existing = await registration.pushManager.getSubscription();

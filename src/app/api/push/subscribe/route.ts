@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
       p256dh: subscription.keys?.p256dh,
       auth: subscription.keys?.auth,
       updated_at: new Date().toISOString(),
-    }, { onConflict: 'user_id,endpoint' });
+    }, { onConflict: 'endpoint' });
 
   if (error) {
     console.error('Push subscribe error:', error);
