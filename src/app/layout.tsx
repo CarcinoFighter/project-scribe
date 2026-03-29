@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { ThemeInitializer } from '@/components/ThemeInitializer';
 import PushSubscriber from '@/components/PushSubscriber';
+import SWRegistration from '@/components/SWRegistration';
 import { DM_Mono } from 'next/font/google';
 
 const dmMono = DM_Mono({
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
     // ── FIX 3: iOS Safari ignores SVG for apple-touch-icon — must be PNG ──
     apple: '/pwa-icon-512.png',
   },
-  manifest: '/manifest.json?v=4',
+  manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
@@ -80,6 +81,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </div>
         <ThemeInitializer />
+        <SWRegistration />
         <PushSubscriber />
         {children}
       </body>
