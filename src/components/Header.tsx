@@ -222,7 +222,7 @@ export default function Header({
         {children}
 
         {/* ── Search ───────────────────────────────────────────────────── */}
-        <button className="db-search" onClick={onOpenCmd} title="Search (Ctrl+K)">
+        <button className="db-search hidden sm:flex" onClick={onOpenCmd} title="Search (Ctrl+K)">
           <Search size={11} strokeWidth={1.8} />
           <span>Search or command…</span>
           <span className="db-kbd hidden md:inline-block">⌘K</span>
@@ -372,7 +372,7 @@ export default function Header({
           {/* Theme toggle */}
           <button 
   onClick={onToggleTheme} 
-  className="p-2 transition-colors hover:bg-[var(--accent-sub)] text-[var(--mid)] hover:text-[var(--accent)]" 
+  className="p-2 transition-colors hover:bg-[var(--accent-sub)] text-[var(--mid)] hover:text-[var(--accent)] hidden sm:flex" 
   title="Toggle Theme"
 >
   {isDark ? (
@@ -425,7 +425,14 @@ export default function Header({
 
             {showAccountMenu && accountMenuPos && createPortal(
               <div style={{ position: 'fixed', top: accountMenuPos.top, right: accountMenuPos.right, zIndex: 9960 }}>
-                <AccountMenu user={user} onClose={() => setShowAccountMenu(false)} onToast={onToast} onOpenSettings={onOpenSettings} />
+                <AccountMenu 
+                  user={user} 
+                  onClose={() => setShowAccountMenu(false)} 
+                  onToast={onToast} 
+                  onOpenSettings={onOpenSettings} 
+                  isDark={isDark}
+                  onToggleTheme={onToggleTheme}
+                />
               </div>,
               document.body
             )}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -13,6 +13,7 @@ import {
 import { useUser } from '@/lib/useUser';
 import { createPortal } from 'react-dom';
 import AccountMenu from '@/components/AccountMenu';
+import MobileNav from '@/components/MobileNav';
 import { Sidebar } from '@/components/Sidebar';
 import { Notif } from '@/components/NotifPanel';
 import AssignTaskModal from '@/components/AssignTaskModal';
@@ -499,30 +500,13 @@ export default function TeamPage() {
         </main>
       </div>
 
-      {/* Mobile Bottom Nav */}
-      <nav className="db-mobile-nav">
-        <div className="db-tape-bar">
-          <div className="db-tape">
-            {[...TAPE_ITEMS, ...TAPE_ITEMS].map((item, i) => (
-              <span key={i} className="db-cap" style={{ color: i % 8 === 7 ? 'var(--accent)' : 'rgba(240,236,228,0.7)', padding: '0 14px' }}>{item}</span>
-            ))}
-          </div>
-        </div>
-        <div className="db-mob-inner">
-          {[
-            { id: 'home', label: 'Home', href: '/', path: 'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z' },
-            { id: 'tasks', label: 'Tasks', href: '/tasks', path: 'M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16' },
-            { id: 'team', label: 'Team', href: '/team', path: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75' },
-          ].map(item => (
-            <Link key={item.id} href={item.href} className={`db-mob-item${item.id === 'team' ? ' active' : ''}`}>
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                {item.path.split(' M').map((d, i) => <path key={i} d={i === 0 ? d : 'M' + d} />)}
-              </svg>
-              <span>{item.label}</span>
-            </Link>
-          ))}
-        </div>
-      </nav>
+      <Suspense fallback={null}>
+        <MobileNav 
+          activeNav="team" 
+          pendingTasksCount={counts.tasks} 
+          isFullSidebar={currentUser?.department === 'Leadership' || currentUser?.department === "Writers' Block"} 
+        />
+      </Suspense>
 
       {/* Overlays */}
       {showAccountMenu && accountMenuPos && createPortal(

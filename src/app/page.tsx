@@ -1,12 +1,12 @@
 'use client';
 
 import React, {
-  useState, useEffect, useRef, useCallback, useMemo,
+  useState, useEffect, useRef, useCallback, useMemo, Suspense
 } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   FileText, BookOpen, Search, Moon, Sun, Bell, BellOff,
   ChevronRight, Plus, TrendingUp, Clock, BarChart2,
@@ -32,6 +32,7 @@ import MarketingDashboard from '@/components/MarketingDashboard';
 import DesignLabDashboard from '@/components/DesignLabDashboard';
 import LeadershipDashboard from '@/components/LeadershipDashboard';
 import WritersDashboard from '@/components/WritersDashboard';
+import MobileNav from '@/components/MobileNav';
 import { StatCard, ActivityChart, QuickAction, DocCard, EmptyDocState, Skeleton, TaskCard } from '@/components/WritersDashboardComponents';
 import { DEPARTMENTS } from '@/config/departments';
 import { getGreeting, getTodayLabel, fmtWords, fmtDate, getWeekWindow, getTodayStr, countWords, excerptFrom } from '@/lib/utils';
@@ -312,6 +313,7 @@ function SortFilterBar({ sortBy, setSortBy, filter, setFilter, total }: { sortBy
 // ─────────────────────────────────────────────────────────────────────────────
 export default function Dashboard() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, loading: userLoading } = useUser();
 
   const [docs,             setDocs]             = useState<Doc[]>([]);
@@ -365,6 +367,13 @@ export default function Dashboard() {
 
   useEffect(() => { (async () => { try { const r = await fetch('/api/documents'); if (r.ok) { const d = await r.json(); setDocs(d.documents); } } catch {} finally { setDocsLoading(false); } })(); }, []);
   useEffect(() => { (async () => { try { const r = await fetch('/api/tasks'); if (r.ok) { const d = await r.json(); setTasks(d.assignments || []); } } catch {} finally { setTasksLoading(false); } })(); }, []);
+
+  useEffect(() => {
+    const nav = searchParams.get('nav');
+    if (nav === 'articles' || nav === 'blogs' || nav === 'home') {
+      setActiveNav(nav as any);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
@@ -749,51 +758,13 @@ export default function Dashboard() {
       </div>
 
       {/* ══ MOBILE BOTTOM NAV ═══════════════════════════════════════════════ */}
-      <nav className="db-mobile-nav">
-        {/* Tape strip at top of mobile nav */}
-        <div className="db-tape-bar">
-          <div className="db-tape">
-            {[...TAPE_ITEMS, ...TAPE_ITEMS].map((item, i) => (
-              <span key={i} className="db-cap" style={{
-                color: i % 8 === 7 || (i - 7) % 8 === 0 ? 'var(--accent)' : 'var(--cream)',
-                opacity: 0.8, padding: '0 14px', marginBottom: 0,
-              }}>{item}</span>
-            ))}
-          </div>
-        </div>
-
-        <div className="db-mob-inner">
-          {NAV_ITEMS.map(item => {
-            const isActive = activeNav === item.id;
-            const inner = (
-              <>
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  {item.id === 'home'     && <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />}
-                  {item.id === 'articles' && <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /><path d="M16 13H8" /><path d="M16 17H8" /><path d="M10 9H8" /></>}
-                  {item.id === 'blogs'    && <><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></>}
-                  {item.id === 'tasks'    && <><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /></>}
-                  {item.id === 'team'     && <><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></>}
-                </svg>
-                <span>{item.label}</span>
-                {item.id === 'tasks' && pendingTasks.length > 0 && (
-                  <span style={{ position: 'absolute', top: 5, left: '50%', transform: 'translateX(4px)', width: 12, height: 12, background: 'var(--accent)', color: 'var(--paper)', fontSize: 7, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--ff-ui)' }}>
-                    {pendingTasks.length > 9 ? '9+' : pendingTasks.length}
-                  </span>
-                )}
-              </>
-            );
-            if (item.href) {
-              return <Link key={item.id} href={item.href} className={`db-mob-item${isActive ? ' active' : ''}`}>{inner}</Link>;
-            }
-            return (
-              <button key={item.id} className={`db-mob-item${isActive ? ' active' : ''}`}
-                onClick={() => setActiveNav(item.id as 'home' | 'articles' | 'blogs')}>
-                {inner}
-              </button>
-            );
-          })}
-        </div>
-      </nav>
+      <Suspense fallback={null}>
+        <MobileNav 
+          activeNav={activeNav} 
+          pendingTasksCount={pendingTasks.length} 
+          isFullSidebar={isFullSidebar} 
+        />
+      </Suspense>
 
       {/* ══ OVERLAYS ════════════════════════════════════════════════════════ */}
       {showCmd && <CommandPalette docs={allDocs} onClose={() => setShowCmd(false)} onCommand={handleCommand} />}

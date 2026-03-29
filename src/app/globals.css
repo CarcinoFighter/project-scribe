@@ -608,8 +608,54 @@ body {
 .db-mob-item.active,
 .mobile-nav-item.active {
   color: var(--accent);
-  border-bottom: 2px solid var(--accent);
-  background: var(--accent-dim);
+  background: var(--accent-sub);
+}
+.db-mob-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 20%; right: 20%;
+  height: 2px;
+  background: var(--accent);
+}
+
+.db-mob-icon-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.db-mob-label {
+  font-family: var(--ff-mono);
+  font-size: 7.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.db-mob-badge {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(4px);
+  min-width: 14px;
+  height: 14px;
+  background: var(--accent);
+  color: var(--paper);
+  font-family: var(--ff-mono);
+  font-size: 8px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+}
+
+/* Hide labels on small phones */
+@media (max-width: 480px) {
+  .db-mob-label { display: none; }
+  .db-mob-inner { height: 60px; }
+  .db-mob-item svg { width: 22px; height: 22px; }
 }
 
 /* ═══════════════════════════════════════════════════════════════

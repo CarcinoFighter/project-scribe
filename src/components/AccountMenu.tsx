@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Settings, Edit3, LogOut } from 'lucide-react';
+import { User, Settings, Edit3, LogOut, Sun, Moon } from 'lucide-react';
 import Image from 'next/image';
 
 interface AccountMenuProps {
@@ -10,14 +10,17 @@ interface AccountMenuProps {
   onClose: () => void;
   onToast: (m: string) => void;
   onOpenSettings?: () => void;
+  isDark?: boolean;
+  onToggleTheme?: () => void;
 }
 
-export default function AccountMenu({ user, onClose, onToast, onOpenSettings }: AccountMenuProps) {
+export default function AccountMenu({ user, onClose, onToast, onOpenSettings, isDark, onToggleTheme }: AccountMenuProps) {
   const router = useRouter();
 
   const items = [
     { icon: User,     label: 'Profile',     action: () => { onClose(); router.push('/profile'); } },
     { icon: Settings, label: 'Settings',    action: () => { onClose(); onOpenSettings?.(); } },
+    { icon: isDark ? Sun : Moon, label: `Switch to ${isDark ? 'Light' : 'Dark'}`, action: () => { onClose(); onToggleTheme?.(); } },
     { icon: Edit3,    label: 'Open Editor', action: () => { onClose(); router.push('/editor'); } },
   ];
 

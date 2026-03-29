@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -58,6 +58,7 @@ import MediaViewerModal from '@/components/MediaViewerModal';
 import TaskDetailsModal from '@/components/TaskDetailsModal';
 import MultiPersonSelect from '@/components/MultiPersonSelect';
 import Header from '@/components/Header';
+import MobileNav from '@/components/MobileNav';
 import { Notif } from '@/components/NotifPanel';
 import { Sidebar } from '@/components/Sidebar';
 import { DEPARTMENTS } from '@/config/departments';
@@ -1407,26 +1408,13 @@ export default function WorkPage() {
 
       {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
 
-      <nav className="db-mobile-nav">
-        <div className="db-mob-inner">
-          {[
-            { id: 'home',     label: 'Overview',    icon: Home,      href: '/'      },
-            { id: 'articles', label: 'Articles',    icon: FileText,  href: '/'      },
-            { id: 'blogs',    label: 'Blog Posts',  icon: BookOpen,  href: '/'      },
-            { id: 'tasks',    label: 'Assignments', icon: Briefcase, href: '/tasks' },
-            { id: 'team',     label: 'Team',        icon: Users,     href: '/team'  },
-          ].map(item => {
-            const isActive = item.id === 'tasks';
-            const inner = (
-              <>
-                <item.icon size={17} strokeWidth={1.8} />
-                <span>{item.label}</span>
-              </>
-            );
-            return <Link key={item.id} href={item.href} className={`db-mob-item${isActive ? ' active' : ''}`}>{inner}</Link>;
-          })}
-        </div>
-      </nav>
+      <Suspense fallback={null}>
+        <MobileNav 
+          activeNav="tasks" 
+          pendingTasksCount={myAssignments.filter(t => t.status !== 'done').length} 
+          isFullSidebar={isWritersBlock || user?.department === 'Leadership'} 
+        />
+      </Suspense>
     </div>
   );
 }
