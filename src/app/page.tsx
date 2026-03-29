@@ -389,7 +389,7 @@ function DashboardContent() {
   const published      = useMemo(() => allDocs.filter(d => d.status === 'published').length, [allDocs]);
   const drafts         = useMemo(() => allDocs.filter(d => d.status === 'draft').length, [allDocs]);
   const starredDocs    = useMemo(() => allDocs.filter(d => d.starred), [allDocs]);
-  const weekWindow     = useMemo(() => getWeekWindow().map((w: any) => w.date), []);
+  const weekWindow     = useMemo(() => getWeekWindow().map((w) => w.date), []);
   const weekWords      = useMemo(() => allDocs.filter(d => weekWindow.includes(d.date)).reduce((s, d) => s + d.words, 0), [allDocs, weekWindow]);
   const goalProgress   = wordGoal > 0 && lsDoc ? { current: lsDoc.words, goal: wordGoal } : null;
   const sortedArticles = useMemo(() => filterDocs(sortDocs(articles, sortBy), filter), [articles, sortBy, filter]);

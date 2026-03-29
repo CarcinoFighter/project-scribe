@@ -1,13 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { 
-  FileText, BookOpen, Heart, Clock, Star, MoreHorizontal, Plus, ArrowRight
-} from 'lucide-react';
+import { FileText, BookOpen, Heart, Clock, Star, MoreHorizontal, Plus, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { Task } from '@/types/task';
-import OriginalTaskCard from './TaskCard';
+// Removed unused imports: Image, Task, OriginalTaskCard
 
 export interface Doc {
   id: string;

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { sendPushToUser } from '@/lib/pushNotify';
+import { notifyUser } from '@/lib/pushNotify';
 
 // Called automatically by Vercel Cron (see vercel.json schedule).
 // Also callable manually: GET /api/push/remind   Header: x-sync-secret: <SYNC_SECRET>
@@ -30,10 +30,9 @@ export async function GET(req: NextRequest) {
 
   let sent = 0;
   for (const task of tasks ?? []) {
-    await sendPushToUser(task.assigned_to, {
+    await notifyUser(task.assigned_to, {
       title: '⏰ Task due today!',
       body: task.title,
-      tag: `reminder-${task.id}`,
       url: '/tasks',
     });
     sent++;
