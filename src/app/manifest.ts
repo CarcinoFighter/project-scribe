@@ -8,6 +8,7 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'A Beautiful Markdown Editor for Writers.',
     start_url: '/',
     display: 'standalone',
+    orientation: 'portrait',
     background_color: '#0c0b0f',
     theme_color: '#0c0b0f',
     icons: [

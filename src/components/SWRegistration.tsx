@@ -10,16 +10,21 @@ declare global {
 
 export default function SWRegistration() {
   useEffect(() => {
-    if ('serviceWorker' in navigator && window.serwist) {
-      // serwist is injected by @serwist/next if register: true is set.
-      // We don't necessarily need to call anything, but we can verify it's registered.
-      navigator.serviceWorker.getRegistration().then((registration) => {
-        if (registration) {
-          console.log('[pwa] service worker registered at scope:', registration.scope);
-        } else {
-          console.warn('[pwa] no service worker detected yet.');
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      const registerSW = async () => {
+        try {
+          const registration = await navigator.serviceWorker.register('/sw.js', {
+            scope: '/',
+            updateViaCache: 'none',
+          });
+          console.log('[pwa] Service Worker registered:', registration.scope);
+        } catch (error) {
+          console.error('[pwa] Service Worker registration failed:', error);
         }
-      });
+      };
+
+      // Always try to register/verify the service worker on mount to ensure installability
+      registerSW();
     }
   }, []);
 

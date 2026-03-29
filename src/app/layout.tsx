@@ -20,7 +20,6 @@ export const metadata: Metadata = {
     // ── FIX 3: iOS Safari ignores SVG for apple-touch-icon — must be PNG ──
     apple: '/pwa-icon-512.png',
   },
-  manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
