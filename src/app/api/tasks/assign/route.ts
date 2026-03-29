@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { sendPushToUser } from '@/lib/pushNotify';
 
 function slugify(text: string): string {
   return text
@@ -146,14 +145,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Fire push notification to all assignees (non-blocking)
+    // Fire notification to all assignees (DB + push)
+    const { notifyUser } = await import('@/lib/pushNotify');
     assigned_to.forEach(uid => {
-      sendPushToUser(uid, {
+      notifyUser(uid, {
         title: '📋 New task assigned to you',
         body: title,
         tag: `task-${data.id}`,
         url: '/tasks',
-      }).catch(() => {});
+      }).catch((e) => console.error('Notification failed:', e));
     });
 
     return NextResponse.json({ success: true, assignment: data, document_id });

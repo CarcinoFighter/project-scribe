@@ -104,6 +104,44 @@ export async function POST(req: NextRequest) {
       }, { status: 500 });
     }
 
+    // Notification Logic for comments
+    try {
+      const { data: assignment } = await supabaseAdmin
+        .from('work_assignments')
+        .select('assigned_to, assigned_by, title')
+        .eq('id', taskId)
+        .single();
+
+      if (assignment) {
+        const { notifyUser } = await import('@/lib/pushNotify');
+        const recipients = new Set<string>();
+        
+        // If commenter is the assigner, notify the assignee
+        if (payload.userId === assignment.assigned_by && assignment.assigned_to) {
+          recipients.add(assignment.assigned_to);
+        } 
+        // If commenter is the assignee, notify the assigner
+        else if (payload.userId === assignment.assigned_to && assignment.assigned_by) {
+          recipients.add(assignment.assigned_by);
+        }
+        // Otherwise, notify both (e.g. if a 3rd party comments)
+        else {
+          if (assignment.assigned_to && assignment.assigned_to !== payload.userId) recipients.add(assignment.assigned_to);
+          if (assignment.assigned_by && assignment.assigned_by !== payload.userId) recipients.add(assignment.assigned_by);
+        }
+
+        for (const uid of recipients) {
+          await notifyUser(uid, {
+            title: `💬 New comment on ${assignment.title}`,
+            body: content.length > 60 ? content.slice(0, 60) + '...' : content,
+            url: `/tasks`,
+          }).catch(() => {});
+        }
+      }
+    } catch (e) {
+      console.error('Comment notification failed:', e);
+    }
+
     return NextResponse.json({ comment });
   } catch (err: any) {
     return NextResponse.json({ error: 'Invalid request', details: err.message }, { status: 400 });

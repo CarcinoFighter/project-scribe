@@ -52,7 +52,8 @@ interface Doc {
   starred: boolean;
   isActive?: boolean;
 }
-interface Notif { id: string; title: string; body: string; time: string; read: boolean; }
+import { useNotifications } from '@/lib/useNotifications';
+import NotifPanel, { type Notif } from '@/components/NotifPanel';
 interface Cmd   { id: string; label: string; hint?: string; icon: React.ElementType; shortcut?: string; group: string; }
 type SortKey      = 'date' | 'words' | 'status';
 type FilterStatus = 'all' | 'published' | 'review' | 'draft';
@@ -67,11 +68,6 @@ function sortDocs(docs: Doc[], by: SortKey) {
 }
 function filterDocs(docs: Doc[], s: FilterStatus) { return s === 'all' ? docs : docs.filter(d => d.status === s); }
 
-const SEED_NOTIFS: Notif[] = [
-  { id: 'n1', title: 'Word goal reached', body: 'You hit your word goal for the day — keep going!', time: '2m ago', read: false },
-  { id: 'n2', title: 'Draft reminder',    body: 'You have 2 documents still in draft.',              time: '1h ago', read: false },
-  { id: 'n3', title: 'Weekly summary',    body: 'Great writing week — check your overview.',          time: '3h ago', read: true  },
-];
 
 function buildCmds(): Cmd[] {
   return [
@@ -94,55 +90,6 @@ const TAPE_ITEMS = ['WRITERS', 'DESIGN', 'DEV', 'PR', 'LEADERSHIP', 'VANTAGE', '
 // SUB-COMPONENTS
 // ─────────────────────────────────────────────────────────────────────────────
 
-function NotifPanel({ notifs, onMarkAllRead, onClose }: { notifs: Notif[]; onMarkAllRead: () => void; onClose: () => void; }) {
-  const unread = notifs.filter(n => !n.read).length;
-  return (
-    <div className="db-notif-panel db-rise-0">
-      {/* Masthead row */}
-      <div style={{ padding: '9px 14px', borderBottom: '1px solid var(--rule)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Bell size={11} strokeWidth={1.8} style={{ color: 'var(--mid)' }} />
-          <span style={{ fontFamily: 'var(--ff-ui)', fontSize: 9, fontWeight: 500, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink)' }}>
-            Notifications
-          </span>
-          {unread > 0 && (
-            <span style={{ fontFamily: 'var(--ff-ui)', fontSize: 8, fontWeight: 700, background: 'var(--accent)', color: 'var(--paper)', padding: '1px 5px', letterSpacing: '0.08em' }}>
-              {unread}
-            </span>
-          )}
-        </div>
-        {unread > 0 && (
-          <button className="db-ghost" onClick={onMarkAllRead} style={{ padding: '2px 7px', fontSize: 8 }}>
-            <BellOff size={9} strokeWidth={1.8} /> Mark read
-          </button>
-        )}
-      </div>
-
-      {/* Items */}
-      <div style={{ maxHeight: 270, overflowY: 'auto' }}>
-        {notifs.map(n => (
-          <div key={n.id} style={{
-            padding: '9px 14px',
-            borderBottom: '1px solid var(--rule)',
-            borderLeft: !n.read ? '2px solid var(--accent)' : '2px solid transparent',
-            background: !n.read ? 'var(--accent-sub)' : 'transparent',
-          }}>
-            <div style={{ fontFamily: 'var(--ff-ui)', fontSize: 10.5, fontWeight: 500, color: 'var(--ink)', marginBottom: 2, letterSpacing: '0.02em' }}>{n.title}</div>
-            <div style={{ fontFamily: 'var(--ff-ui)', fontSize: 9.5, color: 'var(--mid)', lineHeight: 1.5, marginBottom: 4 }}>{n.body}</div>
-            <span className="db-cap">{n.time}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Footer */}
-      <div style={{ padding: '7px 14px', borderTop: '1px solid var(--rule)' }}>
-        <button className="db-ghost" onClick={onClose} style={{ padding: '2px 7px', fontSize: 8 }}>
-          Close <ChevronRight size={9} />
-        </button>
-      </div>
-    </div>
-  );
-}
 
 // ── Command palette ────────────────────────────────────────────────────────────
 interface CtxPos { x: number; y: number; docId: string }
@@ -323,7 +270,11 @@ function DashboardContent() {
   const [appSettings,      setAppSettings]      = useState<AppSettings>(DEFAULT_SETTINGS);
   const [activeNav,        setActiveNav]        = useState<'home' | 'articles' | 'blogs'>('home');
   const [showCmd,          setShowCmd]          = useState(false);
-  const [notifs,           setNotifs]           = useState<Notif[]>(SEED_NOTIFS);
+  const {
+    notifications: notifs,
+    unreadCount,
+    markAllRead: handleMarkAllRead,
+  } = useNotifications();
   const [toast,            setToast]            = useState<string | null>(null);
   const [sortBy,           setSortBy]           = useState<SortKey>('date');
   const [filter,           setFilter]           = useState<FilterStatus>('all');
@@ -438,7 +389,6 @@ function DashboardContent() {
   const published      = useMemo(() => allDocs.filter(d => d.status === 'published').length, [allDocs]);
   const drafts         = useMemo(() => allDocs.filter(d => d.status === 'draft').length, [allDocs]);
   const starredDocs    = useMemo(() => allDocs.filter(d => d.starred), [allDocs]);
-  const unreadCount    = useMemo(() => notifs.filter(n => !n.read).length, [notifs]);
   const weekWindow     = useMemo(() => getWeekWindow().map((w: any) => w.date), []);
   const weekWords      = useMemo(() => allDocs.filter(d => weekWindow.includes(d.date)).reduce((s, d) => s + d.words, 0), [allDocs, weekWindow]);
   const goalProgress   = wordGoal > 0 && lsDoc ? { current: lsDoc.words, goal: wordGoal } : null;
@@ -504,7 +454,7 @@ function DashboardContent() {
             {showNotifPanel && (
               <NotifPanel
                 notifs={notifs}
-                onMarkAllRead={() => { setNotifs(ns => ns.map(n => ({ ...n, read: true }))); setToast('All read'); }}
+                onMarkAllRead={handleMarkAllRead}
                 onClose={() => setShowNotifPanel(false)}
               />
             )}

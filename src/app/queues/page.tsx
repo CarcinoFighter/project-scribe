@@ -24,6 +24,7 @@ import {
   ChevronRight as ChevronR,
 } from "lucide-react";
 import { useUser } from "@/lib/useUser";
+import { useNotifications } from "@/lib/useNotifications";
 import Toast from "@/components/Toast";
 import MediaViewerModal from "@/components/MediaViewerModal";
 import MultiPersonSelect from "@/components/MultiPersonSelect";
@@ -503,6 +504,11 @@ export default function QueuesPage() {
     blogs: 0,
   });
   const [starredDocs, setStarredDocs] = useState<any[]>([]);
+  const {
+    notifications: notifs,
+    unreadCount,
+    markAllRead: handleMarkAllRead,
+  } = useNotifications();
 
   const fetchWork = useCallback(async () => {
     setLoading(true);
@@ -658,14 +664,14 @@ export default function QueuesPage() {
     <div className={`db-root ${isDark ? "dark" : ""}`}>
       <Header
         user={user}
-        notifs={[]}
-        unreadCount={0}
+        notifs={notifs}
+        unreadCount={unreadCount}
         isDark={isDark}
         onToggleTheme={toggleTheme}
         onOpenCmd={() => {}}
         onOpenSearch={() => {}}
         onOpenSettings={() => {}}
-        onMarkAllRead={() => {}}
+        onMarkAllRead={handleMarkAllRead}
         onToast={(m) => setToast(m)}
       />
 

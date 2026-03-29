@@ -54,34 +54,26 @@ export async function POST(req: NextRequest) {
     // If approving, delete the file from storage bucket 'task-submissions'
     if (newStatus === 'done' && task.submission_media_url) {
       try {
-        console.log("Attempting to delete task media:", task.submission_media_url);
         const urlObj = new URL(task.submission_media_url);
-        
-        // Match everything after /task-submissions/
         const match = urlObj.pathname.match(/\/task-submissions\/(.+)$/);
-        
         if (match && match[1]) {
           const filePath = decodeURIComponent(match[1]);
-          console.log(`Extracted file path to delete: "${filePath}"`);
-          
-          const { data: removeData, error: removeError } = await supabaseAdmin.storage
-            .from('task-submissions')
-            .remove([filePath]);
-            
-          if (removeError) {
-            console.error("Supabase Storage remove error:", removeError);
-          } else {
-            console.log("Successfully deleted from Storage. Removed data:", removeData);
-          }
-          
-          // Clear it in DB
+          await supabaseAdmin.storage.from('task-submissions').remove([filePath]);
           await supabaseAdmin.from('work_assignments').update({ submission_media_url: null }).eq('id', id);
-        } else {
-          console.error("Could not extract proper file path from URL:", urlObj.pathname);
         }
       } catch (e) {
-        console.error("Failed to parse and delete task submission media:", e);
+        console.error("Failed to delete task submission media:", e);
       }
+    }
+
+    // Notification Logic for assignee
+    if (newStatus === 'done' && data && data.assigned_to) {
+      const { notifyUser } = await import('@/lib/pushNotify');
+      await notifyUser(data.assigned_to, {
+        title: '✅ Task Approved',
+        body: `"${data.title}" has been approved.`,
+        url: '/tasks',
+      }).catch(e => console.error('Notify assignee failed:', e));
     }
 
     return NextResponse.json({ success: true, assignment: data });

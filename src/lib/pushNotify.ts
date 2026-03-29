@@ -17,10 +17,9 @@ export interface PushPayload {
 }
 
 /**
- * Send a push notification to a specific user.
- * Silently removes stale/expired subscriptions.
+ * Internal function to send the actual push notification.
  */
-export async function sendPushToUser(userId: string, payload: PushPayload) {
+async function sendPushToUser(userId: string, payload: PushPayload) {
   const { data: subs, error } = await supabaseAdmin
     .from('push_subscriptions')
     .select('*')
@@ -31,8 +30,8 @@ export async function sendPushToUser(userId: string, payload: PushPayload) {
   const message = JSON.stringify({
     title: payload.title,
     body: payload.body,
-    icon: payload.icon ?? '/icon-192.png',
-    badge: payload.badge ?? '/icon-192.png',
+    icon: payload.icon ?? '/logo.png',
+    badge: payload.badge ?? '/logo.png',
     tag: payload.tag,
     data: { url: payload.url ?? '/' },
   });
@@ -46,7 +45,6 @@ export async function sendPushToUser(userId: string, payload: PushPayload) {
       try {
         await webpush.sendNotification(pushSub, message);
       } catch (err: any) {
-        // 410 Gone = subscription expired; clean it up
         if (err.statusCode === 410 || err.statusCode === 404) {
           await supabaseAdmin
             .from('push_subscriptions')
@@ -56,4 +54,31 @@ export async function sendPushToUser(userId: string, payload: PushPayload) {
       }
     })
   );
+}
+
+/**
+ * Unified notification sender: Sends a push and saves to DB for the bell icon.
+ */
+export async function notifyUser(userId: string, payload: PushPayload) {
+  // 1. Save to database for the Bell Icon UI
+  const { error: dbError } = await supabaseAdmin
+    .from('notifications')
+    .insert({
+      user_id: userId,
+      title: payload.title,
+      body: payload.body,
+      url: payload.url,
+      read: false,
+    });
+
+  if (dbError) {
+    console.warn('[notifyUser] failed to save to DB:', dbError.message);
+  }
+
+  // 2. Send the Push Notification
+  try {
+    await sendPushToUser(userId, payload);
+  } catch (pushErr) {
+    console.warn('[notifyUser] push failed:', pushErr);
+  }
 }

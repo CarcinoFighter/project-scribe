@@ -127,7 +127,19 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'No records updated' }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, assignment: data[0] });
+    const updated = data[0];
+
+    // Notification Logic
+    if (submission_media_url !== undefined && updated.assigned_by) {
+      const { notifyUser } = await import('@/lib/pushNotify');
+      await notifyUser(updated.assigned_by, {
+        title: '📤 Task submitted',
+        body: `"${updated.title}" has been submitted for review.`,
+        url: '/queues',
+      }).catch(e => console.error('Notify assigner failed:', e));
+    }
+
+    return NextResponse.json({ success: true, assignment: updated });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

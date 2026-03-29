@@ -139,6 +139,7 @@ import {
   ZoomIn,
 } from "lucide-react";
 import { useUser } from "@/lib/useUser";
+import { useNotifications } from "@/lib/useNotifications";
 import AccountMenu from "@/components/AccountMenu";
 import AssignTaskModal from "@/components/AssignTaskModal";
 import Toast from "@/components/Toast";
@@ -868,12 +869,12 @@ export default function WorkPage() {
     blogs: 0,
   });
   const [starredDocs, setStarredDocs] = useState<any[]>([]);
-  const [notifs, setNotifs] = useState<Notif[]>([]);
-
-  const handleMarkAllRead = useCallback(() => {
-    setNotifs((ns) => ns.map((n) => ({ ...n, read: true })));
-    setToast("All notifications read");
-  }, []);
+  const {
+    notifications: notifs,
+    unreadCount,
+    markAllRead: handleMarkAllRead,
+    markRead: handleMarkRead,
+  } = useNotifications();
 
   useEffect(() => {
     if (!loadingUser && user === null) {
@@ -1076,7 +1077,7 @@ export default function WorkPage() {
       <Header
         user={user}
         notifs={notifs}
-        unreadCount={notifs.filter((n) => !n.read).length}
+        unreadCount={unreadCount}
         isDark={isDark}
         onToggleTheme={toggleTheme}
         onOpenCmd={() => setShowCmd(true)}
