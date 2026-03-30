@@ -23,23 +23,22 @@ serwist.addEventListeners();
 
 // Handle incoming push notifications
 self.addEventListener('push', (event) => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let data: any = {};
   try {
     data = event.data ? event.data.json() : {};
-  } catch (_) { }
+  } catch (err) {
+    console.error('Push data error:', err);
+  }
 
-  const title = data.title || 'Carcino Vantage';
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const title = data.title || 'Vantage';
   const options: any = {
-    body: data.body || '',
-    // ── FIX 2: use pwa-icon-512.png which actually exists in /public ──
-    icon: data.icon || '/pwa-icon-512.png',
-    badge: data.badge || '/pwa-icon-512.png',
-    tag: data.tag || 'carcino-push',
+    body: data.body || 'New notification',
+    icon: '/pwa-icon-512.png',
+    badge: '/pwa-icon-512.png',
+    tag: data.tag || 'vantage-notification',
     data: data.data || { url: '/' },
-    requireInteraction: false,
-    actions: [
+    requireInteraction: data.requireInteraction || false,
+    actions: data.actions || [
       { action: 'view', title: 'View' },
       { action: 'dismiss', title: 'Dismiss' },
     ],

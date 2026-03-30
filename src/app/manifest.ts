@@ -2,15 +2,16 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    id: '/',
+    id: 'carcino-vantage',
     name: 'Carcino Vantage',
     short_name: 'Vantage',
-    description: 'A Beautiful Markdown Editor for Writers.',
+    description: 'A Premium Markdown Editor for focused writing.',
     start_url: '/',
     display: 'standalone',
-    orientation: 'portrait',
     background_color: '#0c0b0f',
     theme_color: '#0c0b0f',
+    orientation: 'any',
+    categories: ['productivity', 'utilities'],
     icons: [
       {
         src: '/logo.png',
@@ -19,7 +20,7 @@ export default function manifest(): MetadataRoute.Manifest {
         purpose: 'any',
       },
       {
-        src: '/logo.png',
+        src: '/pwa-icon-512.png',
         sizes: '512x512',
         type: 'image/png',
         purpose: 'any',

@@ -14,10 +14,10 @@ const dmMono = DM_Mono({
 
 export const metadata: Metadata = {
   title: 'Vantage',
-  description: 'A Beautiful Markdown Editor for Writers.',
+  description: 'A Premium Markdown Editor for focused writing.',
+  manifest: '/manifest.webmanifest',
   icons: {
     icon: '/logo.svg',
-    // ── FIX 3: iOS Safari ignores SVG for apple-touch-icon — must be PNG ──
     apple: '/pwa-icon-512.png',
   },
   appleWebApp: {

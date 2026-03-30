@@ -21,7 +21,7 @@ const withSerwist = withSerwistInit({
   swDest: "public/sw.js",
   // Disable in dev (Turbopack doesn't support Serwist's webpack plugin)
   disable: process.env.NODE_ENV !== "production",
-  register: true,
+  register: false,
   reloadOnOnline: true,
 });
 

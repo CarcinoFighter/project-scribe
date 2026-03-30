@@ -11,6 +11,9 @@ declare global {
 export default function SWRegistration() {
   useEffect(() => {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      // Only register in production as Serwist is disabled in dev by default
+      if (process.env.NODE_ENV !== 'production') return;
+
       const registerSW = async () => {
         try {
           const registration = await navigator.serviceWorker.register('/sw.js', {
@@ -19,11 +22,10 @@ export default function SWRegistration() {
           });
           console.log('[pwa] Service Worker registered:', registration.scope);
         } catch (error) {
-          console.error('[pwa] Service Worker registration failed:', error);
+          console.warn('[pwa] Service Worker registration failed:', error);
         }
       };
 
-      // Always try to register/verify the service worker on mount to ensure installability
       registerSW();
     }
   }, []);

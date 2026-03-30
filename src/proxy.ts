@@ -11,6 +11,11 @@ export async function proxy(request: NextRequest) {
   const isPublicPath = 
     pathname === '/login' || 
     pathname === '/api/auth/login' || 
+    pathname === '/manifest.webmanifest' ||
+    pathname === '/sw.js' ||
+    pathname.startsWith('/workbox-') ||
+    pathname.startsWith('/logo') ||
+    pathname.startsWith('/splash') ||
     pathname.startsWith('/api/internal/sync-user') || 
     pathname.startsWith('/api/content/');
 
@@ -54,6 +59,6 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|workbox-).*)',
   ],
 };
