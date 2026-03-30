@@ -762,18 +762,16 @@ function EditorContent() {
       </div>
 
 <div ref={splitRef} className="editor-body relative">
-  {/* Only render sidebar when open */}
-  {sidebarOpen && (
-    <OutlineSidebar
-      content={activeTab.content}
-      isOpen={sidebarOpen}
-      activeLineNumber={activeLine}
-      onHeadingClick={(line) => { editorRef.current?.scrollToLine(line); setSidebarOpen(false); }}
-      onClose={() => setSidebarOpen(false)}
-      width={isMobile ? 280 : sidebarWidth}
-    />
-  )}
-  
+  {/* Always mounted so the CSS slide-in transition works on mobile */}
+  <OutlineSidebar
+    content={activeTab.content}
+    isOpen={sidebarOpen}
+    activeLineNumber={activeLine}
+    onHeadingClick={(line) => { editorRef.current?.scrollToLine(line); setSidebarOpen(false); }}
+    onClose={() => setSidebarOpen(false)}
+    width={isMobile ? 280 : sidebarWidth}
+  />
+
   {sidebarOpen && !isMobile && (
     <div
       className="hidden md:block"

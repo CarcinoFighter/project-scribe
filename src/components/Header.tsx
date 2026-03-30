@@ -9,13 +9,11 @@ import {
   Search, Bell, Moon, Sun, Plus, ChevronDown,
   Settings, Menu, X, Columns, LayoutTemplate, Eye,
   Maximize2, ScanLine, Download, FolderOpen, PanelLeft,
-  // Install icon
-  Smartphone,
+  Smartphone, Save, Pencil, Check,
 } from 'lucide-react';
 import type { ViewMode, Collaborator } from '@/types';
 import AccountMenu from './AccountMenu';
 import NotifPanel, { Notif } from './NotifPanel';
-import CommandPalette from './CommandPalette';
 import { usePWAInstall } from '@/lib/usePWAInstall';
 
 interface HeaderProps {
@@ -49,6 +47,7 @@ interface HeaderProps {
   isSaved?: boolean;
   status?: string;
   onOpenMetadata?: () => void;
+  onSave?: () => void;
 
   // View modes
   viewMode?: ViewMode;
@@ -98,6 +97,7 @@ export default function Header({
   isSaved,
   status,
   onOpenMetadata,
+  onSave,
   viewMode,
   setViewMode,
   zenMode,
@@ -118,27 +118,49 @@ export default function Header({
   const [showNotifPanel, setShowNotifPanel] = useState(false);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [accountMenuPos, setAccountMenuPos] = useState<{ top: number; right: number } | null>(null);
-  // ── FIX 1: track notif panel portal position (same pattern as AccountMenu) ──
   const [notifPanelPos, setNotifPanelPos] = useState<{ top: number; right: number } | null>(null);
 
-  // ── FIX 3: PWA install ──
+  // Mobile inline rename state
+  const [mobileRenaming, setMobileRenaming] = useState(false);
+  const [mobileFileName, setMobileFileName] = useState(fileName ?? '');
+  const mobileRenameInputRef = useRef<HTMLInputElement>(null);
+
+  // Keep mobile filename in sync when prop changes externally
+  useEffect(() => {
+    if (!mobileRenaming) setMobileFileName(fileName ?? '');
+  }, [fileName, mobileRenaming]);
+
+  const commitMobileRename = () => {
+    if (setFileName && mobileFileName.trim()) {
+      setFileName(mobileFileName.trim());
+    } else {
+      setMobileFileName(fileName ?? '');
+    }
+    setMobileRenaming(false);
+  };
+
   const { canInstall, install } = usePWAInstall();
 
   const notifBtnRef = useRef<HTMLButtonElement>(null);
   const notifPanelRef = useRef<HTMLDivElement>(null);
-  const accountRef = useRef<HTMLDivElement>(null);
+  // FIX: use a ref on the account button itself for outside-click detection
+  // (the AccountMenu renders in a portal so a wrapper div ref won't contain it)
   const accountBtnRef = useRef<HTMLButtonElement>(null);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
       const target = e.target as Node;
-      // Check both the button and the portal panel
+
       const clickedInsideNotif =
         (notifBtnRef.current && notifBtnRef.current.contains(target)) ||
         (notifPanelRef.current && notifPanelRef.current.contains(target));
       if (!clickedInsideNotif) setShowNotifPanel(false);
 
-      if (accountRef.current && !accountRef.current.contains(target)) setShowAccountMenu(false);
+      const clickedInsideAccount =
+        (accountBtnRef.current && accountBtnRef.current.contains(target)) ||
+        (accountMenuRef.current && accountMenuRef.current.contains(target));
+      if (!clickedInsideAccount) setShowAccountMenu(false);
     };
     document.addEventListener('mousedown', handleOutsideClick);
     return () => document.removeEventListener('mousedown', handleOutsideClick);
@@ -149,25 +171,25 @@ export default function Header({
       const rect = accountBtnRef.current.getBoundingClientRect();
       setAccountMenuPos({ top: rect.bottom + 5, right: window.innerWidth - rect.right });
     }
-    setShowAccountMenu(!showAccountMenu);
+    setShowAccountMenu((prev) => !prev);
     setShowNotifPanel(false);
   };
 
-  // ── FIX 1: calculate portal position from the button rect ──
   const handleNotifClick = () => {
     if (!showNotifPanel && notifBtnRef.current) {
       const rect = notifBtnRef.current.getBoundingClientRect();
-      // Right-align panel with the button but clamp so it never goes off-screen
       const panelWidth = 300;
       const rightFromEdge = window.innerWidth - rect.right;
-      const clampedRight = Math.max(8, rightFromEdge); // at least 8px from the right edge
+      const clampedRight = Math.max(8, rightFromEdge);
       setNotifPanelPos({ top: rect.bottom + 7, right: clampedRight });
     }
-    setShowNotifPanel(!showNotifPanel);
+    setShowNotifPanel((prev) => !prev);
     setShowAccountMenu(false);
   };
 
   if (zenMode) return null;
+
+  const hasEditorCtx = fileName !== undefined && setFileName;
 
   return (
     <>
@@ -180,7 +202,7 @@ export default function Header({
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className={`db-icon-btn ${sidebarOpen ? 'active' : ''}`}
               style={{ border: '1px solid var(--rule)', flexShrink: 0 }}
-              title="Toggle sidebar"
+              title={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
             >
               <PanelLeft size={14} />
             </button>
@@ -216,19 +238,19 @@ export default function Header({
 
         <div className="db-vr" />
 
-        {/* ── Filename input (when in editor context) ──────────────────── */}
-        {fileName !== undefined && setFileName && (
+        {/* ── Filename input (desktop — hidden on mobile, shown in mobile menu) ── */}
+        {hasEditorCtx && (
           <>
-            <div className="flex items-center gap-2 min-w-0" style={{ flex: '0 1 260px' }}>
+            <div className="hidden sm:flex items-center gap-2 min-w-0" style={{ flex: '0 1 260px' }}>
               <input
                 value={fileName}
-                onChange={(e) => setFileName(e.target.value)}
+                onChange={(e) => setFileName!(e.target.value)}
                 className="db-inp min-w-0"
                 style={{ flex: 1, fontSize: '13px', fontWeight: 500 }}
                 spellCheck={false}
               />
               <span
-                className={`db-status flex-shrink-0 hidden sm:block ${isSaved ? 'published' : 'draft'}`}
+                className={`db-status flex-shrink-0 ${isSaved ? 'published' : 'draft'}`}
                 style={{ fontSize: '7px' }}
               >
                 {isSaved ? 'SYNCED' : 'MODIFIED'}
@@ -262,7 +284,7 @@ export default function Header({
         {/* ── Right-side actions ───────────────────────────────────────── */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
 
-          {/* View mode toggles */}
+          {/* View mode toggles — desktop only */}
           {setViewMode && (
             <div className="hidden lg:flex items-center gap-0 border border-[var(--rule)]" id="tour-view-modes">
               <button
@@ -292,7 +314,7 @@ export default function Header({
             </div>
           )}
 
-          {/* Zen / Focus tools */}
+          {/* Zen / Focus tools — desktop only */}
           {(onToggleZen || onToggleFocus) && (
             <div className="hidden md:flex items-center gap-0 border border-[var(--rule)]">
               {onToggleZen && (
@@ -318,7 +340,7 @@ export default function Header({
             </div>
           )}
 
-          {/* File actions: new / open / export */}
+          {/* File actions — desktop only */}
           {(onNew || onOpenFile || onExportMd) && (
             <div className="hidden md:flex items-center gap-0 border border-[var(--rule)]" id="tour-export">
               {onNew && (
@@ -377,7 +399,7 @@ export default function Header({
             </div>
           )}
 
-          {/* ── FIX 3: PWA Install button (only shown when browser fires beforeinstallprompt) ── */}
+          {/* PWA Install — desktop */}
           {canInstall && (
             <button
               className="db-icon-btn hidden sm:flex"
@@ -388,7 +410,19 @@ export default function Header({
             </button>
           )}
 
-          {/* ── FIX 1: Notifications — button + portal-rendered panel ── */}
+          {/* ── Mobile: Save button (quick-access, shown only in editor context) ── */}
+          {hasEditorCtx && onSave && (
+            <button
+              className={`db-icon-btn sm:hidden ${isSaved ? '' : 'text-[var(--accent)]'}`}
+              onClick={onSave}
+              title={isSaved ? 'All changes saved' : 'Save'}
+              style={!isSaved ? { color: 'var(--accent)', borderColor: 'var(--accent)' } : undefined}
+            >
+              <Save size={14} strokeWidth={1.8} />
+            </button>
+          )}
+
+          {/* Notifications */}
           <button
             ref={notifBtnRef}
             className={`db-icon-btn${showNotifPanel ? ' active' : ''}`}
@@ -401,7 +435,6 @@ export default function Header({
             )}
           </button>
 
-          {/* Render the notif panel via portal so it escapes any overflow/stacking context */}
           {showNotifPanel && onMarkAllRead && notifPanelPos && createPortal(
             <div
               ref={notifPanelRef}
@@ -410,7 +443,6 @@ export default function Header({
                 top: notifPanelPos.top,
                 right: notifPanelPos.right,
                 zIndex: 9960,
-                // Ensure it never overflows the viewport on small screens
                 maxWidth: 'calc(100vw - 16px)',
               }}
             >
@@ -454,43 +486,44 @@ export default function Header({
             </button>
           )}
 
-          {/* Account */}
-          <div ref={accountRef} style={{ position: 'relative' }}>
-            <button
-              ref={accountBtnRef}
-              className="db-ghost"
-              style={{ gap: 6, padding: '3px 8px 3px 4px' }}
-              onClick={handleAccountClick}
-            >
-              {user?.avatar_url ? (
-                <div style={{ width: 20, height: 20, overflow: 'hidden', border: '1px solid var(--rule)', flexShrink: 0 }}>
-                  <Image src={user.avatar_url} alt="Profile" width={20} height={20} />
-                </div>
-              ) : (
-                <div className="db-avatar" style={{ width: 20, height: 20 }}>
-                  {user?.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || 'S'}
-                </div>
-              )}
-              <span className="hidden md:block" style={{ fontFamily: 'var(--ff-ui)', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.06em', color: 'var(--ink)' }}>
-                {user?.name || ''}
-              </span>
-              <ChevronDown className="hidden sm:block" size={10} strokeWidth={2} style={{ color: 'var(--mid)' }} />
-            </button>
-
-            {showAccountMenu && accountMenuPos && createPortal(
-              <div style={{ position: 'fixed', top: accountMenuPos.top, right: accountMenuPos.right, zIndex: 9960 }}>
-                <AccountMenu
-                  user={user}
-                  onClose={() => setShowAccountMenu(false)}
-                  onToast={onToast}
-                  onOpenSettings={onOpenSettings}
-                  isDark={isDark}
-                  onToggleTheme={onToggleTheme}
-                />
-              </div>,
-              document.body
+          {/* Account — always visible */}
+          <button
+            ref={accountBtnRef}
+            className="db-ghost"
+            style={{ gap: 6, padding: '3px 8px 3px 4px' }}
+            onClick={handleAccountClick}
+          >
+            {user?.avatar_url ? (
+              <div style={{ width: 20, height: 20, overflow: 'hidden', border: '1px solid var(--rule)', flexShrink: 0 }}>
+                <Image src={user.avatar_url} alt="Profile" width={20} height={20} />
+              </div>
+            ) : (
+              <div className="db-avatar" style={{ width: 20, height: 20 }}>
+                {user?.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || 'S'}
+              </div>
             )}
-          </div>
+            <span className="hidden md:block" style={{ fontFamily: 'var(--ff-ui)', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.06em', color: 'var(--ink)' }}>
+              {user?.name || ''}
+            </span>
+            <ChevronDown className="hidden sm:block" size={10} strokeWidth={2} style={{ color: 'var(--mid)' }} />
+          </button>
+
+          {showAccountMenu && accountMenuPos && createPortal(
+            <div
+              ref={accountMenuRef}
+              style={{ position: 'fixed', top: accountMenuPos.top, right: accountMenuPos.right, zIndex: 9960 }}
+            >
+              <AccountMenu
+                user={user}
+                onClose={() => setShowAccountMenu(false)}
+                onToast={onToast}
+                onOpenSettings={onOpenSettings}
+                isDark={isDark}
+                onToggleTheme={onToggleTheme}
+              />
+            </div>,
+            document.body
+          )}
         </div>
       </header>
 
@@ -498,6 +531,118 @@ export default function Header({
       {mobileMenuOpen && setMobileMenuOpen && (
         <div className="md:hidden fixed inset-x-0 top-[42px] bg-[var(--paper)] border-b border-[var(--rule)] z-40 p-4 space-y-4 max-h-[calc(100vh-42px)] overflow-y-auto">
 
+          {/* ── Document rename + save ── */}
+          {hasEditorCtx && (
+            <div className="border-b border-[var(--rule)] pb-4 space-y-2">
+              <span className="db-cap block">Document</span>
+
+              {/* Rename row */}
+              <div className="flex items-center gap-2">
+                {mobileRenaming ? (
+                  <>
+                    <input
+                      ref={mobileRenameInputRef}
+                      value={mobileFileName}
+                      onChange={(e) => setMobileFileName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') commitMobileRename();
+                        if (e.key === 'Escape') {
+                          setMobileFileName(fileName ?? '');
+                          setMobileRenaming(false);
+                        }
+                      }}
+                      className="db-inp flex-1 text-xs"
+                      autoFocus
+                      spellCheck={false}
+                    />
+                    <button
+                      onClick={commitMobileRename}
+                      className="db-icon-btn"
+                      style={{ flexShrink: 0, color: 'var(--accent)', borderColor: 'var(--accent)' }}
+                      title="Confirm rename"
+                    >
+                      <Check size={13} />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setMobileFileName(fileName ?? '');
+                        setMobileRenaming(false);
+                      }}
+                      className="db-icon-btn"
+                      style={{ flexShrink: 0 }}
+                      title="Cancel"
+                    >
+                      <X size={13} />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span
+                      className="flex-1 truncate text-xs font-medium"
+                      style={{ color: 'var(--ink)', fontFamily: 'var(--ff-ui)' }}
+                    >
+                      {fileName || 'Untitled'}
+                    </span>
+                    <span
+                      className={`db-status flex-shrink-0 ${isSaved ? 'published' : 'draft'}`}
+                      style={{ fontSize: '7px' }}
+                    >
+                      {isSaved ? 'SYNCED' : 'MODIFIED'}
+                    </span>
+                    <button
+                      onClick={() => {
+                        setMobileRenaming(true);
+                        // focus deferred so the input has time to mount
+                        setTimeout(() => mobileRenameInputRef.current?.select(), 50);
+                      }}
+                      className="db-icon-btn flex-shrink-0"
+                      title="Rename document"
+                    >
+                      <Pencil size={13} />
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {/* Save + status row */}
+              <div className="flex items-center gap-2">
+                {onSave && (
+                  <button
+                    onClick={() => { onSave(); setMobileMenuOpen(false); }}
+                    className="flex-1 db-btn justify-center text-xs"
+                    style={!isSaved ? { borderColor: 'var(--accent)', color: 'var(--accent)' } : undefined}
+                  >
+                    <Save size={14} className="mr-2" />
+                    {isSaved ? 'Saved' : 'Save now'}
+                  </button>
+                )}
+                {status && onOpenMetadata && (
+                  <button
+                    onClick={() => { onOpenMetadata!(); setMobileMenuOpen(false); }}
+                    className="db-ghost text-xs"
+                    style={{ color: 'var(--accent)', flexShrink: 0 }}
+                  >
+                    {status.toUpperCase().replace(/_/g, ' ')}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── Sidebar toggle (mobile) ── */}
+          {setSidebarOpen && (
+            <div className="border-b border-[var(--rule)] pb-4">
+              <button
+                onClick={() => { setSidebarOpen(!sidebarOpen); setMobileMenuOpen(false); }}
+                className={`w-full db-ghost justify-center text-xs ${sidebarOpen ? 'active' : ''}`}
+              >
+                <PanelLeft size={14} className="mr-2" />
+                {sidebarOpen ? 'Hide Sidebar' : 'Show Sidebar'}
+              </button>
+            </div>
+          )}
+
+          {/* ── View mode ── */}
           {setViewMode && (
             <div className="space-y-2">
               <span className="db-cap block mb-2">View Mode</span>
@@ -528,18 +673,12 @@ export default function Header({
                 <ScanLine size={14} className="mr-2" /> Focus
               </button>
             )}
-            {/* Theme Toggle */}
-            <button className="db-icon-btn" onClick={onToggleTheme} title={isDark ? 'Light mode' : 'Dark mode'}>
-              {isDark ? <Sun size={13} strokeWidth={1.8} /> : <Moon size={13} strokeWidth={1.8} />}
+            <button className="db-ghost justify-center text-xs" onClick={() => { onToggleTheme(); }}>
+              {isDark ? <Sun size={13} strokeWidth={1.8} className="mr-2" /> : <Moon size={13} strokeWidth={1.8} className="mr-2" />}
+              {isDark ? 'Light Mode' : 'Dark Mode'}
             </button>
-            {setSidebarOpen && (
-              <button onClick={() => { setSidebarOpen(!sidebarOpen); setMobileMenuOpen(false); }} className="db-ghost justify-center text-xs">
-                <PanelLeft size={14} className="mr-2" /> Sidebar
-              </button>
-            )}
-            {/* ── FIX 3: Install button in mobile menu ── */}
             {canInstall && (
-              <button onClick={() => { install(); setMobileMenuOpen(false); }} className="db-ghost justify-center text-xs col-span-2">
+              <button onClick={() => { install(); setMobileMenuOpen(false); }} className="db-ghost justify-center text-xs">
                 <Smartphone size={14} className="mr-2" /> Install App
               </button>
             )}
@@ -567,6 +706,12 @@ export default function Header({
           )}
 
           <div className="border-t border-[var(--rule)] pt-4 space-y-2">
+            <button onClick={() => { onOpenSearch(); setMobileMenuOpen(false); }} className="w-full db-ghost justify-center text-xs">
+              <Search size={14} className="mr-2" /> Search
+            </button>
+            <button onClick={() => { onOpenCmd(); setMobileMenuOpen(false); }} className="w-full db-ghost justify-center text-xs">
+              <Search size={14} className="mr-2" /> Command palette
+            </button>
             {onOpenMetadata && (
               <button onClick={() => { onOpenMetadata(); setMobileMenuOpen(false); }} className="w-full db-ghost justify-center text-xs">
                 Document Settings
