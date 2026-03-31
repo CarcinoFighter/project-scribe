@@ -28,8 +28,6 @@ export async function POST(req: NextRequest) {
       status: (status === 'review' || status === 'in_review') ? 'review' : 'draft',
       title: title,
       content: content || '',
-      excerpt: '', // calculated on load
-      words: 0, // calculated on load
       tags: [],
       starred: false
     });
