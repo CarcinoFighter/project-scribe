@@ -382,16 +382,16 @@ function DashboardContent() {
     else if (id === 'settings') setShowSettings(true);
   }, [toggleTheme, router]);
 
-  const allDocs        = useMemo(() => lsDoc ? [lsDoc, ...docs] : docs, [docs, lsDoc]);
+  const allDocs        = docs;
   const articles       = useMemo(() => allDocs.filter(d => d.type === 'cancer_docs' || d.type === 'survivor_stories'), [allDocs]);
   const blogs          = useMemo(() => allDocs.filter(d => d.type === 'blogs'), [allDocs]);
   const totalWords     = useMemo(() => docs.reduce((s, d) => s + d.words, 0), [docs]);
-  const published      = useMemo(() => allDocs.filter(d => d.status === 'published').length, [allDocs]);
-  const drafts         = useMemo(() => allDocs.filter(d => d.status === 'draft').length, [allDocs]);
+  const published      = useMemo(() => docs.filter(d => d.status === 'published').length, [docs]);
+  const drafts         = useMemo(() => docs.filter(d => d.status === 'draft').length, [docs]);
   const starredDocs    = useMemo(() => allDocs.filter(d => d.starred), [allDocs]);
   const weekWindow     = useMemo(() => getWeekWindow().map((w) => w.date), []);
-  const weekWords      = useMemo(() => allDocs.filter(d => weekWindow.includes(d.date)).reduce((s, d) => s + d.words, 0), [allDocs, weekWindow]);
-  const goalProgress   = wordGoal > 0 && lsDoc ? { current: lsDoc.words, goal: wordGoal } : null;
+  const weekWords      = useMemo(() => docs.filter(d => weekWindow.includes(d.date)).reduce((s, d) => s + d.words, 0), [docs, weekWindow]);
+  const goalProgress   = wordGoal > 0 && docs.length > 0 ? { current: docs[0].words, goal: wordGoal } : null;
   const sortedArticles = useMemo(() => filterDocs(sortDocs(articles, sortBy), filter), [articles, sortBy, filter]);
   const sortedBlogs    = useMemo(() => filterDocs(sortDocs(blogs, sortBy), filter), [blogs, sortBy, filter]);
   const pendingTasks   = useMemo(() => tasks.filter(t => t.status !== 'done'), [tasks]);
