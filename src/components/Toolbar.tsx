@@ -3,15 +3,17 @@
 import { useState, useCallback, useRef } from 'react';
 import {
   Bold, Italic, Strikethrough, Code, Code2, Quote, Link, Image as ImageIcon,
-  Heading1, Heading2, Heading3, List, LucideIcon, ListOrdered, Minus, Table, ScanLine, MoreHorizontal, ChevronDown
+  Heading1, Heading2, Heading3, List, LucideIcon, ListOrdered, Minus, Table, ScanLine, MoreHorizontal, ChevronDown,
+  Underline
 } from 'lucide-react';
 import clsx from 'clsx';
 import type { ViewMode } from '@/types';
 
 export type ToolbarAction =
-  | 'bold' | 'italic' | 'strikethrough' | 'code' | 'codeblock'
+  | 'bold' | 'italic' | 'strikethrough' | 'underline' | 'code' | 'codeblock'
   | 'quote' | 'link' | 'image' | 'h1' | 'h2' | 'h3'
   | 'ul' | 'ol' | 'hr' | 'table' | 'focus';
+
 
 interface Props {
   onAction: (a: ToolbarAction) => void;
@@ -39,6 +41,7 @@ const GROUPS: Group[] = [
     items: [
       { action: 'bold', icon: Bold, title: 'Bold (Ctrl+B)' },
       { action: 'italic', icon: Italic, title: 'Italic (Ctrl+I)' },
+      { action: 'underline', icon: Underline, title: 'Underline' },
       { action: 'strikethrough', icon: Strikethrough, title: 'Strikethrough' },
     ]
   },

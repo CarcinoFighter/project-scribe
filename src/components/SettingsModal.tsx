@@ -844,6 +844,7 @@ export default function SettingsModal({ settings, onClose, onChange }: {
               <ShortcutRow label="Zen mode"         keys={['⌘','Shift','Z']} />
               <ShortcutRow label="Bold"             keys={['⌘','B']} />
               <ShortcutRow label="Italic"           keys={['⌘','I']} />
+              <ShortcutRow label="Underline"        keys={['⌘','U']} />
               <ShortcutRow label="Save"             keys={['⌘','S']} />
               <ShortcutRow label="Find"             keys={['⌘','F']} />
               <ShortcutRow label="New tab"          keys={['⌘','T']} />

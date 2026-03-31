@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  Bold, Italic, Strikethrough, Code, Code2, Quote, Link, Table,
+  Bold, Italic, Strikethrough, Underline, Code, Code2, Quote, Link, Table,
   Heading1, Heading2, Heading3, List, ListOrdered, Minus,
   Eye, Columns, LayoutTemplate, Moon, Sun, Download, FolderOpen,
   Maximize2, ScanLine, Type, Search, LucideIcon, FileText, Plus,
@@ -23,6 +23,7 @@ function buildCommands(isDark: boolean): Cmd[] {
   return [
     { id: 'bold', label: 'Bold', hint: 'Wrap selection', icon: Bold, shortcut: 'Ctrl+B', group: 'Format' },
     { id: 'italic', label: 'Italic', hint: 'Wrap selection', icon: Italic, shortcut: 'Ctrl+I', group: 'Format' },
+    { id: 'underline', label: 'Underline', hint: 'Wrap selection', icon: Underline, shortcut: 'Ctrl+U', group: 'Format' },
     { id: 'strikethrough', label: 'Strikethrough', hint: 'Wrap selection', icon: Strikethrough, group: 'Format' },
     { id: 'code', label: 'Inline code', hint: 'Wrap selection', icon: Code, group: 'Format' },
     { id: 'codeblock', label: 'Code block', hint: 'Insert at cursor', icon: Code2, group: 'Format' },

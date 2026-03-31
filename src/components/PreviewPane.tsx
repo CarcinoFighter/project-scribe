@@ -5,7 +5,14 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import rehypeSlug from 'rehype-slug';
+import rehypeRaw from 'rehype-raw';
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import type { RefObject } from 'react';
+
+const PREVIEW_SANITIZE_SCHEMA = {
+  ...defaultSchema,
+  tagNames: [...(defaultSchema.tagNames || []), 'u'],
+};
 
 interface Props {
   content: string;
@@ -47,7 +54,7 @@ export default function PreviewPane({ content, containerRef }: Props) {
         <div className="prose-carcino max-w-none md:max-w-2xl lg:max-w-3xl mx-auto">
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
-            rehypePlugins={[rehypeHighlight, rehypeSlug]}
+            rehypePlugins={[rehypeHighlight, rehypeSlug, rehypeRaw, [rehypeSanitize, PREVIEW_SANITIZE_SCHEMA]]}
             components={{
               a: ({ href, children, ...props }) => (
                 <a

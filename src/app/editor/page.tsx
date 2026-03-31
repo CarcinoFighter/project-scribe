@@ -594,6 +594,7 @@ function EditorContent() {
     switch (id) {
       case 'bold': api?.wrapSelection('**', '**', 'bold text'); break;
       case 'italic': api?.wrapSelection('*', '*', 'italic text'); break;
+      case 'underline': api?.wrapSelection('<u>', '</u>', 'underlined text'); break;
       case 'h1': api?.prefixLines('#'); break;
       case 'h2': api?.prefixLines('##'); break;
       case 'ul': api?.prefixLines('-'); break;
