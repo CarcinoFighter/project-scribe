@@ -10,22 +10,20 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import {
   FileText, BookOpen, Search, Moon, Sun, Bell, BellOff,
   ChevronRight, Plus, TrendingUp, Clock, BarChart2,
-  Star, MoreHorizontal, Trash2, ExternalLink,
+  Star, MoreHorizontal, Trash2,
   ArrowRight, Settings,
   Activity, ChevronDown, PenTool,
   Home, Edit3, Award,
   Check, ArrowUpDown, Target, Loader2,
   Briefcase, Users, Heart, Calendar, Zap,
-  Flame, BookMarked, Sparkles, TrendingDown,
-  Layers
+  Flame, BookMarked
 } from 'lucide-react';
 import { useUser } from '@/lib/useUser';
 import { useTheme } from '@/lib/useTheme';
 import AccountMenu from '@/components/AccountMenu';
 import Toast from '@/components/Toast';
 import TaskSubmissionModal from '@/components/TaskSubmissionModal';
-import SettingsModal, { loadSettings, saveSettings, applySettings, DEFAULT_SETTINGS, THEMES } from '@/components/SettingsModal';
-import type { AppSettings } from '@/components/SettingsModal';
+import SettingsModal, { loadSettings, saveSettings, applySettings, DEFAULT_SETTINGS } from '@/components/SettingsModal';
 
 import DevelopmentDashboard from '@/components/DevelopmentDashboard';
 import MarketingDashboard from '@/components/MarketingDashboard';
@@ -33,9 +31,8 @@ import DesignLabDashboard from '@/components/DesignLabDashboard';
 import LeadershipDashboard from '@/components/LeadershipDashboard';
 import WritersDashboard from '@/components/WritersDashboard';
 import MobileNav from '@/components/MobileNav';
-import { StatCard, ActivityChart, QuickAction, DocCard, EmptyDocState, Skeleton, TaskCard } from '@/components/WritersDashboardComponents';
-import { DEPARTMENTS } from '@/config/departments';
-import { getGreeting, getTodayLabel, fmtWords, fmtDate, getWeekWindow, getTodayStr, countWords, excerptFrom } from '@/lib/utils';
+import { DocCard, EmptyDocState } from '@/components/WritersDashboardComponents';
+import { getGreeting, getTodayLabel, fmtWords, getWeekWindow, getTodayStr, countWords, excerptFrom } from '@/lib/utils';
 import { Task } from '@/types/task';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -53,7 +50,7 @@ interface Doc {
   isActive?: boolean;
 }
 import { useNotifications } from '@/lib/useNotifications';
-import NotifPanel, { type Notif } from '@/components/NotifPanel';
+import NotifPanel from '@/components/NotifPanel';
 interface Cmd   { id: string; label: string; hint?: string; icon: React.ElementType; shortcut?: string; group: string; }
 type SortKey      = 'date' | 'words' | 'status';
 type FilterStatus = 'all' | 'published' | 'review' | 'draft';
@@ -157,7 +154,7 @@ function CommandPalette({ docs, onClose, onCommand }: { docs: Doc[]; onClose: ()
         <div ref={listRef} style={{ maxHeight: 340, overflowY: 'auto' }}>
           {flat.length === 0 ? (
             <div style={{ padding: '22px 16px', textAlign: 'center', fontFamily: 'var(--ff-ui)', fontSize: 9.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--mid)' }}>
-              No results for "{query}"
+              No results for &quot;{query}&quot;
             </div>
           ) : (
             <>
@@ -322,7 +319,7 @@ function DashboardContent() {
   useEffect(() => {
     const nav = searchParams.get('nav');
     if (nav === 'articles' || nav === 'blogs' || nav === 'home') {
-      setActiveNav(nav as any);
+      setActiveNav(nav as 'articles' | 'blogs' | 'home');
     }
   }, [searchParams]);
 

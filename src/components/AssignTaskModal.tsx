@@ -626,7 +626,7 @@ export default function AssignTaskModal({ member, onClose, onSuccess, defaultCat
                         </button>
                       ))}
                       {uniqueIcons.length === 0 && (
-                        <div className="col-span-7 py-4 text-center text-[10px] text-[var(--text-4)]">No icons match "{iconSearch}"</div>
+                        <div className="col-span-7 py-4 text-center text-[10px] text-[var(--text-4)]">No icons match &quot;{iconSearch}&quot;</div>
                       )}
                     </div>
                   </div>

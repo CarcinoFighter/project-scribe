@@ -66,8 +66,8 @@ export default function TaskSubmissionModal({ taskId, taskTitle, onClose, onSucc
       }
 
       onSuccess(url);
-    } catch (err: any) {
-      setError(err.message || 'An error occurred during submission.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An error occurred during submission.');
     } finally {
       setSubmitting(false);
     }

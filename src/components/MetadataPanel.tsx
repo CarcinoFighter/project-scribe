@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { useUser } from '@/lib/useUser';
 import {
-  FileText,
   Globe,
   Lock,
   Tag,
@@ -11,13 +11,23 @@ import {
   ChevronDown,
   Info,
   RefreshCw,
-  ExternalLink,
   ShieldCheck,
   Send,
   AlertCircle,
   Clock,
   MessageSquare
 } from 'lucide-react';
+
+interface Comment {
+  id: string;
+  content: string;
+  created_at: string;
+  type?: string;
+  user?: {
+    name: string;
+    avatar_url?: string;
+  };
+}
 
 interface MetadataPanelProps {
   id: string;
@@ -35,7 +45,7 @@ interface MetadataPanelProps {
 
 export default function MetadataPanel(props: MetadataPanelProps) {
   const {
-    id, title, slug, setSlug,
+    id, slug, setSlug,
     status, setStatus,
     contentType, setContentType,
     onAutoGenerateSlug, author_id, onClose
@@ -43,7 +53,7 @@ export default function MetadataPanel(props: MetadataPanelProps) {
   const { user } = useUser();
   const [commentText, setCommentText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [comments, setComments] = useState<any[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   React.useEffect(() => {
@@ -83,9 +93,9 @@ export default function MetadataPanel(props: MetadataPanelProps) {
         const errData = await res.json();
         setErrorMsg(errData.details || errData.error || 'Failed to request changes');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setErrorMsg(err.message || 'Connection error');
+      setErrorMsg(err instanceof Error ? err.message : 'Connection error');
     } finally {
       setIsSubmitting(false);
     }
@@ -116,9 +126,9 @@ export default function MetadataPanel(props: MetadataPanelProps) {
       }
       setStatus('ready_for_upload');
       setCommentText('');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setErrorMsg(err.message || 'Connection error');
+      setErrorMsg(err instanceof Error ? err.message : 'Connection error');
     } finally {
       setIsSubmitting(false);
     }
@@ -156,7 +166,7 @@ export default function MetadataPanel(props: MetadataPanelProps) {
             ].map((type) => (
               <button
                 key={type.id}
-                onClick={() => setContentType(type.id as any)}
+                onClick={() => setContentType(type.id as 'blogs' | 'survivor_stories' | 'cancer_docs')}
                 className={`flex items-center justify-between px-3 py-2 rounded-[var(--r-md)] text-xs transition-all border ${contentType === type.id
                     ? 'bg-[var(--accent-subtle2)] border-[var(--accent-subtle)] text-[var(--accent)] font-semibold'
                     : 'bg-transparent border-transparent text-[var(--text-3)] hover:bg-[var(--bg-deep)]'
@@ -370,7 +380,7 @@ export default function MetadataPanel(props: MetadataPanelProps) {
                 <div key={comment.id} className="flex gap-2">
                   <div className="flex-shrink-0 mt-0.5">
                     {comment.user?.avatar_url ? (
-                      <img src={comment.user.avatar_url} alt="" className="w-5 h-5 rounded-full" />
+                      <Image src={comment.user.avatar_url} alt="" width={20} height={20} className="w-5 h-5 rounded-full" />
                     ) : (
                       <div className="w-5 h-5 rounded-full bg-[var(--bg-deep)] flex items-center justify-center text-[8px] font-bold text-[var(--text-4)] border border-[var(--border-med)]">
                         {comment.user?.name?.[0] || '?'}

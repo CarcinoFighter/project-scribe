@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
     // Fetch author information
     const authorIds = Array.from(new Set(allDocsRaw.map(d => d.author_id).filter(Boolean)));
     
-    let authorsMap: Record<string, any> = {};
+    const authorsMap: Record<string, any> = {};
     if (authorIds.length > 0) {
       const { data: authors, error: authorsError } = await supabaseAdmin
         .from('users')

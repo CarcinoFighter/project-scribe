@@ -44,14 +44,14 @@ export function getLocalDocs(): LocalDoc[] {
       const id = file.replace(/\.(md|txt)$/, '');
       const parts = id.split('_');
       
-      let type: any = 'cancer_docs';
-      let status: any = 'draft';
+      let type: LocalDoc['type'] = 'cancer_docs';
+      let status: LocalDoc['status'] = 'draft';
       let title = id;
 
       if (parts.length >= 3) {
         // If we follow a convention like: type_status_title
-        type = ['blogs', 'survivor_stories', 'cancer_docs'].includes(parts[0]) ? parts[0] : 'cancer_docs';
-        status = ['published', 'review', 'draft'].includes(parts[1]) ? parts[1] : 'draft';
+        type = (['blogs', 'survivor_stories', 'cancer_docs'].includes(parts[0]) ? parts[0] : 'cancer_docs') as LocalDoc['type'];
+        status = (['published', 'review', 'draft'].includes(parts[1]) ? parts[1] : 'draft') as LocalDoc['status'];
         title = parts.slice(2).join(' ').replace(/-/g, ' ');
       }
 
@@ -74,10 +74,25 @@ export function getLocalDocs(): LocalDoc[] {
 
 export function saveLocalDoc(doc: Omit<LocalDoc, 'date' | 'readTime' | 'excerpt' | 'words'>) {
   ensureDraftsDir();
+  // If the ID already has the format type_status_title, use it to find and overwrite the file
+  // Otherwise, generate a new filename.
   const filename = `${doc.type}_${doc.status}_${doc.title.replace(/\s+/g, '-')}.md`;
+  
+  // If we have an ID that looks like a filename, we should probably delete the old file if the title/status changed
+  // but for now, we'll just write the new one.
   const filePath = path.join(DRAFTS_DIR, filename);
   fs.writeFileSync(filePath, doc.content, 'utf8');
   return filename.replace(/\.md$/, '');
+}
+
+export function deleteLocalDoc(id: string) {
+  ensureDraftsDir();
+  const filePath = path.join(DRAFTS_DIR, `${id}.md`);
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath);
+    return true;
+  }
+  return false;
 }
 
 export function loadLocalDoc(id: string): LocalDoc | null {
@@ -90,13 +105,13 @@ export function loadLocalDoc(id: string): LocalDoc | null {
   const words = countWords(content);
   
   const parts = id.split('_');
-  let type: any = 'cancer_docs';
-  let status: any = 'draft';
+  let type: LocalDoc['type'] = 'cancer_docs';
+  let status: LocalDoc['status'] = 'draft';
   let title = id;
 
   if (parts.length >= 3) {
-    type = parts[0];
-    status = parts[1];
+    type = parts[0] as LocalDoc['type'];
+    status = parts[1] as LocalDoc['status'];
     title = parts.slice(2).join(' ').replace(/-/g, ' ');
   }
 

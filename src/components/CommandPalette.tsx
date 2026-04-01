@@ -163,7 +163,7 @@ export default function CommandPalette({ onClose, onCommand, isDark, isMobile }:
         <div id="cmd-results" ref={listRef} role="listbox" className="db-cmd-list" style={{ maxHeight: isMobile ? '60vh' : '400px' }}>
           {filtered.length === 0 ? (
             <div className="db-cmd-empty">
-              No results for <strong>"{query}"</strong>
+              No results for <strong>&quot;{query}&quot;</strong>
             </div>
           ) : (
             <>

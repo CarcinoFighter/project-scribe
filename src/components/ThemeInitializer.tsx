@@ -17,7 +17,7 @@ export function ThemeInitializer() {
     // Store PWA install prompt globally
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
-      (window as any).deferredPrompt = e;
+      (window as Window & typeof globalThis & { deferredPrompt?: Event }).deferredPrompt = e;
       window.dispatchEvent(new Event('install-prompt-ready'));
     };
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt as EventListener);

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { 
-  X, Calendar, Clock, User, MessageSquare, Send, 
+  X, Calendar, Clock, MessageSquare, Send, 
   RefreshCw, ChevronRight, Loader2, AlertCircle,
   Briefcase, FileText, BookOpen, Heart, Megaphone
 } from 'lucide-react';
@@ -22,8 +22,27 @@ interface Comment {
   };
 }
 
+interface TaskData {
+  id: string;
+  title: string;
+  description?: string;
+  status: string;
+  category: string;
+  due_date: string;
+  created_at: string;
+  assigned_to_ids?: string[];
+  assigned_to?: string;
+  proofreader_id?: string;
+  assignees?: {
+    id: string;
+    name: string;
+    avatar_url?: string;
+    department?: string;
+  }[];
+}
+
 interface TaskDetailsModalProps {
-  task: any;
+  task: TaskData;
   onClose: () => void;
   onUpdate: () => void;
   isAdmin: boolean;
@@ -31,7 +50,7 @@ interface TaskDetailsModalProps {
   onOpenSubmission?: (taskId: string, title: string) => void;
 }
 
-const CATEGORY_MAP: Record<string, any> = {
+const CATEGORY_MAP: Record<string, { icon: React.ElementType; color: string; label: string }> = {
   article: { icon: FileText, color: '#3b82f6', label: 'Research Article' },
   blog: { icon: BookOpen, color: '#9875c1', label: 'Blog Post' },
   survivor_story: { icon: Heart, color: '#10b981', label: 'Survivor Story' },
@@ -371,7 +390,7 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin, use
             <div className="space-y-4">
               <h3 className="text-[10px] font-black uppercase tracking-widest text-[var(--text-4)]">Currently Assigned</h3>
               <div className="space-y-3">
-                {task.assignees?.map((member: any) => (
+                {task.assignees?.map((member) => (
                   <div key={member.id} className="flex items-center gap-3">
                     {member.avatar_url ? (
                       <Image src={member.avatar_url} alt={member.name} width={28} height={28} className="rounded-full" />

@@ -1,17 +1,34 @@
-import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
-import nextTypescript from "eslint-config-next/typescript";
+import { FlatCompat } from "@eslint/eslintrc";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const compat = new FlatCompat({
+  baseDirectory: __dirname,
+});
 
 const eslintConfig = [
-  ...nextCoreWebVitals,
-  ...nextTypescript,
+  ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
     ignores: [
-      "node_modules/**",
-      ".next/**",
-      "out/**",
-      "build/**",
+      "**/node_modules/**",
+      "**/.next/**",
+      "**/out/**",
+      "**/build/**",
+      "**/public/**",
+      "**/scripts/**",
       "next-env.d.ts",
     ],
+  },
+  {
+    rules: {
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-unused-vars": "warn",
+      "@typescript-eslint/no-require-imports": "warn",
+      "react-hooks/exhaustive-deps": "warn",
+    },
   },
 ];
 

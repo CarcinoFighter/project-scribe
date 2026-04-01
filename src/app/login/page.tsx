@@ -382,8 +382,8 @@ export default function LoginPage() {
               maxWidth: 300,
               marginBottom: 24,
             }}>
-              "Built for work that matters — writers, designers, developers, communications,
-              and leadership, unified in one place."
+              &quot;Built for work that matters — writers, designers, developers, communications,
+              and leadership, unified in one place.&quot;
             </p>
             <svg className="lp-march" width="100%" height="12" style={{ opacity: 0.25 }} aria-hidden>
               <line x1="0" y1="6" x2="100%" y2="6" stroke="var(--ink)" strokeWidth="1.5"/>
@@ -502,7 +502,7 @@ export default function LoginPage() {
                 letterSpacing: '0.04em',
                 margin: 0,
               }}>
-                Welcome back — let's change the world
+                Welcome back — let&apos;s change the world
               </p>
             </div>
 

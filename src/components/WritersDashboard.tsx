@@ -9,12 +9,19 @@ import {
   StatCard, ActivityChart, QuickAction, DocCard, EmptyDocState, Skeleton, TaskCard, 
   Doc 
 } from '@/components/WritersDashboardComponents';
-import { fmtWords as utilFmtWords, getGreeting, getTodayLabel } from '@/lib/utils';
+import { fmtWords as utilFmtWords } from '@/lib/utils';
 
 interface WritersDashboardProps {
-  user: any;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    avatar_url: string | null;
+    admin_access: boolean;
+    department: string | null;
+  };
   allDocs: Doc[];
-  fmtWords?: (n: number) => string; // Optional if we use util
+  fmtWords?: (n: number) => string;
   totalWords: number;
   weekWords: number;
   published: number;
@@ -22,11 +29,11 @@ interface WritersDashboardProps {
   goalProgress: { current: number; goal: number } | null;
   docsLoading: boolean;
   tasksLoading: boolean;
-  pendingTasks: any[];
+  pendingTasks: any[]; // These are Task objects, using any for now but should use Task
   doneTasks: any[];
   articles: Doc[];
   blogs: Doc[];
-  router: any;
+  router: { push: (url: string) => void };
   setActiveNav: (nav: 'home' | 'articles' | 'blogs') => void;
   toggleStar: (id: string) => void;
   handleContextMenu: (e: React.MouseEvent, id: string) => void;
@@ -186,11 +193,7 @@ export default function WritersDashboard({
             </span>
           </div>
 
-          {(() => {
-            const filtered = !selectedDept ? [] : []; // This logic needs to be handled via props or similar
-            // For now, I'll pass the tasks down if needed, but the rollup is specific to Leadership
-            return null; // LeadershipDashboard might handle this better
-          })()}
+          {/* Rolling up assignments logic removed as it was placeholder */}
         </div>
       )}
     </>

@@ -66,7 +66,7 @@ export default function GuidedTour({ onClose, isMobile }: TourProps) {
       const pad = 20;
 
       let top = r.bottom + pad;
-      let left = Math.max(pad, Math.min(r.left, window.innerWidth - mWidth - pad));
+      const left = Math.max(pad, Math.min(r.left, window.innerWidth - mWidth - pad));
       let placement: 'top' | 'bottom' | 'center' = 'bottom';
 
       // If no space below, try above

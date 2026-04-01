@@ -304,16 +304,21 @@ function EditorContent() {
       }
 
       const id = searchParams.get('id');
-      const type = searchParams.get('type') as Tab['type'];
+      const typeFromUrl = searchParams.get('type') as Tab['type'];
       
-      if (id && type) {
+      if (id) {
         const existing = initialTabs.find(t => t.id === id);
         if (existing) {
           setTabs(initialTabs);
           setActiveTabId(id);
         } else {
+          // If we have an ID but it's not in our local session tabs, we must fetch it.
+          // Fallback to 'blogs' if type is unknown; the load API will search all tables.
+          const effectiveType = typeFromUrl || 'blogs';
+          
           const newTab: Tab = {
-            id, type,
+            id, 
+            type: effectiveType,
             title: 'Loading...',
             content: '',
             slug: '',
@@ -325,7 +330,8 @@ function EditorContent() {
           setTabs(nextTabs);
           setActiveTabId(id);
 
-          fetch(`/api/editor/load?id=${id}&type=${type}`)
+          const typeParam = typeFromUrl ? `&type=${typeFromUrl}` : '';
+          fetch(`/api/editor/load?id=${id}${typeParam}`)
             .then(res => res.json())
             .then(data => {
               if (data.success) {
@@ -438,13 +444,18 @@ function EditorContent() {
           
           if (res.ok) {
             const data = await res.json();
+            const newId = data.doc?.id;
+            
             setTabs(prev => prev.map(t => {
               if (t.id === activeTabId) {
-                return { ...t, id: data.doc?.id || t.id, isSaved: true };
+                return { ...t, id: newId || t.id, isSaved: true };
               }
               return t;
             }));
-            if (data.doc?.id && activeTabId === 'ls-active') setActiveTabId(data.doc.id);
+
+            if (newId && activeTabId !== newId) {
+              setActiveTabId(newId);
+            }
           }
         } else {
           setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, isSaved: true } : t));

@@ -12,13 +12,13 @@ interface User {
 }
 
 // Simple client-side cache for the user profile
-let cachedUser: any = null;
+let cachedUser: User | null = null;
 
 export function useUser() {
   const [user, setUser] = useState<User | null>(cachedUser);
   const [loading, setLoading] = useState(!cachedUser);
 
-  const fetchUser = async (force = false) => {
+  const fetchUser = async (_force = false) => {
     // If not forced and we have a cached user, we can resolve immediately 
     // but we'll still fetch in the background to stay fresh (SWR)
     try {
@@ -34,7 +34,7 @@ export function useUser() {
         cachedUser = null;
         try { localStorage.removeItem('cs-user-cache'); } catch {}
       }
-    } catch (error) {
+    } catch (_error) {
       // Keep existing user if fetch fails
     } finally {
       setLoading(false);
