@@ -36,7 +36,7 @@ interface TaskData {
   assignees?: {
     id: string;
     name: string;
-    avatar_url?: string;
+    avatar_url?: string | null;
     department?: string;
   }[];
 }
@@ -424,7 +424,7 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin, use
                 </p>
                 <div className="space-y-2">
                   {/* Author Actions */}
-                  {(task.assigned_to_ids?.includes(userId) || task.assigned_to === userId) && task.status === 'in_progress' && (
+                  {userId && (task.assigned_to_ids?.includes(userId) || task.assigned_to === userId) && task.status === 'in_progress' && (
                     <button 
                       onClick={() => handleStatusUpdate('ready_for_proofreading', 'Initial draft completed. Ready for proofreading.')}
                       disabled={submitting}
@@ -486,7 +486,7 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin, use
                   )}
 
                   {/* Standard submission button for tasks */}
-                  {task.category === 'task' && task.status !== 'done' && (isAdmin || task.assigned_to_ids?.includes(userId) || task.assigned_to === userId) && (
+                  {task.category === 'task' && task.status !== 'done' && (isAdmin || (userId && (task.assigned_to_ids?.includes(userId) || task.assigned_to === userId))) && (
                     <button 
                       onClick={() => onOpenSubmission?.(task.id, task.title)}
                       className="w-full py-2.5 px-3 flex items-center justify-center gap-2 text-xs font-bold text-white bg-[var(--accent)] rounded-[var(--r-md)] shadow-lg hover:scale-[1.02] transition-all"

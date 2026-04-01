@@ -11,7 +11,7 @@ import {
   FileText, BookOpen, Search, Moon, Sun, Bell, BellOff,
   ChevronRight, Plus, TrendingUp, Clock, BarChart2,
   Star, MoreHorizontal, Trash2,
-  ArrowRight, Settings,
+  ArrowRight, Settings, ExternalLink,
   Activity, ChevronDown, PenTool,
   Home, Edit3, Award,
   Check, ArrowUpDown, Target, Loader2,
@@ -23,7 +23,7 @@ import { useTheme } from '@/lib/useTheme';
 import AccountMenu from '@/components/AccountMenu';
 import Toast from '@/components/Toast';
 import TaskSubmissionModal from '@/components/TaskSubmissionModal';
-import SettingsModal, { loadSettings, saveSettings, applySettings, DEFAULT_SETTINGS } from '@/components/SettingsModal';
+import SettingsModal, { AppSettings, loadSettings, saveSettings, applySettings, DEFAULT_SETTINGS } from '@/components/SettingsModal';
 
 import DevelopmentDashboard from '@/components/DevelopmentDashboard';
 import MarketingDashboard from '@/components/MarketingDashboard';
@@ -627,7 +627,7 @@ function DashboardContent() {
                     <div key={i} style={{ height: 72, background: 'var(--accent-sub)', border: '1px solid var(--rule)', borderLeft: '2px solid var(--accent)', opacity: 0.6 + i * 0.1 }} />
                   ))}
                 </div>
-              ) : (
+              ) : user && (
                 <>
                   {(activeDeptKey === 'Development' || (activeDeptKey === 'Leadership' && selectedDept === 'Development')) && <DevelopmentDashboard />}
                   {(activeDeptKey === 'Marketing'   || (activeDeptKey === 'Leadership' && selectedDept === 'Marketing'))   && <MarketingDashboard />}
