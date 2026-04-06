@@ -9,7 +9,7 @@ const getAssignmentsCached = unstable_cache(
     let query = supabaseAdmin.from('work_assignments').select('*');
     
     if (!isLeadership) {
-      query = query.or(`assigned_to.eq.${userId},assigned_to_ids.cs.{${userId}}`);
+      query = query.or(`assigned_to.eq.${userId},assigned_to_ids.cs.{${userId}},proofreader_id.eq.${userId}`);
     }
 
     const { data: assignments, error } = await query.order('due_date', { ascending: true });
@@ -113,7 +113,7 @@ export async function PATCH(req: NextRequest) {
       .eq('id', id);
 
     if (!payload.adminAccess && table === 'work_assignments') {
-      query = query.or(`assigned_to.eq.${payload.userId},assigned_to_ids.cs.{${payload.userId}}`);
+      query = query.or(`assigned_to.eq.${payload.userId},assigned_to_ids.cs.{${payload.userId}},proofreader_id.eq.${payload.userId}`);
     }
 
     const { data, error } = await query.select();
