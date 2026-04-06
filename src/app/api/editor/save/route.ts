@@ -82,6 +82,18 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Sync status back to the linked work_assignment
+    if (status) {
+      let taskStatus = status;
+      if (status === 'draft') taskStatus = 'in_progress';
+      else if (status === 'review') taskStatus = 'in_review';
+
+      await supabaseAdmin
+        .from('work_assignments')
+        .update({ status: taskStatus, updated_at: new Date().toISOString() })
+        .eq('document_id', finalId);
+    }
+
     return NextResponse.json({ success: true, doc: { id: finalId } });
   } catch (err: any) {
     console.error('Save error:', err);

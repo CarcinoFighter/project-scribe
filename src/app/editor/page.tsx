@@ -506,6 +506,7 @@ function EditorContent() {
       if (ctrl && e.shiftKey && e.key === 'Z') { e.preventDefault(); setZenMode(z => !z); }
       if (ctrl && e.shiftKey && e.key === 'F') { e.preventDefault(); setFocusMode(f => !f); }
       if (ctrl && e.shiftKey && e.key === 'D') { e.preventDefault(); handleCommandRef.current('theme'); }
+      if (ctrl && String(e.key).toLowerCase() === 's') { e.preventDefault(); setShowMetadata(true); }
       if (e.key === 'Escape' && zenMode)        { e.preventDefault(); setZenMode(false); }
       if (e.key === 'Escape' && mobileMenuOpen) { setMobileMenuOpen(false); }
     };
