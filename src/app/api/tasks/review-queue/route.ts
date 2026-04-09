@@ -16,15 +16,14 @@ export async function GET(req: NextRequest) {
 
   try {
     // Fetch from all 4 tables documents/tasks in 'review' status (no join)
-    const [blogs, stories, docs, tasks] = await Promise.all([
+    const [blogs, stories, docs] = await Promise.all([
       supabaseAdmin.from('blogs').select('*').in('status', ['in_review', 'ready_for_proofreading', 'ready_for_upload']),
       supabaseAdmin.from('survivor_stories').select('*').in('status', ['in_review', 'ready_for_proofreading', 'ready_for_upload']),
       supabaseAdmin.from('cancer_docs').select('*').in('status', ['in_review', 'ready_for_proofreading', 'ready_for_upload']),
-      supabaseAdmin.from('work_assignments').select('*').in('status', ['in_review', 'ready_for_proofreading', 'ready_for_upload']).eq('category', 'task'),
     ]);
 
-    if (blogs.error || stories.error || docs.error || tasks.error) {
-      console.error('Error fetching review queue docs:', { blogs: blogs.error, stories: stories.error, docs: docs.error, tasks: tasks.error });
+    if (blogs.error || stories.error || docs.error) {
+      console.error('Error fetching review queue docs:', { blogs: blogs.error, stories: stories.error, docs: docs.error });
       return NextResponse.json({ error: 'Failed to fetch review queue documents' }, { status: 500 });
     }
 
@@ -32,7 +31,6 @@ export async function GET(req: NextRequest) {
       ...(blogs.data || []).map(b => ({ ...b, type: 'blogs' })),
       ...(stories.data || []).map(s => ({ ...s, type: 'survivor_stories' })),
       ...(docs.data || []).map(d => ({ ...d, type: 'cancer_docs' })),
-      ...(tasks.data || []).map(t => ({ ...t, type: 'tasks', author_id: t.assigned_to, assigned_by: t.assigned_by })),
     ];
 
     if (allDocsRaw.length === 0) {

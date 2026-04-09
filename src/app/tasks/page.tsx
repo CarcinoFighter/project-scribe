@@ -201,6 +201,14 @@ interface Assignment {
   }[];
   assigner?: { id: string; name: string; username: string };
   assigned_by?: string;
+  proofreader?: {
+    id: string;
+    name: string;
+    username: string;
+    avatar_url: string | null;
+    department: string;
+  };
+  document_title?: string;
 }
 
 // DEPARTMENTS imported from @/config/departments
@@ -506,13 +514,13 @@ function TaskRow({
                 }}
                 className={`text-sm font-semibold text-left hover:text-[var(--accent)] transition-colors truncate ${isDone ? "line-through" : ""}`}
               >
-                {task.title}
+                {task.document_title || task.title}
               </button>
             ) : (
               <span
                 className={`text-sm font-semibold text-[var(--text)] truncate hover:text-[var(--accent)] transition-colors ${isDone ? "line-through" : ""}`}
               >
-                {task.title}
+                {task.document_title || task.title}
               </span>
             )}
             <StatusBadge status={task.status} />
@@ -527,15 +535,16 @@ function TaskRow({
 
       <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 pl-10 sm:pl-0">
         <div className="flex items-center gap-3 sm:gap-4">
-          {isAdmin && task.assignees && task.assignees.length > 0 && (
+          {isAdmin && (task.assignees?.length || task.proofreader) && (
             <div className="flex items-center gap-2.5 group/avatars mr-1">
               <div className="flex items-center -space-x-2">
-                {task.assignees.slice(0, 3).map((member, idx) => (
+                {/* Regular Assignees */}
+                {task.assignees?.slice(0, 3).map((member, idx) => (
                   <div
                     key={member.id}
                     className="db-avatar"
                     style={{ zIndex: 10 - idx }}
-                    title={member.name}
+                    title={`Writer: ${member.name}`}
                   >
                     {member.avatar_url ? (
                       <img
@@ -550,15 +559,38 @@ function TaskRow({
                         .map((n) => n[0])
                         .join("")
                         .slice(0, 2)
+                        .toUpperCase()
                     )}
                   </div>
                 ))}
-                {task.assignees.length > 3 && (
+
+                {/* Proofreader Avatar */}
+                {task.proofreader && (
+                  <div
+                    className="db-avatar border-2 border-[var(--accent)]"
+                    style={{ zIndex: 5, background: 'var(--accent-sub)' }}
+                    title={`Proofreader: ${task.proofreader.name}`}
+                  >
+                    {task.proofreader.avatar_url ? (
+                      <img
+                        src={task.proofreader.avatar_url}
+                        alt={task.proofreader.name}
+                        width={20}
+                        height={20}
+                      />
+                    ) : (
+                      <ShieldCheck size={10} className="text-[var(--accent)]" />
+                    )}
+                  </div>
+                )}
+
+                {task.assignees && task.assignees.length > 3 && (
                   <div
                     className="db-avatar"
                     style={{
                       background: "var(--surface-2)",
                       color: "var(--text-4)",
+                      zIndex: 1
                     }}
                   >
                     +{task.assignees.length - 3}
@@ -566,9 +598,17 @@ function TaskRow({
                 )}
               </div>
               <span className="text-[10px] sm:text-xs text-[var(--text-4)] truncate max-w-[60px] sm:max-w-[100px]">
-                {task.assignees.length === 1
-                  ? task.assignees[0].name
-                  : `${task.assignees.length} people`}
+                {task.proofreader ? (
+                  <span className="text-[var(--accent)] font-medium">
+                    {task.proofreader.name.split(' ')[0]} (PR)
+                  </span>
+                ) : task.assignees?.length === 1 ? (
+                  task.assignees[0].name
+                ) : task.assignees && task.assignees.length > 1 ? (
+                  `${task.assignees.length} people`
+                ) : (
+                  "Unassigned"
+                )}
               </span>
             </div>
           )}

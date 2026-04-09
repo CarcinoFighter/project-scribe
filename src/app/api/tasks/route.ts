@@ -48,7 +48,70 @@ export async function GET(req: NextRequest) {
     // 2. Fetch assignments (conditional based on leadership status)
     const assignments = await getAssignmentsCached(payload.userId, isLeadership);
     
-    return NextResponse.json({ assignments });
+    // 3. Enrich assignments with user info and document titles
+    const userIds = new Set<string>();
+    const docIdsByCategory: Record<string, Set<string>> = {
+      'article': new Set(),
+      'blog': new Set(),
+      'survivor_story': new Set()
+    };
+
+    assignments.forEach((a: any) => {
+      if (a.assigned_to_ids && Array.isArray(a.assigned_to_ids)) {
+        a.assigned_to_ids.forEach((id: string) => userIds.add(id));
+      } else if (a.assigned_to) {
+        userIds.add(a.assigned_to);
+      }
+      if (a.assigned_by) userIds.add(a.assigned_by);
+      if (a.proofreader_id) userIds.add(a.proofreader_id);
+
+      if (a.document_id && docIdsByCategory[a.category]) {
+        docIdsByCategory[a.category].add(a.document_id);
+      }
+    });
+
+    const [usersRes, ...docResList] = await Promise.all([
+      userIds.size > 0 ? supabaseAdmin.from('users').select('id, name, username, avatar_url, department').in('id', Array.from(userIds)) : Promise.resolve({ data: [] }),
+      ...['article', 'blog', 'survivor_story'].map(async (cat) => {
+        const ids = Array.from(docIdsByCategory[cat]);
+        if (ids.length === 0) return { cat, data: [] };
+        const table = cat === 'article' ? 'cancer_docs' : (cat === 'blog' ? 'blogs' : 'survivor_stories');
+        const { data } = await supabaseAdmin.from(table).select(cat === 'survivor_story' ? 'id, name' : 'id, title').in('id', ids);
+        return { cat, data: data || [] };
+      })
+    ]);
+
+    const userMap = new Map((usersRes.data || []).map((u: any) => [u.id, u]));
+    const docTitleMap = new Map();
+    docResList.forEach((res: any) => {
+      res.data.forEach((d: any) => {
+        docTitleMap.set(d.id, d.title || d.name);
+      });
+    });
+
+    const enriched = assignments.map((a: any) => {
+      const assigner = a.assigned_by ? userMap.get(a.assigned_by) : null;
+      const proofreader = a.proofreader_id ? userMap.get(a.proofreader_id) : null;
+      let assignees: any[] = [];
+      
+      if (a.assigned_to_ids && Array.isArray(a.assigned_to_ids)) {
+        assignees = a.assigned_to_ids.map((id: string) => userMap.get(id)).filter(Boolean);
+      } else if (a.assigned_to) {
+        const u = userMap.get(a.assigned_to);
+        if (u) assignees = [u];
+      }
+
+      return {
+        ...a,
+        assignees,
+        assignee: assignees[0] || null,
+        assigner,
+        proofreader,
+        document_title: docTitleMap.get(a.document_id) || null
+      };
+    });
+
+    return NextResponse.json({ assignments: enriched });
   } catch (error: any) {
     console.error('Fetch assignments error:', error);
     return NextResponse.json({ error: 'Failed to fetch assignments' }, { status: 500 });
