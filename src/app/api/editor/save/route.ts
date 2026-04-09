@@ -86,11 +86,16 @@ export async function POST(req: NextRequest) {
     if (status) {
       let taskStatus = status;
       if (status === 'draft') taskStatus = 'in_progress';
-      else if (status === 'review') taskStatus = 'in_review';
+      else if (status === 'review' || status === 'in_review') taskStatus = 'in_review';
+      else if (status === 'published') taskStatus = 'done';
 
       await supabaseAdmin
         .from('work_assignments')
-        .update({ status: taskStatus, updated_at: new Date().toISOString() })
+        .update({ 
+          status: taskStatus, 
+          title: title,
+          updated_at: new Date().toISOString() 
+        })
         .eq('document_id', finalId);
     }
 

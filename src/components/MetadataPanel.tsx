@@ -124,7 +124,7 @@ export default function MetadataPanel(props: MetadataPanelProps) {
           if (res.status === 500) return;
         }
       }
-      setStatus('ready_for_upload');
+      setStatus('in_review');
       setCommentText('');
     } catch (err: unknown) {
       console.error(err);
@@ -218,15 +218,15 @@ export default function MetadataPanel(props: MetadataPanelProps) {
           <div className="space-y-2">
             {/* Current Status Indicator */}
             <div className={`flex items-center gap-3 px-3 py-2.5 rounded-[var(--r-md)] border ${status === 'published' ? 'bg-green-500/10 border-green-500/20 text-green-500' :
-                status === 'review' || status === 'in_review' ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' :
+                status === 'review' ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' :
                   status === 'ready_for_proofreading' ? 'bg-purple-500/10 border-purple-500/20 text-purple-500' :
                     status === 'proofreading' ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-500' :
-                      status === 'ready_for_upload' ? 'bg-cyan-500/10 border-cyan-500/20 text-cyan-500' :
-                        'bg-[var(--bg-deep)] border-[var(--border-med)] text-[var(--text-3)]'
+                    status === 'in_review' ? 'bg-cyan-500/10 border-cyan-500/20 text-cyan-500' :
+                      'bg-[var(--bg-deep)] border-[var(--border-med)] text-[var(--text-3)]'
               }`}>
               {status === 'published' ? <Globe size={14} /> :
                 status === 'review' || status === 'in_review' ? <ShieldCheck size={14} /> :
-                  status === 'ready_for_proofreading' || status === 'proofreading' || status === 'ready_for_upload' ? <Send size={14} /> :
+                  status === 'ready_for_proofreading' || status === 'proofreading' ? <Send size={14} /> :
                     <Lock size={14} />}
               <div className="flex flex-col">
                 <span className="text-[10px] uppercase font-bold tracking-tight opacity-70">Current Status</span>
@@ -284,7 +284,7 @@ export default function MetadataPanel(props: MetadataPanelProps) {
                       className="w-full flex items-center justify-center gap-2 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-[var(--r-md)] text-xs font-bold transition-all shadow-md active:scale-[0.98] disabled:opacity-50"
                     >
                       <ShieldCheck size={14} />
-                      {isSubmitting ? 'Processing...' : 'Ready for Upload'}
+                      {isSubmitting ? 'Processing...' : 'Send for Approval'}
                     </button>
                     <button
                       onClick={handleRequestChanges}
@@ -298,7 +298,7 @@ export default function MetadataPanel(props: MetadataPanelProps) {
                 </div>
               )}
 
-              {status === 'ready_for_upload' && (
+              {(status === 'ready_for_upload' || status === 'in_review' || status === 'review') && (
                 <>
                   {user?.department === 'Leadership' || user?.admin_access ? (
                     <button
@@ -314,33 +314,6 @@ export default function MetadataPanel(props: MetadataPanelProps) {
                       Awaiting final Leadership approval.
                     </div>
                   )}
-                </>
-              )}
-
-              {(status === 'review' || status === 'in_review') && (
-                <>
-                  {(user?.admin_access || user?.department === 'Leadership') && user?.id !== author_id ? (
-                    <button
-                      onClick={() => setStatus('published')}
-                      className="w-full flex items-center justify-center gap-2 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-[var(--r-md)] text-xs font-bold transition-all shadow-md active:scale-[0.98]"
-                    >
-                      <ShieldCheck size={14} />
-                      Approve & Publish
-                    </button>
-                  ) : (
-                    <div className="flex items-center gap-2 p-3 bg-amber-500/5 border border-amber-500/10 rounded-[var(--r-md)] text-[10px] text-amber-600 font-medium">
-                      <AlertCircle size={12} className="shrink-0" />
-                      {user?.id === author_id
-                        ? "Under review. You cannot self-approve your own work."
-                        : "Under review. Admin approval required."}
-                    </div>
-                  )}
-                  <button
-                    onClick={() => setStatus('draft')}
-                    className="w-full flex items-center justify-center gap-2 py-2 bg-[var(--surface-1)] hover:bg-[var(--surface-2)] text-[var(--text-2)] rounded-[var(--r-md)] text-xs transition-all border border-[var(--border-med)]"
-                  >
-                    Return to Draft
-                  </button>
                 </>
               )}
 

@@ -29,6 +29,10 @@ export default function TaskCard({ task, onComplete }: { task: Task; onComplete:
   };
   
   const handleComplete = async () => { 
+    if (isArticle || isBlog || isStory) {
+      handleEdit({ stopPropagation: () => {} } as any);
+      return;
+    }
     setLoading(true); 
     await onComplete(task.id); 
     setLoading(false); 

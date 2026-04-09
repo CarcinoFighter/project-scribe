@@ -129,6 +129,18 @@ export async function PATCH(req: NextRequest) {
 
     const updated = data[0];
 
+    // After updating content table, sync work_assignments
+    if (table !== 'work_assignments') {
+      await supabaseAdmin
+        .from('work_assignments')
+        .update({
+          status: updateData.status,
+          proofreader_id: updateData.proofreader_id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('document_id', id);
+    }
+
     // Notification Logic
     if (submission_media_url !== undefined && updated.assigned_by) {
       const { notifyUser } = await import('@/lib/pushNotify');

@@ -924,6 +924,10 @@ export default function WorkPage() {
   const handleCompleteClick = (task: Assignment) => {
     if (task.category === "task") {
       setSubmittingTask({ id: task.id, title: task.title });
+    } else if (["article", "blog", "survivor_story"].includes(task.category)) {
+      // Don't allow direct done — open editor instead
+      const t = task.category === 'article' ? 'cancer_docs' : task.category === 'blog' ? 'blogs' : 'survivor_stories';
+      router.push(`/editor?id=${task.document_id}&type=${t}`);
     } else {
       handleComplete(task.id);
     }

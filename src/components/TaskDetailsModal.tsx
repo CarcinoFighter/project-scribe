@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useRouter } from 'next/navigation';
 import { 
   X, Calendar, Clock, MessageSquare, Send, 
   RefreshCw, ChevronRight, Loader2, AlertCircle,
@@ -33,6 +34,7 @@ interface TaskData {
   assigned_to_ids?: string[];
   assigned_to?: string;
   proofreader_id?: string;
+  document_id?: string;
   assignees?: {
     id: string;
     name: string;
@@ -59,7 +61,9 @@ const CATEGORY_MAP: Record<string, { icon: React.ElementType; color: string; lab
 };
 
 export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin, userId, onOpenSubmission }: TaskDetailsModalProps) {
+  const router = useRouter();
   const [comments, setComments] = useState<Comment[]>([]);
+  const [docTitle, setDocTitle] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [commentText, setCommentText] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -84,7 +88,29 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin, use
       }
     };
     fetchComments();
-  }, [task.id]);
+
+    if (task.document_id) {
+      const fetchDocTitle = async () => {
+        let table = '';
+        if (task.category === 'article') table = 'cancer_docs';
+        else if (task.category === 'blog') table = 'blogs';
+        else if (task.category === 'survivor_story') table = 'survivor_stories';
+
+        if (table) {
+          try {
+            const res = await fetch(`/api/documents/title?id=${task.document_id}&table=${table}`);
+            if (res.ok) {
+              const data = await res.json();
+              setDocTitle(data.title);
+            }
+          } catch (err) {
+            console.error('Error fetching doc title:', err);
+          }
+        }
+      };
+      fetchDocTitle();
+    }
+  }, [task.id, task.document_id, task.category]);
 
   useEffect(() => {
     commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -259,6 +285,11 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin, use
                 </span>
               </div>
               <h2 className="text-xl font-bold tracking-tight">{task.title}</h2>
+              {docTitle && docTitle !== task.title && (
+                <p className="text-xs text-[var(--accent)] font-medium mt-0.5">
+                  Internal Title: {docTitle}
+                </p>
+              )}
               <div className="flex items-center gap-3 mt-2 text-[var(--text-4)]">
                 <div className="flex items-center gap-1.5 text-xs">
                   <Calendar size={12} />
@@ -272,9 +303,23 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin, use
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-[var(--surface-1)] rounded-full transition-colors text-[var(--text-4)]">
-            <X size={20} />
-          </button>
+          <div className="flex items-center gap-3">
+            {task.document_id && (
+              <button 
+                onClick={() => {
+                  const t = task.category === 'article' ? 'cancer_docs' : task.category === 'blog' ? 'blogs' : 'survivor_stories';
+                  router.push(`/editor?id=${task.document_id}&type=${t}`);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--accent-subtle2)] text-[var(--accent)] text-[11px] font-bold rounded-lg border border-[var(--accent-subtle)] hover:bg-[var(--accent-subtle)] transition-all"
+              >
+                <ChevronRight size={14} />
+                Open Document
+              </button>
+            )}
+            <button onClick={onClose} className="p-2 hover:bg-[var(--surface-1)] rounded-full transition-colors text-[var(--text-4)]">
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 flex flex-col sm:flex-row overflow-hidden">
