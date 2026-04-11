@@ -10,7 +10,6 @@ interface MobileNavProps {
   isFullSidebar?: boolean;
 }
 
-const TAPE_ITEMS = ['WRITERS', 'DESIGN', 'DEV', 'PR', 'LEADERSHIP', 'VANTAGE', '2026', '✦'];
 
 export default function MobileNav({ activeNav, pendingTasksCount = 0, isFullSidebar = true }: MobileNavProps) {
   const NAV_ITEMS = ([
@@ -23,17 +22,6 @@ export default function MobileNav({ activeNav, pendingTasksCount = 0, isFullSide
   return (
     <nav className="db-mobile-nav">
       {/* Tape strip at top of mobile nav */}
-      <div className="db-tape-bar">
-        <div className="db-tape">
-          {[...TAPE_ITEMS, ...TAPE_ITEMS].map((item, i) => (
-            <span key={i} className="db-cap" style={{
-              color: i % 8 === 7 || (i - 7) % 8 === 0 ? 'var(--accent)' : 'var(--cream)',
-              opacity: 0.8, padding: '0 14px', marginBottom: 0,
-            }}>{item}</span>
-          ))}
-        </div>
-      </div>
-
       <div className="db-mob-inner">
         {NAV_ITEMS.map((item) => {
           const isActive = activeNav === item.id;

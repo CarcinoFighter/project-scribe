@@ -1544,38 +1544,18 @@ export default function WorkPage() {
                         return acc;
                       }, {} as Record<string, { category: string, department: string, tasks: Assignment[] }>);
 
-                      const groupList = Object.values(groups);
-
-                      if (groupList.length === 0) {
-                        return (
-                          <SectionTable
-                            section={{
-                              key: "task",
-                              label: "General Tasks",
-                              icon: Briefcase,
-                              color: "#6b7280",
-                              hasEditor: false,
-                              table: null,
-                            }}
-                            tasks={[]}
-                            onCompleteClick={handleCompleteClick}
-                            onDeleteClick={handleDelete}
-                            completing={completing}
-                            deleting={deleting}
-                            isAdmin={isAdmin}
-                            onAssign={() =>
-                              setShowAssignModal({
-                                category: "task",
-                                department: activeDeptKey,
-                              })
-                            }
-                            onToast={(m: string) => setToast(m)}
-                            onInit={handleInitDoc}
-                            onTaskClick={handleTaskClick}
-                            currentUserId={user?.id}
-                          />
-                        );
+                      // Ensure "General Tasks" for the active department is ALWAYS present (parity with Writers' Block)
+                      const nativeDeptKeyVal = activeDeptKey || "Writers' Block";
+                      const nativeTaskKey = `${nativeDeptKeyVal}|task`;
+                      if (!groups[nativeTaskKey]) {
+                        groups[nativeTaskKey] = {
+                          category: "task",
+                          department: nativeDeptKeyVal,
+                          tasks: []
+                        };
                       }
+
+                      const groupList = Object.values(groups);
 
                       // Sort groups:
                       // 1. Native department groups first
