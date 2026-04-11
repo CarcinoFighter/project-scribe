@@ -1,11 +1,18 @@
 import webpush from 'web-push';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
-webpush.setVapidDetails(
-  'mailto:admin@carcino.work',
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-);
+const VAPID_PUBLIC = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY;
+
+if (VAPID_PUBLIC && VAPID_PRIVATE) {
+  webpush.setVapidDetails(
+    'mailto:admin@carcino.work',
+    VAPID_PUBLIC,
+    VAPID_PRIVATE
+  );
+} else {
+  console.warn('[pushNotify] VAPID keys are missing from environment variables. Push notifications will not be sent.');
+}
 
 export interface PushPayload {
   title: string;

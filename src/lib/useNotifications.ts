@@ -75,7 +75,18 @@ export function useNotifications() {
   useEffect(() => {
     fetchNotifications();
 
-    // Optional: Poll every 60 seconds for new notifications
+    // Listen for real-time refresh messages from the Service Worker
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      const handleMessage = (event: MessageEvent) => {
+        if (event.data?.type === 'PUSH_RECEIVED') {
+          fetchNotifications();
+        }
+      };
+      navigator.serviceWorker.addEventListener('message', handleMessage);
+      return () => navigator.serviceWorker.removeEventListener('message', handleMessage);
+    }
+
+    // Optional: Poll every 60 seconds for new notifications as fallback
     const interval = setInterval(fetchNotifications, 60000);
     return () => clearInterval(interval);
   }, [fetchNotifications]);

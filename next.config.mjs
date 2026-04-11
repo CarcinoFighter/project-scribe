@@ -19,7 +19,8 @@ const nextConfig = {
 const withSerwist = withSerwistInit({
   swSrc: "src/app/sw.ts",
   swDest: "public/sw.js",
-  // Disable in dev (Turbopack doesn't support Serwist's webpack plugin)
+  // Serwist's injectManifest plugin is currently incompatible with Turbopack (next dev --turbo).
+  // To test PWA/Push notifications, run: npm run build && npm run start
   disable: process.env.NODE_ENV !== "production",
   register: false,
   reloadOnOnline: true,

@@ -44,7 +44,17 @@ self.addEventListener('push', (event) => {
     ],
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil(
+    Promise.all([
+      self.registration.showNotification(title, options),
+      // Broadcast to all open clients (tabs) to trigger a UI refresh
+      self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+        clientList.forEach((client) => {
+          client.postMessage({ type: 'PUSH_RECEIVED' });
+        });
+      })
+    ])
+  );
 });
 
 // Open the target URL when user taps the notification

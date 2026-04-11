@@ -15,7 +15,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid subscription' }, { status: 400 });
   }
 
-  // Upsert subscription — one per user+endpoint combo
+  // 1. Verify user exists in public.users to avoid FK errors
+  const { data: userExists, error: userError } = await supabaseAdmin
+    .from('users')
+    .select('id')
+    .eq('id', payload.userId)
+    .single();
+
+  if (userError || !userExists) {
+    console.warn(`[push] User ${payload.userId} not found in database. Session might be stale.`);
+    return NextResponse.json({ error: 'User account not found. Please log out and log back in.' }, { status: 404 });
+  }
+
+  // 2. Upsert subscription — one per user+endpoint combo
   const { error } = await supabaseAdmin
     .from('push_subscriptions')
     .upsert({

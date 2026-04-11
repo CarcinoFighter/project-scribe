@@ -14,13 +14,17 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 export async function requestPushSubscription(): Promise<boolean> {
   if (typeof window === 'undefined') return false;
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
-  if (!VAPID_PUBLIC_KEY) return false;
 
   if (Notification.permission === 'denied') return false;
 
+  if (!VAPID_PUBLIC_KEY || VAPID_PUBLIC_KEY === 'undefined') {
+    console.warn('[push] VAPID public key is missing. Ensure NEXT_PUBLIC_VAPID_PUBLIC_KEY is set.');
+    return false;
+  }
+
   try {
-    // Get current registration without waiting indefinitely if missing (e.g. dev mode)
-    const registration = await navigator.serviceWorker.getRegistration();
+    // Wait for the service worker to be ready
+    const registration = await navigator.serviceWorker.ready;
     if (!registration) {
       console.warn('[push] No active service worker registration found.');
       return false;

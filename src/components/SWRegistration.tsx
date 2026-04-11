@@ -12,7 +12,10 @@ export default function SWRegistration() {
   useEffect(() => {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       // Only register in production as Serwist is disabled in dev by default
-      if (process.env.NODE_ENV !== 'production') return;
+      if (process.env.NODE_ENV !== 'production') {
+        console.info('[pwa] Service Worker registration skipped in development mode. Build the project locally with `npm run build && npm run start` to test push notifications.');
+        return;
+      }
 
       const registerSW = async () => {
         try {
@@ -20,9 +23,9 @@ export default function SWRegistration() {
             scope: '/',
             updateViaCache: 'none',
           });
-          console.log('[pwa] Service Worker registered:', registration.scope);
+          console.log('[pwa] Service Worker registered successfully:', registration.scope);
         } catch (error) {
-          console.warn('[pwa] Service Worker registration failed:', error);
+          console.error('[pwa] Service Worker registration failed:', error);
         }
       };
 
