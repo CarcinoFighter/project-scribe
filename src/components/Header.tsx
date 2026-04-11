@@ -74,6 +74,9 @@ interface HeaderProps {
 
   // Tour
   onOpenTour?: () => void;
+
+  // Extra mobile content
+  extraMobileContent?: React.ReactNode;
 }
 
 export default function Header({
@@ -112,6 +115,7 @@ export default function Header({
   mobileMenuOpen,
   setMobileMenuOpen,
   onOpenTour,
+  extraMobileContent,
 }: HeaderProps) {
   const router = useRouter();
 
@@ -721,6 +725,13 @@ export default function Header({
               <Settings size={14} className="mr-2" /> App Settings
             </button>
           </div>
+
+          {/* ── Extra mobile content (injected from pages) ── */}
+          {extraMobileContent && (
+            <div className="border-t border-[var(--rule)] pt-4">
+              {extraMobileContent}
+            </div>
+          )}
         </div>
       )}
     </>

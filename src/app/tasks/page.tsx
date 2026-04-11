@@ -890,6 +890,7 @@ export default function WorkPage() {
   } | null>(null);
   const [activeDeptKey, setActiveDeptKey] = useState("Writers' Block");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isDark, toggleTheme } = useTheme();
 
   const isWritersBlock = activeDeptKey === "Writers' Block";
@@ -1131,9 +1132,64 @@ export default function WorkPage() {
         onOpenSettings={() => setShowSettings(true)}
         onMarkAllRead={handleMarkAllRead}
         onToast={(m) => setToast(m)}
+        mobileMenuOpen={mobileMenuOpen}
+        setMobileMenuOpen={setMobileMenuOpen}
+        extraMobileContent={
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <span className="db-cap block">Board Selection</span>
+              <div className="grid grid-cols-1 gap-1">
+                {DEPARTMENTS.map((dept) => {
+                  const isActive = activeDeptKey === dept.key;
+                  return (
+                    <button
+                      key={dept.key}
+                      onClick={() => {
+                        setActiveDeptKey(dept.key);
+                        setMobileMenuOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-left hover:bg-[var(--accent-sub)] ${isActive ? "text-[var(--accent)] bg-[var(--accent-sub)]" : "text-[var(--mid)]"}`}
+                    >
+                      <dept.icon
+                        size={14}
+                        className={isActive ? dept.color : "text-current"}
+                      />
+                      {dept.label.toUpperCase()}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            {isAdmin && (
+              <div className="space-y-2">
+                <span className="db-cap block">View Perspective</span>
+                <div className="flex bg-[var(--accent-sub)] p-0.5 border border-[var(--rule)]">
+                  <button
+                    onClick={() => {
+                      setView("my");
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`flex-1 db-filter-btn px-3 py-2 ${view === "my" ? "active" : ""}`}
+                  >
+                    My Assignments
+                  </button>
+                  <button
+                    onClick={() => {
+                      setView("admin");
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`flex-1 db-filter-btn px-3 py-2 ${view === "admin" ? "active" : ""}`}
+                  >
+                    Team Board
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        }
       >
         {/* Department Selector — specific to Tasks page */}
-        <div className="relative">
+        <div className="relative hidden sm:block">
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className="db-ghost px-2 py-1 flex items-center gap-1.5"
@@ -1187,11 +1243,11 @@ export default function WorkPage() {
           )}
         </div>
 
-        <div className="db-vr hidden sm:block" />
+        <div className="db-vr hidden md:block" />
 
         <div className="flex items-center gap-2">
           {isAdmin && (
-            <div className="hidden sm:flex items-center bg-[var(--accent-sub)] p-0.5 border border-[var(--rule)]">
+            <div className="hidden md:flex items-center bg-[var(--accent-sub)] p-0.5 border border-[var(--rule)]">
               <button
                 onClick={() => setView("my")}
                 className={`db-filter-btn px-3 py-1 ${view === "my" ? "active" : ""}`}

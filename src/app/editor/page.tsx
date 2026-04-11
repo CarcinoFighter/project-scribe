@@ -918,17 +918,6 @@ function EditorContent() {
         onToggleView={() => setViewMode(viewMode === 'editor' ? 'preview' : 'editor')}
       />
 
-      {/* Mobile View Toggle */}
-      {isMobile && (
-        <button
-          onClick={() => setViewMode(viewMode === 'editor' ? 'preview' : 'editor')}
-          className="fixed bottom-20 right-4 w-12 h-12 bg-[var(--ink)] text-[var(--paper)] flex items-center justify-center shadow-lg z-50"
-          style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}
-        >
-          <span className="db-cap text-[10px]">{viewMode === 'editor' ? 'PREV' : 'EDIT'}</span>
-        </button>
-      )}
-
       {showCmd && <CommandPalette isDark={isDark} onClose={() => setShowCmd(false)} onCommand={handleCommand} isMobile={isMobile} />}
       {showTour && <GuidedTour onClose={() => setShowTour(false)} isMobile={isMobile} />}
       

@@ -25,6 +25,8 @@ import {
   Bell,
   ChevronDown,
   Check,
+  Menu,
+  X,
 } from "lucide-react";
 import { useUser } from "@/lib/useUser";
 import { createPortal } from "react-dom";
@@ -134,6 +136,7 @@ export default function TeamPage() {
     right: number;
   } | null>(null);
   const [showNotifPanel, setShowNotifPanel] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const accountBtnRef = useRef<HTMLButtonElement>(null);
 
   const [counts, setCounts] = useState<{
@@ -301,13 +304,13 @@ export default function TeamPage() {
 
         <div className="db-vr" />
 
-        {/* Search */}
+        {/* Search — hidden on mobile */}
         <div
+          className="hidden md:flex"
           style={{
             position: "relative",
             flex: 1,
             maxWidth: 320,
-            display: "flex",
             alignItems: "center",
           }}
         >
@@ -396,7 +399,7 @@ export default function TeamPage() {
 
           {unreadCount > 0 && (
             <button
-              className="db-ghost"
+              className="db-ghost hidden sm:flex"
               style={{ padding: "3px 7px", gap: 4 }}
               onClick={handleMarkAllRead}
               title="Mark all read"
@@ -408,7 +411,6 @@ export default function TeamPage() {
                   fontSize: 8,
                   letterSpacing: "0.08em",
                 }}
-                className="hidden md:inline"
               >
                 All read
               </span>
@@ -416,6 +418,15 @@ export default function TeamPage() {
           )}
 
           <div className="db-vr" />
+
+          {/* Mobile menu toggle */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="db-icon-btn md:hidden"
+            title="Menu"
+          >
+            {mobileMenuOpen ? <X size={16} /> : <Menu size={16} />}
+          </button>
 
           {/* Account */}
           <button
@@ -478,6 +489,81 @@ export default function TeamPage() {
           </button>
         </div>
       </header>
+
+      {/* Mobile menu panel */}
+      {mobileMenuOpen && (
+        <div className="md:hidden fixed inset-x-0 top-[42px] bg-[var(--paper)] border-b border-[var(--rule)] z-40 p-4 space-y-4 max-h-[calc(100vh-42px)] overflow-y-auto anim-fade-in">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <span className="db-cap block">Search Team</span>
+              <div className="relative flex items-center">
+                <Search
+                  size={12}
+                  style={{
+                    position: "absolute",
+                    left: 10,
+                    color: "var(--mid)",
+                    pointerEvents: "none",
+                  }}
+                />
+                <input
+                  type="text"
+                  placeholder="name, email, dept…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="db-inp w-full"
+                  style={{ paddingLeft: 30, fontSize: 11 }}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 border-t border-[var(--rule)] pt-4">
+              <button
+                className="db-ghost justify-center text-xs py-2"
+                onClick={() => {
+                  toggleTheme();
+                }}
+              >
+                {isDark ? (
+                  <Sun size={14} className="mr-2" />
+                ) : (
+                  <Moon size={14} className="mr-2" />
+                )}
+                {isDark ? "Light" : "Dark"}
+              </button>
+              <button
+                className="db-ghost justify-center text-xs py-2"
+                onClick={() => {
+                  setShowSettings(true);
+                  setMobileMenuOpen(false);
+                }}
+              >
+                <Settings size={14} className="mr-2" /> Settings
+              </button>
+              <button
+                className="db-ghost justify-center text-xs py-2"
+                onClick={() => {
+                  setShowNotifPanel(!showNotifPanel);
+                  setMobileMenuOpen(false);
+                }}
+              >
+                <Bell size={14} className="mr-2" /> Notifs
+              </button>
+              {unreadCount > 0 && (
+                <button
+                  className="db-ghost justify-center text-xs py-2"
+                  onClick={() => {
+                    handleMarkAllRead();
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <Check size={14} className="mr-2" /> Clear All
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       {/* ── END HEADER ──────────────────────────────────────────────────────── */}
 
       {/* Body */}
