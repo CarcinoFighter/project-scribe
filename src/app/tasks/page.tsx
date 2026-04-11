@@ -917,6 +917,9 @@ export default function WorkPage() {
     markRead: handleMarkRead,
   } = useNotifications();
 
+  // Leadership is defined as admin access OR explicitly being in the Leadership department
+  const isLeadership = !!user?.admin_access || user?.department === "Leadership";
+
   useEffect(() => {
     if (!loadingUser && user === null) {
       router.push("/login");
@@ -961,6 +964,13 @@ export default function WorkPage() {
       setActiveDeptKey(user.department);
     }
   }, [user, fetchWork]);
+
+  // Safeguard: Lock non-leadership users to their assigned department
+  useEffect(() => {
+    if (user && !isLeadership && user.department && activeDeptKey !== user.department) {
+      setActiveDeptKey(user.department);
+    }
+  }, [user, isLeadership, activeDeptKey]);
 
   const handleCompleteClick = (task: Assignment) => {
     if (task.category === "task") {
@@ -1048,11 +1058,19 @@ export default function WorkPage() {
 
   // Filter tasks for the active department
   const activeDeptTasks = assignments.filter((a) => {
+    // 1. Task belongs to this department
     // Treat null/undefined as "Writers' Block" for backward compatibility/editorial content
-    if (activeDeptKey === "Writers' Block") {
-      return a.department === activeDeptKey || !a.department;
-    }
-    return a.department === activeDeptKey;
+    const isPrimary = activeDeptKey === "Writers' Block"
+      ? (a.department === activeDeptKey || !a.department)
+      : a.department === activeDeptKey;
+
+    if (isPrimary) return true;
+
+    // 2. Task is assigned to someone who belongs to this department (Cross-department assignment)
+    // This allows people to see tasks assigned to them from other departments on their own board
+    const isAssignedToThisDept = a.assignees?.some(m => m.department === activeDeptKey);
+
+    return isAssignedToThisDept;
   });
 
   const activeDept =
@@ -1136,30 +1154,32 @@ export default function WorkPage() {
         setMobileMenuOpen={setMobileMenuOpen}
         extraMobileContent={
           <div className="space-y-4">
-            <div className="space-y-2">
-              <span className="db-cap block">Board Selection</span>
-              <div className="grid grid-cols-1 gap-1">
-                {DEPARTMENTS.map((dept) => {
-                  const isActive = activeDeptKey === dept.key;
-                  return (
-                    <button
-                      key={dept.key}
-                      onClick={() => {
-                        setActiveDeptKey(dept.key);
-                        setMobileMenuOpen(false);
-                      }}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-left hover:bg-[var(--accent-sub)] ${isActive ? "text-[var(--accent)] bg-[var(--accent-sub)]" : "text-[var(--mid)]"}`}
-                    >
-                      <dept.icon
-                        size={14}
-                        className={isActive ? dept.color : "text-current"}
-                      />
-                      {dept.label.toUpperCase()}
-                    </button>
-                  );
-                })}
+            {isLeadership && (
+              <div className="space-y-2">
+                <span className="db-cap block">Board Selection</span>
+                <div className="grid grid-cols-1 gap-1">
+                  {DEPARTMENTS.map((dept) => {
+                    const isActive = activeDeptKey === dept.key;
+                    return (
+                      <button
+                        key={dept.key}
+                        onClick={() => {
+                          setActiveDeptKey(dept.key);
+                          setMobileMenuOpen(false);
+                        }}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-left hover:bg-[var(--accent-sub)] ${isActive ? "text-[var(--accent)] bg-[var(--accent-sub)]" : "text-[var(--mid)]"}`}
+                      >
+                        <dept.icon
+                          size={14}
+                          className={isActive ? dept.color : "text-current"}
+                        />
+                        {dept.label.toUpperCase()}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
             {isAdmin && (
               <div className="space-y-2">
                 <span className="db-cap block">View Perspective</span>
@@ -1189,59 +1209,61 @@ export default function WorkPage() {
         }
       >
         {/* Department Selector — specific to Tasks page */}
-        <div className="relative hidden sm:block">
-          <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="db-ghost px-2 py-1 flex items-center gap-1.5"
-          >
-            <Layers size={13} className="text-[var(--accent)]" />
-            <span className="text-[11px] font-bold uppercase tracking-tight">
-              {activeDeptKey}
-            </span>
-            <ChevronR
-              size={10}
-              className={`ml-1 transition-transform ${isMenuOpen ? "rotate-90" : "rotate-0"}`}
-            />
-          </button>
-
-          {isMenuOpen && (
-            <>
-              <div
-                className="fixed inset-0 z-[250]"
-                onClick={() => setIsMenuOpen(false)}
+        {isLeadership && (
+          <div className="relative hidden sm:block">
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="db-ghost px-2 py-1 flex items-center gap-1.5"
+            >
+              <Layers size={13} className="text-[var(--accent)]" />
+              <span className="text-[11px] font-bold uppercase tracking-tight">
+                {activeDeptKey}
+              </span>
+              <ChevronR
+                size={10}
+                className={`ml-1 transition-transform ${isMenuOpen ? "rotate-90" : "rotate-0"}`}
               />
-              <div
-                className="absolute top-full left-0 mt-1 w-52 bg-[var(--paper)] border border-[var(--rule)] shadow-xl z-[300]"
-                style={{ borderTop: "2px solid var(--accent)" }}
-              >
-                <div className="p-2 border-b border-[var(--rule)]">
-                  <span className="db-cap">Select Board</span>
+            </button>
+
+            {isMenuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-[250]"
+                  onClick={() => setIsMenuOpen(false)}
+                />
+                <div
+                  className="absolute top-full left-0 mt-1 w-52 bg-[var(--paper)] border border-[var(--rule)] shadow-xl z-[300]"
+                  style={{ borderTop: "2px solid var(--accent)" }}
+                >
+                  <div className="p-2 border-b border-[var(--rule)]">
+                    <span className="db-cap">Select Board</span>
+                  </div>
+                  <div className="p-1">
+                    {DEPARTMENTS.map((dept) => {
+                      const isActive = activeDeptKey === dept.key;
+                      return (
+                        <button
+                          key={dept.key}
+                          onClick={() => {
+                            setActiveDeptKey(dept.key);
+                            setIsMenuOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-[11px] font-bold text-left hover:bg-[var(--accent-sub)] ${isActive ? "text-[var(--accent)]" : "text-[var(--mid)]"}`}
+                        >
+                          <dept.icon
+                            size={13}
+                            className={isActive ? dept.color : "text-current"}
+                          />
+                          {dept.label.toUpperCase()}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div className="p-1">
-                  {DEPARTMENTS.map((dept) => {
-                    const isActive = activeDeptKey === dept.key;
-                    return (
-                      <button
-                        key={dept.key}
-                        onClick={() => {
-                          setActiveDeptKey(dept.key);
-                          setIsMenuOpen(false);
-                        }}
-                        className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-[11px] font-bold text-left hover:bg-[var(--accent-sub)] ${isActive ? "text-[var(--accent)]" : "text-[var(--mid)]"}`}
-                      >
-                        <dept.icon
-                          size={13}
-                          className={isActive ? dept.color : "text-current"}
-                        />
-                        {dept.label.toUpperCase()}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </>
-          )}
-        </div>
+              </>
+            )}
+          </div>
+        )}
 
         <div className="db-vr hidden md:block" />
 
@@ -1365,31 +1387,55 @@ export default function WorkPage() {
                     {(() => {
                       // 1. Get default sections
                       const renderedSections = [...WRITERS_BLOCK_SECTIONS];
-                      // 2. Add any other dynamic categories found in tasks
-                      const dynamicCategories = Array.from(
-                        new Set(activeDeptTasks.map((t) => t.category)),
+                      // 2. Identify all categories + departments present in activeDeptTasks
+                      const nativeGroups = activeDeptTasks.filter(a => a.department === "Writers' Block" || !a.department);
+                      const foreignGroups = activeDeptTasks.filter(a => a.department !== "Writers' Block" && a.department);
+
+                      // 3. Find unique dynamic categories for Writers' Block (not in standard sections)
+                      const dynamicNativeCategories = Array.from(
+                        new Set(nativeGroups.map((t) => t.category)),
                       ).filter(
-                        (cat) =>
-                          !WRITERS_BLOCK_SECTIONS.some((s) => s.key === cat),
+                        (cat) => !renderedSections.some((s) => s.key === cat),
                       );
+
+                      // 4. Create foreign sections grouped by department and category
+                      const foreignSections = foreignGroups.reduce((acc, t) => {
+                        const dept = t.department!;
+                        const key = `${dept}|${t.category}`;
+                        if (!acc[key]) acc[key] = {
+                          key: t.category,
+                          department: dept,
+                          label: t.category.charAt(0).toUpperCase() + t.category.slice(1).replace(/_/g, " "),
+                          icon: Layers,
+                          color: "#6b7280",
+                          hasEditor: false,
+                          table: null,
+                        };
+                        return acc;
+                      }, {} as Record<string, any>);
 
                       const allSections = [
                         ...renderedSections,
-                        ...dynamicCategories.map((cat) => ({
+                        ...dynamicNativeCategories.map((cat) => ({
                           key: cat,
-                          label:
-                            cat.charAt(0).toUpperCase() +
-                            cat.slice(1).replace(/_/g, " "),
+                          department: "Writers' Block",
+                          label: cat.charAt(0).toUpperCase() + cat.slice(1).replace(/_/g, " "),
                           icon: Layers,
                           color: "#6b7280",
                           hasEditor: false,
                           table: null,
                         })),
+                        ...Object.values(foreignSections).sort((a, b) => {
+                          if (a.department !== b.department) return a.department.localeCompare(b.department);
+                          return a.key.localeCompare(b.key);
+                        }),
                       ];
 
-                      return allSections.map((section) => {
+                      return allSections.map((section: any) => {
+                        const isNative = !section.department || section.department === "Writers' Block";
                         const sectionTasks = activeDeptTasks.filter(
-                          (a) => a.category === section.key,
+                          (a) => a.category === section.key && 
+                                (isNative ? (a.department === "Writers' Block" || !a.department) : a.department === section.department)
                         );
                         // Resolve icon prioritizing DB value
                         const resolvedIcon = resolveIcon(
@@ -1397,12 +1443,19 @@ export default function WorkPage() {
                           sectionTasks,
                           section.icon,
                         );
+
+                        // If foreign, add department name to label and use that department's color
+                        const sectionColor = isNative ? (section.color) : getDeptHex(section.department);
+                        const label = isNative ? section.label : `${section.label} (${section.department})`;
+
                         return (
                           <SectionTable
-                            key={section.key}
+                            key={isNative ? section.key : `${section.department}-${section.key}`}
                             section={
                               {
                                 ...section,
+                                label,
+                                color: sectionColor,
                                 icon: resolvedIcon,
                               } as any
                             }
@@ -1478,10 +1531,22 @@ export default function WorkPage() {
                     </div>
 
                     {(() => {
-                      const categories = Array.from(
-                        new Set(activeDeptTasks.map((t) => t.category)),
-                      );
-                      if (categories.length === 0) {
+                      // Group tasks by category AND department
+                      const groups = activeDeptTasks.reduce((acc, t) => {
+                        const dept = t.department || "Writers' Block";
+                        const key = `${dept}|${t.category}`;
+                        if (!acc[key]) acc[key] = {
+                          category: t.category,
+                          department: dept,
+                          tasks: []
+                        };
+                        acc[key].tasks.push(t);
+                        return acc;
+                      }, {} as Record<string, { category: string, department: string, tasks: Assignment[] }>);
+
+                      const groupList = Object.values(groups);
+
+                      if (groupList.length === 0) {
                         return (
                           <SectionTable
                             section={{
@@ -1512,35 +1577,53 @@ export default function WorkPage() {
                         );
                       }
 
-                      return categories.sort().map((cat) => {
-                        const sectionTasks = activeDeptTasks.filter(
-                          (a) => a.category === cat,
-                        );
+                      // Sort groups:
+                      // 1. Native department groups first
+                      // 2. Normal categories sorted alphabetically
+                      // 3. 'task' category last
+                      // 4. Foreign department groups at the very bottom
+                      const sortedGroups = groupList.sort((a, b) => {
+                        const aIsNative = a.department === activeDeptKey;
+                        const bIsNative = b.department === activeDeptKey;
+
+                        if (aIsNative && !bIsNative) return -1;
+                        if (!aIsNative && bIsNative) return 1;
+
+                        if (aIsNative && bIsNative) {
+                          if (a.category === "task" && b.category !== "task") return 1;
+                          if (a.category !== "task" && b.category === "task") return -1;
+                          return a.category.localeCompare(b.category);
+                        }
+
+                        // Both foreign: Sort by department first, then category
+                        if (a.department !== b.department) return a.department.localeCompare(b.department);
+                        return a.category.localeCompare(b.category);
+                      });
+
+                      return sortedGroups.map((group) => {
+                        const { category: cat, department: dept, tasks: sectionTasks } = group;
+                        const isNative = dept === activeDeptKey;
                         const known = KNOWN_CATEGORIES[cat];
-                        const deptColor = getDeptHex(activeDeptKey);
-                        // Consistently resolve icon using our helper
-                        const resolvedIcon = resolveIcon(
-                          cat,
-                          sectionTasks,
-                          known?.icon,
-                        );
+                        const deptColor = getDeptHex(dept);
+                        const resolvedIcon = resolveIcon(cat, sectionTasks, known?.icon);
+
+                        // If foreign, add department name to label
+                        let label = known?.label ||
+                          cat.charAt(0).toUpperCase() + cat.slice(1).replace(/_/g, " ");
+
+                        if (!isNative) {
+                          label = `${label} (${dept})`;
+                        }
 
                         return (
                           <SectionTable
-                            key={cat}
+                            key={`${dept}-${cat}`}
                             section={{
                               key: cat,
-                              label:
-                                known?.label ||
-                                cat.charAt(0).toUpperCase() +
-                                  cat.slice(1).replace(/_/g, " "),
+                              label,
                               icon: resolvedIcon,
                               color: known?.color || deptColor,
-                              hasEditor: [
-                                "article",
-                                "blog",
-                                "survivor_story",
-                              ].includes(cat),
+                              hasEditor: ["article", "blog", "survivor_story"].includes(cat),
                               table: null,
                             }}
                             tasks={sectionTasks}
@@ -1552,7 +1635,7 @@ export default function WorkPage() {
                             onAssign={(category: string) =>
                               setShowAssignModal({
                                 category,
-                                department: activeDeptKey,
+                                department: dept,
                               })
                             }
                             onToast={(m: string) => setToast(m)}
