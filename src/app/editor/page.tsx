@@ -532,7 +532,7 @@ function EditorContent() {
       const patches = dmp.patch_make(lastBroadcastedContentRef.current, currentContent);
       
       const channel = presenceChannelRef.current;
-      if (patches.length > 0 && channelReady && channel && (channel as any).state === 'joined') {
+      if (patches.length > 0 && channelReady && channel) {
         docVersionRef.current++;
         channel.send({
           type: 'broadcast',
@@ -543,7 +543,10 @@ function EditorContent() {
             senderId: user.id,
             version: docVersionRef.current
           }
+        }).then((res: any) => {
+          if (res !== 'ok') console.warn('Broadcast failed:', res);
         });
+        
         // Update presence too so others know we advanced our version
         channel.track({
           id: user.id,
