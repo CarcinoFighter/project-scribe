@@ -16,6 +16,7 @@ import SettingsModal, {
   loadSettings,
   saveSettings,
   applySettings,
+  DEFAULT_SETTINGS,
   type AppSettings,
 } from '@/components/SettingsModal';
 import { Settings } from 'lucide-react';

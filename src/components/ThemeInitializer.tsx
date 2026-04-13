@@ -1,6 +1,8 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useUser } from '@/lib/useUser';
+import { loadSettings, applySettings } from './SettingsModal';
 
 export function ThemeInitializer() {
   const { user, loading } = useUser();
