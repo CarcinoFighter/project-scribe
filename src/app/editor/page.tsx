@@ -219,6 +219,7 @@ function EditorContent() {
               // Only update if at least one patch applied successfully
               if (results.some(r => r)) {
                 lastBroadcastedContentRef.current = mergedContent;
+                lastSavedContentRef.current = mergedContent; // SYNC BOTH REFS
                 return { ...t, content: mergedContent, isSaved: true };
               }
             } catch (err) {
@@ -502,6 +503,7 @@ function EditorContent() {
             const newId = data.doc?.id;
             
             lastSavedContentRef.current = currentContent;
+            lastBroadcastedContentRef.current = currentContent; // SYNC BOTH REFS
             
             setTabs(prev => prev.map(t => {
               if (t.id === activeTabId) {
