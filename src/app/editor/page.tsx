@@ -21,6 +21,9 @@ import { supabase } from '@/lib/supabase';
 import type { Collaborator } from '@/types';
 import Toast from '@/components/Toast';
 import { convertDocxToMarkdown } from '@/lib/document-utils';
+import { diff_match_patch } from 'diff-match-patch';
+
+const dmp = new diff_match_patch();
 
 const EditorPane = dynamic(() => import('@/components/EditorPane'), {
   ssr: false,
@@ -160,6 +163,8 @@ function EditorContent() {
   const { user, loading: userLoading } = useUser();
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const presenceChannelRef = useRef<any>(null);
+  const lastBroadcastedContentRef = useRef<string>('');
+  const lastSavedContentRef = useRef<string>('');
 
   // Check mobile
   const [isMobile, setIsMobile] = useState(false);
@@ -202,10 +207,24 @@ function EditorContent() {
         }
         setCollaborators(otherUsers);
       })
-      .on('broadcast', { event: 'content-update' }, (payload) => {
-        const { tabId, content, senderId } = payload.payload;
+      .on('broadcast', { event: 'patch-update' }, (payload) => {
+        const { tabId, patch, senderId } = payload.payload;
         if (senderId !== user.id && tabId === activeTabId) {
-          setTabs(prev => prev.map(t => t.id === tabId ? { ...t, content, isSaved: true } : t));
+          setTabs(prev => prev.map(t => {
+            if (t.id !== tabId) return t;
+            
+            try {
+              const [mergedContent, results] = dmp.patch_apply(patch, t.content);
+              // Only update if at least one patch applied successfully
+              if (results.some(r => r)) {
+                lastBroadcastedContentRef.current = mergedContent;
+                return { ...t, content: mergedContent, isSaved: true };
+              }
+            } catch (err) {
+              console.error('Failed to apply patch:', err);
+            }
+            return t;
+          }));
         }
       })
       .subscribe(async (status) => {
@@ -336,7 +355,14 @@ function EditorContent() {
             .then(res => res.json())
             .then(data => {
               if (data.success) {
-                setTabs(prev => prev.map(t => t.id === id ? { ...t, ...data.doc, isLoading: false } : t));
+                setTabs(prev => prev.map(t => {
+                  if (t.id === id) {
+                    lastBroadcastedContentRef.current = data.doc.content || '';
+                    lastSavedContentRef.current = data.doc.content || '';
+                    return { ...t, ...data.doc, isLoading: false };
+                  }
+                  return t;
+                }));
               } else {
                 setTabs(prev => prev.map(t => t.id === id ? { ...t, title: 'Error loading', isLoading: false } : t));
               }
@@ -400,7 +426,14 @@ function EditorContent() {
           .then(res => res.json())
           .then(data => {
             if (data.success) {
-              setTabs(curr => curr.map(t => t.id === id ? { ...t, ...data.doc, isLoading: false } : t));
+              setTabs(curr => curr.map(t => {
+                if (t.id === id) {
+                  lastBroadcastedContentRef.current = data.doc.content || '';
+                  lastSavedContentRef.current = data.doc.content || '';
+                  return { ...t, ...data.doc, isLoading: false };
+                }
+                return t;
+              }));
             } else {
               setTabs(curr => curr.map(t => t.id === id ? { ...t, title: 'Error loading', isLoading: false } : t));
             }
@@ -422,6 +455,8 @@ function EditorContent() {
       setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, isSaved: false } : t));
     }, 300);
 
+    const saveInterval = activeTab.isShared ? 300 : 1500;
+
     const t = setTimeout(async () => {
       try {
         const tabsToSave = tabsRef.current.filter(tab => tab.title !== 'Error loading' && !tab.isLoading && !tab.isShared);
@@ -433,23 +468,39 @@ function EditorContent() {
         }
 
         if (activeTab.title !== 'Untitled Document' && activeTab.slug && activeTab.title !== 'Error loading') {
+          const currentContent = activeTab.content || '';
+          let body: any = {
+            id: activeTab.id === 'ls-active' ? null : activeTab.id,
+            title: activeTab.title,
+            slug: activeTab.slug,
+            contentType: activeTab.type,
+            status: activeTab.status,
+            tags: [],
+          };
+
+          // For shared docs, send patches instead of full content
+          if (activeTab.isShared && lastSavedContentRef.current) {
+            const patches = dmp.patch_make(lastSavedContentRef.current, currentContent);
+            if (patches.length === 0) {
+              setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, isSaved: true } : t));
+              return;
+            }
+            body.patch = patches;
+          } else {
+            body.content = currentContent;
+          }
+
           const res = await fetch('/api/editor/save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              id: activeTab.id === 'ls-active' ? null : activeTab.id,
-              title: activeTab.title,
-              slug: activeTab.slug,
-              content: activeTab.content,
-              contentType: activeTab.type,
-              status: activeTab.status,
-              tags: [],
-            }),
+            body: JSON.stringify(body),
           });
           
           if (res.ok) {
             const data = await res.json();
             const newId = data.doc?.id;
+            
+            lastSavedContentRef.current = currentContent;
             
             setTabs(prev => prev.map(t => {
               if (t.id === activeTabId) {
@@ -466,7 +517,7 @@ function EditorContent() {
           setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, isSaved: true } : t));
         }
       } catch (e) {}
-    }, 1500);
+    }, saveInterval);
     return () => { clearTimeout(markUnsaved); clearTimeout(t); };
   }, [activeTab?.content, activeTab?.title, activeTab?.slug, activeTab?.status, activeTabId]);
 
@@ -475,16 +526,24 @@ function EditorContent() {
     if (!activeTab || !presenceChannelRef.current || !user) return;
 
     const t = setTimeout(() => {
-      presenceChannelRef.current.send({
-        type: 'broadcast',
-        event: 'content-update',
-        payload: {
-          tabId: activeTabId,
-          content: activeTab.content,
-          senderId: user.id
-        }
-      });
-    }, 400);
+      if (!activeTab || activeTab.title === 'Error loading') return;
+      
+      const currentContent = activeTab.content || '';
+      const patches = dmp.patch_make(lastBroadcastedContentRef.current, currentContent);
+      
+      if (patches.length > 0) {
+        presenceChannelRef.current.send({
+          type: 'broadcast',
+          event: 'patch-update',
+          payload: {
+            tabId: activeTabId,
+            patch: patches,
+            senderId: user.id
+          }
+        });
+        lastBroadcastedContentRef.current = currentContent;
+      }
+    }, 200);
 
     return () => clearTimeout(t);
   }, [activeTab?.content, activeTabId, user]);

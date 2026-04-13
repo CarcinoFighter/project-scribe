@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { saveLocalDoc, deleteLocalDoc } from '@/lib/localFiles';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { diff_match_patch } from 'diff-match-patch';
+
+const dmp = new diff_match_patch();
 
 export async function POST(req: NextRequest) {
   const token = req.cookies.get('cw_token')?.value;
@@ -16,7 +19,7 @@ export async function POST(req: NextRequest) {
   }
 
   const userId = payload.userId;
-  const { id, title, content, contentType, status, slug } = await req.json();
+  const { id, title, content, patch, contentType, status, slug } = await req.json();
 
   if (!title || !contentType) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -32,14 +35,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid content type' }, { status: 400 });
     }
 
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    let finalContent = content || '';
+
+    if (isUuid && patch) {
+      // Advanced: Apply patch to the current content in the database
+      const { data: currentDoc, error: fetchError } = await supabaseAdmin
+        .from(table)
+        .select('content')
+        .eq('id', id)
+        .single();
+      
+      if (!fetchError && currentDoc) {
+        const [mergedContent, results] = dmp.patch_apply(patch, currentDoc.content || '');
+        // We accept the merge even if some patches fail (best effort)
+        finalContent = mergedContent;
+      }
+    }
+
     const docData: any = {
-      content: content || '',
+      content: finalContent,
       status: status,
       updated_at: new Date().toISOString(),
     };
 
     // Only set author_id for new documents
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
     if (!isUuid) {
       docData.author_id = userId;
     }
@@ -57,7 +77,6 @@ export async function POST(req: NextRequest) {
     }
 
     let finalId = id;
-    // isUuid already declared above
 
     if (isUuid) {
       // Update existing Supabase record
