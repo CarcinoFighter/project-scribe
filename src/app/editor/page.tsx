@@ -330,6 +330,78 @@ function EditorContent() {
     };
   }, [activeTabId, user]);
 
+  // ---- Re-sync on browser tab focus (Page Visibility API) ----
+  // When the browser tab regains focus, timers may have been throttled and
+  // patches missed. Re-fetch the latest content from DB to catch up.
+  useEffect(() => {
+    const isUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+    const handleVisibility = async () => {
+      if (document.visibilityState !== 'visible') return;
+      const tabId = activeTabId;
+      if (!tabId || !isUuid(tabId)) return;
+
+      const tab = tabsRef.current.find(t => t.id === tabId);
+      if (!tab || tab.isLoading) return;
+
+      // Re-fetch fresh content from DB to catch up on missed patches
+      try {
+        const res = await fetch(`/api/editor/load?id=${tabId}&type=${tab.type}`);
+        const data = await res.json();
+        if (!data.success) return;
+
+        const freshContent = data.doc.content || '';
+        const localContent = editorRef.current?.getValue() ?? tab.content;
+
+        if (freshContent !== localContent) {
+          const patches = dmp.patch_make(localContent, freshContent);
+          const patchText = dmp.patch_toText(patches);
+          if (patchText && editorRef.current) {
+            editorRef.current.applyRemotePatch(patchText);
+          }
+          const merged = editorRef.current?.getValue() ?? freshContent;
+          lastBroadcastedContentRef.current = merged;
+          lastSavedContentRef.current = merged;
+          setTabs(prev => prev.map(t => t.id === tabId ? { ...t, content: merged, isSaved: true } : t));
+        }
+
+        // Re-track presence so others know we're back
+        if (presenceChannelRef.current && user) {
+          presenceChannelRef.current.track({
+            id: user.id,
+            name: user.name,
+            avatar_url: user.avatar_url,
+            cursor: { line: cursorLine, col: cursorCol },
+            version: docVersionRef.current
+          }).catch(() => {});
+        }
+      } catch (e) {
+        console.warn('[Collab] Visibility re-sync failed:', e);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [activeTabId, user, cursorLine, cursorCol]);
+
+  // ---- Presence heartbeat (keep-alive every 30s) ----
+  // Prevents the Supabase channel from going stale during long editing sessions.
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(() => {
+      const channel = presenceChannelRef.current;
+      if (!channel || !channelReady) return;
+      channel.track({
+        id: user.id,
+        name: user.name,
+        avatar_url: user.avatar_url,
+        cursor: { line: cursorLine, col: cursorCol },
+        version: docVersionRef.current
+      }).catch(() => {});
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, [user, channelReady, cursorLine, cursorCol]);
+
   // Update presence on cursor move
   useEffect(() => {
     if (presenceChannelRef.current && user) {
