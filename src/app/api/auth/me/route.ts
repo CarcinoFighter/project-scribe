@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   // Fetch fresh user data from DB
   const { data: user, error } = await supabaseAdmin
     .from('users')
-    .select('id, name, email, avatar_url, admin_access, department')
+    .select('id, name, email, avatar_url, admin_access, department, metadata')
     .eq('id', payload.userId)
     .single();
 

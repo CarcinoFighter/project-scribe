@@ -1,18 +1,16 @@
 'use client';
 
-import { useEffect } from 'react';
-import { loadSettings, applySettings } from './SettingsModal';
+import { useUser } from '@/lib/useUser';
 
-/**
- * ThemeInitializer
- * Loads and applies the saved theme from localStorage on mount.
- * This runs on every page load to ensure theme persistence across refreshes.
- */
 export function ThemeInitializer() {
+  const { user, loading } = useUser();
+
   useEffect(() => {
-    // Load settings from localStorage and apply the theme
-    const settings = loadSettings();
-    applySettings(settings);
+    if (!loading && user) {
+      const meta = user.metadata || {};
+      const settings = meta.settings || loadSettings();
+      applySettings(settings);
+    }
 
     // Store PWA install prompt globally
     const handleBeforeInstallPrompt = (e: Event) => {

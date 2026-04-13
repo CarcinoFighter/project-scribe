@@ -431,18 +431,11 @@ export function applySettings(s: AppSettings): boolean {
 /*  Persistence                                                 */
 /* ─────────────────────────────────────────────────────────── */
 export function loadSettings(): AppSettings {
-  try {
-    const raw = localStorage.getItem('cs-settings');
-    if (raw) return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
-  } catch { /* */ }
   return { ...DEFAULT_SETTINGS };
 }
 
 export function saveSettings(s: AppSettings): void {
-  try {
-    localStorage.setItem('cs-settings', JSON.stringify(s));
-    localStorage.setItem('cs-dark', (THEMES[s.theme]?.dark ?? true) ? 'true' : 'false');
-  } catch { /* */ }
+  // Persistence is now handled via Supabase metadata updates in parent components.
 }
 
 /* ─────────────────────────────────────────────────────────── */

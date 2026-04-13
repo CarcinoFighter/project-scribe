@@ -258,7 +258,7 @@ function SortFilterBar({ sortBy, setSortBy, filter, setFilter, total }: { sortBy
 function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, loading: userLoading } = useUser();
+  const { user, loading: userLoading, updateMetadata } = useUser();
 
   const [docs,             setDocs]             = useState<Doc[]>([]);
   const [lsDoc,            setLsDoc]            = useState<Doc | null>(null);
@@ -296,18 +296,17 @@ function DashboardContent() {
   useEffect(() => { if (!userLoading && !user) router.push('/login'); }, [user, userLoading, router]);
 
   useEffect(() => {
+    if (!user || userLoading) return;
     try {
-      const s = loadSettings(); setAppSettings(s); applySettings(s);
-      const goal = localStorage.getItem('cs-goal');
+      const meta = user.metadata || {};
+      const goal = meta.wordGoal;
       if (goal) setWordGoal(parseInt(goal, 10) || 0);
-      const rawContent = localStorage.getItem('cs-content');
-      const name = localStorage.getItem('cs-name') || 'Untitled Document';
-      if (rawContent) {
-        const words = countWords(rawContent), readTime = Math.max(1, Math.round(words / 200)), excerpt = excerptFrom(rawContent);
-        setLsDoc({ id: 'ls-active', type: 'cancer_docs', title: name, excerpt: excerpt || 'Document in editor.', words, status: 'draft', date: getTodayStr(), readTime, tags: [], starred: false, isActive: true });
-      }
+
+      const s = meta.settings || loadSettings();
+      setAppSettings(s);
+      applySettings(s);
     } catch {}
-  }, []);
+  }, [user, userLoading]);
 
   useEffect(() => {
     if (user && !activeDeptKey) setActiveDeptKey(user.department || "Writers' Block");
@@ -343,18 +342,15 @@ function DashboardContent() {
   const showToastMsg = useCallback((msg: string) => setToast(msg), []);
 
   const toggleStar = useCallback((id: string) => {
-    if (id === 'ls-active') { setLsDoc(d => d ? { ...d, starred: !d.starred } : null); setToast(lsDoc?.starred ? 'Removed from starred' : 'Added to starred'); return; }
     setDocs(ds => ds.map(d => d.id === id ? { ...d, starred: !d.starred } : d));
     const doc = docs.find(d => d.id === id); setToast(doc?.starred ? 'Removed from starred' : 'Added to starred');
-  }, [docs, lsDoc]);
+  }, [docs]);
 
   const deleteDoc = useCallback(async (id: string) => {
-    const all = lsDoc ? [lsDoc, ...docs] : docs;
-    const doc = all.find(d => d.id === id); if (!doc) return;
-    if (id === 'ls-active') { setLsDoc(null); localStorage.removeItem('cs-content'); localStorage.removeItem('cs-name'); localStorage.removeItem('cs-tabs'); }
-    else { setDocs(ds => ds.filter(d => d.id !== id)); try { await fetch(`/api/documents?id=${id}&type=${doc.type}`, { method: 'DELETE' }); } catch {} }
+    const doc = docs.find(d => d.id === id); if (!doc) return;
+    setDocs(ds => ds.filter(d => d.id !== id)); try { await fetch(`/api/documents?id=${id}&type=${doc.type}`, { method: 'DELETE' }); } catch {}
     setToast(`Deleted "${doc.title.slice(0, 28)}…"`);
-  }, [docs, lsDoc]);
+  }, [docs]);
 
   const handleCompleteTask = useCallback(async (taskId: string) => {
     try {
@@ -565,7 +561,7 @@ function DashboardContent() {
               ))}
 
               {/* Word goal */}
-              {wordGoal > 0 && lsDoc && (
+              {wordGoal > 0 && docs.length > 0 && (
                 <>
                   <div className="db-sidebar-rule" />
                   <div className="db-goal">
@@ -575,15 +571,14 @@ function DashboardContent() {
                         <span className="db-cap" style={{ color: 'var(--accent)' }}>Word Goal</span>
                       </div>
                       <span className="db-cap" style={{ color: 'var(--accent)' }}>
-                        {Math.round((lsDoc.words / wordGoal) * 100)}%
+                        {Math.round((docs[0].words / wordGoal) * 100)}%
                       </span>
                     </div>
                     <div style={{ fontFamily: 'var(--ff-ui)', fontSize: 10.5, color: 'var(--ink)', fontWeight: 500, marginBottom: 7, letterSpacing: '0.04em' }}>
-                      {lsDoc.words.toLocaleString()} <span style={{ color: 'var(--mid)', fontWeight: 400 }}>/ {wordGoal.toLocaleString()}</span>
+                      {docs[0].words.toLocaleString()} <span style={{ color: 'var(--mid)', fontWeight: 400 }}>/ {wordGoal.toLocaleString()}</span>
                     </div>
-                    {/* Flat progress bar — no border-radius */}
                     <div style={{ height: 2, background: 'var(--rule)' }}>
-                      <div style={{ height: '100%', background: lsDoc.words >= wordGoal ? '#4ade80' : 'var(--accent)', width: `${Math.min((lsDoc.words / wordGoal) * 100, 100)}%`, transition: 'width 0.4s cubic-bezier(0.34,1.2,0.64,1)' }} />
+                      <div style={{ height: '100%', background: docs[0].words >= wordGoal ? '#4ade80' : 'var(--accent)', width: `${Math.min((docs[0].words / wordGoal) * 100, 100)}%`, transition: 'width 0.4s cubic-bezier(0.34,1.2,0.64,1)' }} />
                     </div>
                   </div>
                 </>
@@ -726,7 +721,18 @@ function DashboardContent() {
       )}
 
       {showSettings && (
-        <SettingsModal settings={appSettings} onClose={() => setShowSettings(false)} onChange={next => { setAppSettings(next); saveSettings(next); applySettings(next); }} />
+        <SettingsModal 
+          settings={appSettings} 
+          onClose={() => setShowSettings(false)} 
+          onChange={next => { 
+            setAppSettings(next); 
+            applySettings(next);
+            if (user) {
+              const meta = user.metadata || {};
+              updateMetadata({ ...meta, settings: next });
+            }
+          }} 
+        />
       )}
 
       {submittingTask && (

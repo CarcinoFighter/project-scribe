@@ -341,115 +341,84 @@ function EditorContent() {
   const initialized = useRef(false);
 
   useEffect(() => {
-    if (initialized.current) return;
+    if (!user || userLoading || initialized.current) return;
     initialized.current = true;
 
     try {
-      const savedTabs = localStorage.getItem('cs-tabs');
-      const goal = localStorage.getItem('cs-goal');
-      const toured = localStorage.getItem('cs-toured');
+      const meta = user.metadata || {};
+      const goal = meta.wordGoal;
+      const toured = meta.toured;
 
       if (goal) setWordGoal(parseInt(goal, 10) || 0);
       if (!toured) setShowTour(true);
 
-      const s = loadSettings();
+      const s = meta.settings || loadSettings();
       setAppSettings(s);
       setIsDark(applySettings(s));
 
-      let initialTabs: Tab[] = [];
-      if (savedTabs) {
-        try {
-          initialTabs = JSON.parse(savedTabs);
-        } catch (e) {
-          console.error('Failed to parse saved tabs:', e);
-        }
-      }
-
       const id = searchParams.get('id');
       const typeFromUrl = searchParams.get('type') as Tab['type'];
-      const isUuid = id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-      
+
       if (id) {
-        // If it's a database document (UUID), we MUST fetch it to ensure fresh state,
-        // even if it exists in LocalStorage. LocalStorage is only a fallback or for local-only drafts.
-        const existing = initialTabs.find(t => t.id === id);
+        // Fetch fresh data for the document
+        const effectiveType = typeFromUrl || 'blogs';
         
-        if (existing && !isUuid) {
-          // Local-only draft found in LocalStorage
-          setTabs(initialTabs);
-          setActiveTabId(id);
-        } else {
-          // Database document or new tab: Fetch fresh data
-          const effectiveType = typeFromUrl || existing?.type || 'blogs';
-          
-          const newTab: Tab = {
-            id, 
-            type: effectiveType,
-            title: 'Loading...',
-            content: '',
-            slug: '',
-            status: 'draft',
-            isSaved: true,
-            isLoading: true
-          };
-          const nextTabs = [...initialTabs, newTab];
-          setTabs(nextTabs);
-          setActiveTabId(id);
-
-          const typeParam = typeFromUrl ? `&type=${typeFromUrl}` : '';
-          fetch(`/api/editor/load?id=${id}${typeParam}`)
-            .then(res => res.json())
-            .then(data => {
-              if (data.success) {
-                setTabs(prev => {
-                  const updated = prev.map(t => {
-                    if (t.id === id) {
-                      lastBroadcastedContentRef.current = data.doc.content || '';
-                      lastSavedContentRef.current = data.doc.content || '';
-                      docVersionRef.current = 0; 
-                      patchQueueRef.current = [];
-                      return { ...t, ...data.doc, isLoading: false };
-                    }
-                    return t;
-                  });
-                  // If we didn't find the tab to update (rare case), add it
-                  if (!updated.find(t => t.id === id)) {
-                    updated.push({ ...data.doc, isLoading: false });
-                  }
-                  return updated;
-                });
-              } else {
-                setTabs(prev => prev.map(t => t.id === id ? { ...t, title: 'Error loading', isLoading: false } : t));
-              }
-            })
-            .catch(() => {
-              setTabs(prev => prev.map(t => t.id === id ? { ...t, title: 'Error loading', isLoading: false } : t));
-            });
-        }
-        return;
-      }
-
-      if (initialTabs.length > 0) {
-        setTabs(initialTabs);
-        setActiveTabId(initialTabs[0].id);
-      } else {
-        const defaultTab: Tab = {
-          id: 'ls-active',
-          type: 'blogs',
-          title: 'Untitled Document',
-          content: DEFAULT_CONTENT,
+        const newTab: Tab = {
+          id, 
+          type: effectiveType,
+          title: 'Loading...',
+          content: '',
           slug: '',
           status: 'draft',
           isSaved: true,
-          isShared: false
+          isLoading: true
         };
-        setTabs([defaultTab]);
-        setActiveTabId(defaultTab.id);
+        setTabs([newTab]);
+        setActiveTabId(id);
+
+        const typeParam = typeFromUrl ? `&type=${typeFromUrl}` : '';
+        fetch(`/api/editor/load?id=${id}${typeParam}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              setTabs(prev => prev.map(t => {
+                if (t.id === id) {
+                  lastBroadcastedContentRef.current = data.doc.content || '';
+                  lastSavedContentRef.current = data.doc.content || '';
+                  docVersionRef.current = 0; 
+                  patchQueueRef.current = [];
+                  return { ...t, ...data.doc, isLoading: false };
+                }
+                return t;
+              }));
+            } else {
+              setTabs(prev => prev.map(t => t.id === id ? { ...t, title: 'Error loading', isLoading: false } : t));
+            }
+          })
+          .catch(() => {
+            setTabs(prev => prev.map(t => t.id === id ? { ...t, title: 'Error loading', isLoading: false } : t));
+          });
+        return;
       }
+
+      // No ID in URL, start with a fresh untitled doc
+      const defaultTab: Tab = {
+        id: 'new-active',
+        type: 'blogs',
+        title: 'Untitled Document',
+        content: DEFAULT_CONTENT,
+        slug: '',
+        status: 'draft',
+        isSaved: true,
+        isShared: false
+      };
+      setTabs([defaultTab]);
+      setActiveTabId(defaultTab.id);
+
     } catch (e) {
       console.error('Failed to initialize editor:', e);
     }
-  }, [searchParams]);
+  }, [user, userLoading, searchParams]);
 
   const tabsRef = useRef<Tab[]>([]);
   useEffect(() => { tabsRef.current = tabs; }, [tabs]);
@@ -515,18 +484,11 @@ function EditorContent() {
     const t = setTimeout(async () => {
       try {
         const startVersion = lastSyncVersionRef.current;
-        const tabsToSave = tabsRef.current.filter(tab => tab.title !== 'Error loading' && !tab.isLoading && !tab.isShared);
-        if (tabsToSave.length > 0) {
-          localStorage.setItem('cs-tabs', JSON.stringify(tabsToSave));
-        } else if (tabsRef.current.length > 0 && tabsRef.current.every(t => t.isShared)) {
-          // If all tabs are shared, we might want to clear or keep existing? 
-          // Actually, let's just not update localStorage with shared tabs.
-        }
 
-        if (activeTab.title !== 'Untitled Document' && activeTab.slug && activeTab.title !== 'Error loading') {
+        if (activeTab.title !== 'Error loading') {
           const currentContent = activeTab.content || '';
           let body: any = {
-            id: activeTab.id === 'ls-active' ? null : activeTab.id,
+            id: activeTab.id.startsWith('new-') ? null : activeTab.id,
             title: activeTab.title,
             slug: activeTab.slug,
             contentType: activeTab.type,
@@ -551,7 +513,7 @@ function EditorContent() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body),
           });
-          
+
           if (res.ok) {
             const data = await res.json();
             const newId = data.doc?.id;
@@ -626,10 +588,27 @@ function EditorContent() {
     document.title = unsaved ? `\u25CF ${base}` : base;
   }, [activeTab?.title, activeTab?.isSaved]);
 
-  // ---- Persist word goal ----
+  // ---- Sync metadata ----
+  const { updateMetadata } = useUser();
+
   useEffect(() => {
-    localStorage.setItem('cs-goal', String(wordGoal));
-  }, [wordGoal]);
+    if (!userLoading && user) {
+      const currentMeta = user.metadata || {};
+      if (currentMeta.wordGoal !== wordGoal || currentMeta.toured !== !showTour) {
+         updateMetadata({ ...currentMeta, wordGoal, toured: !showTour });
+      }
+    }
+  }, [wordGoal, showTour]);
+
+  // Persist app settings to Supabase
+  useEffect(() => {
+    if (!userLoading && user) {
+      const currentMeta = user.metadata || {};
+      if (JSON.stringify(currentMeta.settings) !== JSON.stringify(appSettings)) {
+        updateMetadata({ ...currentMeta, settings: appSettings });
+      }
+    }
+  }, [appSettings]);
 
   const handleCommandRef = useRef<(id: string) => void>(() => {});
 

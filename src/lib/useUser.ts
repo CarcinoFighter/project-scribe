@@ -9,6 +9,7 @@ interface User {
   avatar_url: string | null;
   admin_access: boolean;
   department: string | null;
+  metadata: any;
 }
 
 // Simple client-side cache for the user profile
@@ -27,12 +28,9 @@ export function useUser() {
         const data = await res.json();
         setUser(data.user);
         cachedUser = data.user;
-        // Also persist to localStorage for cross-refresh instant load
-        try { localStorage.setItem('cs-user-cache', JSON.stringify(data.user)); } catch {}
       } else {
         setUser(null);
         cachedUser = null;
-        try { localStorage.removeItem('cs-user-cache'); } catch {}
       }
     } catch (_error) {
       // Keep existing user if fetch fails
@@ -42,27 +40,32 @@ export function useUser() {
   };
 
   useEffect(() => {
-    // 1. Check in-memory cache first (quickest)
+    // Check in-memory cache first (quickest)
     if (cachedUser) {
       setUser(cachedUser);
       setLoading(false);
     } 
-    // 2. Check localStorage if in-memory is empty
-    else {
-      try {
-        const saved = localStorage.getItem('cs-user-cache');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          setUser(parsed);
-          cachedUser = parsed;
-          setLoading(false);
-        }
-      } catch {}
-    }
 
     // 3. Always refresh from server in the background
     fetchUser();
   }, []);
 
-  return { user, loading, refreshUser: () => fetchUser(true) };
+  const updateMetadata = async (newMetadata: any) => {
+    try {
+      const res = await fetch('/api/users/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ metadata: newMetadata }),
+      });
+      if (res.ok) {
+        await fetchUser(true);
+        return true;
+      }
+    } catch (err) {
+      console.error('Failed to update metadata:', err);
+    }
+    return false;
+  };
+
+  return { user, loading, refreshUser: () => fetchUser(true), updateMetadata };
 }

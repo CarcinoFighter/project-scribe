@@ -56,7 +56,7 @@ function FieldRow({
 }
 
 export default function ProfilePage() {
-  const { user, loading: userLoading, refreshUser } = useUser();
+  const { user, loading: userLoading, refreshUser, updateMetadata } = useUser();
   const { isDark, toggleTheme } = useTheme();
   const router = useRouter();
 
@@ -69,14 +69,16 @@ export default function ProfilePage() {
   const [tempImage, setTempImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showSettings, setShowSettings] = useState(false);
-  const [settings, setSettings] = useState<AppSettings>(() => loadSettings());
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
 
   // Apply saved settings on mount
   useEffect(() => {
-    const s = loadSettings();
+    if (!user || userLoading) return;
+    const meta = user.metadata || {};
+    const s = meta.settings || loadSettings();
     setSettings(s);
     applySettings(s);
-  }, []);
+  }, [user, userLoading]);
 
   useEffect(() => {
     if (user) { setName(user.name || ''); setAvatarUrl(user.avatar_url || ''); }
@@ -434,8 +436,11 @@ export default function ProfilePage() {
           onClose={() => setShowSettings(false)}
           onChange={next => {
             setSettings(next);
-            saveSettings(next);
             applySettings(next);
+            if (user) {
+              const meta = user.metadata || {};
+              updateMetadata({ ...meta, settings: next });
+            }
           }}
         />
       )}

@@ -45,7 +45,6 @@ export default function GuidedTour({ onClose, isMobile }: TourProps) {
   const current = currentSteps[step];
 
   const handleClose = useCallback(() => {
-    localStorage.setItem('cs-toured', 'true');
     onClose();
   }, [onClose]);
 

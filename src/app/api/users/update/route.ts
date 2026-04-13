@@ -14,19 +14,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
   }
 
-  const { name, avatar_url } = await req.json();
+  const { name, avatar_url, metadata } = await req.json();
+  const updateData: any = { updated_at: new Date().toISOString() };
 
-  if (!name) {
-    return NextResponse.json({ error: 'Name is required' }, { status: 400 });
-  }
+  if (name) updateData.name = name;
+  if (avatar_url !== undefined) updateData.avatar_url = avatar_url;
+  if (metadata !== undefined) updateData.metadata = metadata;
 
   const { data, error } = await supabaseAdmin
     .from('users')
-    .update({ 
-      name, 
-      avatar_url,
-      updated_at: new Date().toISOString() 
-    })
+    .update(updateData)
     .eq('id', payload.userId)
     .select()
     .single();
