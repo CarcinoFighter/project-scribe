@@ -210,29 +210,35 @@ export default function EditorPane({ content, onChange, isDark, focusMode, colla
         const currentContent = view.state.doc.toString();
         try {
           const patches = dmp.patch_fromText(patchText);
-          
-          // Use patch_apply on the current document, but CodeMirror's
-          // transaction system will help merge it with local changes.
           const [newContent, results] = dmp.patch_apply(patches, currentContent);
           
           if (results.some(r => r)) {
-            // Calculate a minimal diff between current state and the patched state
             const diffs = dmp.diff_main(currentContent, newContent);
             dmp.diff_cleanupSemantic(diffs);
             
             const changes = getChangesFromDiffs(diffs);
             
             if (changes.length > 0) {
-              // Apply changes as an atomic transaction
-              view.dispatch({
-                changes,
-                annotations: [Transaction.remote.of(true)], // Mark as remote to prevent echo
-                userEvent: 'remote.sync', // Help CodeMirror's history reconcile
-              });
+              try {
+                // Try fine-grained atomic transaction
+                view.dispatch({
+                  changes,
+                  annotations: [Transaction.remote.of(true)],
+                  userEvent: 'remote.sync',
+                });
+              } catch (cmErr) {
+                console.warn('[Editor] Fine-grained patch failed, falling back to full replace:', cmErr);
+                // Fallback: replace whole document
+                view.dispatch({
+                  changes: { from: 0, to: currentContent.length, insert: newContent },
+                  annotations: [Transaction.remote.of(true)],
+                  userEvent: 'remote.sync',
+                });
+              }
             }
           }
         } catch (err) {
-          console.error('[Editor] Remote patch failed:', err);
+          console.error('[Editor] Remote patch failed completely:', err);
         }
       },
     };
