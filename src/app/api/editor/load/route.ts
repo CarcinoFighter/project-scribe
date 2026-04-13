@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
             .from('work_assignments')
             .select('assigned_to_ids')
             .eq('document_id', id)
-            .single();
+            .maybeSingle();
 
           const isShared = assignment?.assigned_to_ids && Array.isArray(assignment.assigned_to_ids) && assignment.assigned_to_ids.length > 1;
 
