@@ -214,7 +214,8 @@ function EditorContent() {
             if (t.id !== tabId) return t;
             
             try {
-              const [mergedContent, results] = dmp.patch_apply(patch, t.content);
+              const patches = dmp.patch_fromText(patch);
+              const [mergedContent, results] = dmp.patch_apply(patches, t.content);
               // Only update if at least one patch applied successfully
               if (results.some(r => r)) {
                 lastBroadcastedContentRef.current = mergedContent;
@@ -485,7 +486,7 @@ function EditorContent() {
               setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, isSaved: true } : t));
               return;
             }
-            body.patch = patches;
+            body.patch = dmp.patch_toText(patches);
           } else {
             body.content = currentContent;
           }
@@ -537,7 +538,7 @@ function EditorContent() {
           event: 'patch-update',
           payload: {
             tabId: activeTabId,
-            patch: patches,
+            patch: dmp.patch_toText(patches),
             senderId: user.id
           }
         });

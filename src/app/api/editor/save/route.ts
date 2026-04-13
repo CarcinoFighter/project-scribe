@@ -47,9 +47,15 @@ export async function POST(req: NextRequest) {
         .single();
       
       if (!fetchError && currentDoc) {
-        const [mergedContent, results] = dmp.patch_apply(patch, currentDoc.content || '');
-        // We accept the merge even if some patches fail (best effort)
-        finalContent = mergedContent;
+        try {
+          const patches = dmp.patch_fromText(patch);
+          const [mergedContent, results] = dmp.patch_apply(patches, currentDoc.content || '');
+          // We accept the merge even if some patches fail (best effort)
+          finalContent = mergedContent;
+        } catch (err) {
+          console.error('Patch application failed on server:', err);
+          // Fallback to sending full content if patch fails or we could just use old content
+        }
       }
     }
 
