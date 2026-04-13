@@ -447,6 +447,15 @@ function EditorContent() {
 
         // Only act if DB content has changed since our last poll
         if (freshContent === prevRemote) return;
+
+        // CRITICAL: Skip if DB content is what WE just saved — not a remote change.
+        // Without this, our own auto-saves get re-applied as "remote" patches,
+        // duplicating text (e.g. typing "hello" → "hellohello").
+        if (freshContent === lastSavedContentRef.current) {
+          lastRemoteSyncedContentRef.current = freshContent;
+          return;
+        }
+
         lastRemoteSyncedContentRef.current = freshContent;
 
         // Compute ONLY the remote delta (what changed in DB relative to our last poll)
