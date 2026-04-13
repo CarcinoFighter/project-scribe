@@ -287,9 +287,21 @@ function EditorContent() {
         if (tabId !== activeTabId) return;
         
         if (editorRef.current) {
+          // Compute what the remote applied to OUR last broadcasted base.
+          // This represents the shared state both we and the sender now agree on.
+          // We do NOT use the full mergedContent here — that would include our own
+          // local edits, which would make the broadcasting effect think they've
+          // already been sent (causing one-way sync where only one user propagates).
+          const prevBase = lastBroadcastedContentRef.current;
+          const [remoteApplied] = dmp.patch_apply(dmp.patch_fromText(patch), prevBase);
+
+          // Apply the remote patch to the CodeMirror editor (merges with our local edits)
           editorRef.current.applyRemotePatch(patch);
           const mergedContent = editorRef.current.getValue();
-          lastBroadcastedContentRef.current = mergedContent;
+
+          // Base = remoteApplied: our local changes (mergedContent - remoteApplied)
+          // will be detected by the broadcasting effect and sent to the remote user.
+          lastBroadcastedContentRef.current = remoteApplied;
           lastSavedContentRef.current = mergedContent;
           lastSyncVersionRef.current++;
           
