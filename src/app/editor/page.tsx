@@ -166,6 +166,8 @@ function EditorContent() {
   const lastBroadcastedContentRef = useRef<string>('');
   const lastSavedContentRef = useRef<string>('');
   const lastSyncVersionRef = useRef<number>(0);
+  const docVersionRef = useRef<number>(0);
+  const patchQueueRef = useRef<{ version: number, patch: string, senderId: string }[]>([]);
 
   // Check mobile
   const [isMobile, setIsMobile] = useState(false);
@@ -209,26 +211,50 @@ function EditorContent() {
         setCollaborators(otherUsers);
       })
       .on('broadcast', { event: 'patch-update' }, (payload) => {
-        const { tabId, patch, senderId } = payload.payload;
+        const { tabId, patch, senderId, version } = payload.payload;
         if (senderId !== user.id && tabId === activeTabId) {
-          setTabs(prev => prev.map(t => {
-            if (t.id !== tabId) return t;
-            
-            try {
-              const patches = dmp.patch_fromText(patch);
-              const [mergedContent, results] = dmp.patch_apply(patches, t.content);
-              // Only update if at least one patch applied successfully
-              if (results.some(r => r)) {
-                lastBroadcastedContentRef.current = mergedContent;
-                lastSavedContentRef.current = mergedContent;
-                lastSyncVersionRef.current++; // ADVANCE VERSION ON BROADCAST
+          
+          const processPatch = (p: string, v: number) => {
+            if (editorRef.current) {
+              editorRef.current.applyRemotePatch(p);
+              const mergedContent = editorRef.current.getValue();
+              lastBroadcastedContentRef.current = mergedContent;
+              lastSavedContentRef.current = mergedContent;
+              lastSyncVersionRef.current++;
+              docVersionRef.current = v;
+              
+              setTabs(prev => prev.map(t => {
+                if (t.id !== tabId) return t;
                 return { ...t, content: mergedContent, isSaved: true };
-              }
-            } catch (err) {
-              console.error('Failed to apply patch:', err);
+              }));
             }
-            return t;
-          }));
+          };
+
+          const isInitialPatch = docVersionRef.current === 0;
+          const isNextPatch = version === docVersionRef.current + 1;
+          const isFuturePatch = version > docVersionRef.current + 1;
+
+          if (isInitialPatch || isNextPatch) {
+            processPatch(patch, version);
+
+            // Check queue for next versions
+            while (patchQueueRef.current.length > 0 && patchQueueRef.current[0].version === docVersionRef.current + 1) {
+              const next = patchQueueRef.current.shift()!;
+              processPatch(next.patch, next.version);
+            }
+          } else if (isFuturePatch) {
+            // Future patch, queue it
+            patchQueueRef.current.push({ version, patch, senderId });
+            patchQueueRef.current.sort((a, b) => a.version - b.version);
+            
+            // If the queue gets too long, we've likely missed something permanently. 
+            // Jump to the oldest in queue to unblock.
+            if (patchQueueRef.current.length > 20) {
+               const next = patchQueueRef.current.shift()!;
+               processPatch(next.patch, next.version);
+            }
+          }
+          // If version <= docVersionRef.current, we ignore it (unless it was the initial patch)
         }
       })
       .subscribe(async (status) => {
@@ -541,13 +567,15 @@ function EditorContent() {
       const patches = dmp.patch_make(lastBroadcastedContentRef.current, currentContent);
       
       if (patches.length > 0) {
+        docVersionRef.current++;
         presenceChannelRef.current.send({
           type: 'broadcast',
           event: 'patch-update',
           payload: {
             tabId: activeTabId,
             patch: dmp.patch_toText(patches),
-            senderId: user.id
+            senderId: user.id,
+            version: docVersionRef.current
           }
         });
         lastBroadcastedContentRef.current = currentContent;

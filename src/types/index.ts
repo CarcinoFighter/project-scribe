@@ -15,6 +15,7 @@ export interface EditorAPI {
   scrollToLine: (lineNumber: number) => void;
   focus: () => void;
   getValue: () => string;
+  applyRemotePatch: (patch: string) => void;
 }
 
 export interface DocumentStats {

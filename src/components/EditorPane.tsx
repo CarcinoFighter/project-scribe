@@ -7,12 +7,16 @@ import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
 import { EditorView, keymap, Decoration, WidgetType } from '@codemirror/view';
 import type { ViewUpdate } from '@codemirror/view';
+import { Transaction } from '@codemirror/state';
 import { defaultKeymap, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { searchKeymap, openSearchPanel } from '@codemirror/search';
 import { createTheme } from '@uiw/codemirror-themes';
 import { tags as t } from '@lezer/highlight';
 import type { EditorAPI, Collaborator } from '@/types';
-import { getCollaboratorColor } from '@/lib/utils';
+import { getCollaboratorColor, getChangesFromDiffs } from '@/lib/utils';
+import { diff_match_patch } from 'diff-match-patch';
+
+const dmp = new diff_match_patch();
 
 const makeTheme = (dark: boolean, fontFamily?: string) =>
   createTheme({
@@ -202,6 +206,29 @@ export default function EditorPane({ content, onChange, isDark, focusMode, colla
       },
       focus() { view.focus(); },
       getValue() { return view.state.doc.toString(); },
+      applyRemotePatch(patchText: string) {
+        const currentContent = view.state.doc.toString();
+        try {
+          const patches = dmp.patch_fromText(patchText);
+          const [newContent, results] = dmp.patch_apply(patches, currentContent);
+          
+          if (results.some(r => r)) {
+            // Calculate minimal diffs between current and patched content
+            const diffs = dmp.diff_main(currentContent, newContent);
+            dmp.diff_cleanupSemantic(diffs);
+            const changes = getChangesFromDiffs(diffs);
+            
+            if (changes.length > 0) {
+              view.dispatch({
+                changes,
+                annotations: [Transaction.remote.of(true)], // Mark as remote transaction
+              });
+            }
+          }
+        } catch (err) {
+          console.error('Remote patch application failed:', err);
+        }
+      },
     };
 
     onReady(api);
@@ -209,12 +236,21 @@ export default function EditorPane({ content, onChange, isDark, focusMode, colla
 
   const onUpdate = useCallback((update: ViewUpdate) => {
     exposeApi();
+    
+    // Check if any transaction in this update was remote
+    const isRemote = update.transactions.some(tr => tr.annotation(Transaction.remote));
+    
     if (update.selectionSet) {
       const { from } = update.state.selection.main;
       const line = update.state.doc.lineAt(from);
       onCursorChange(line.number, from - line.from + 1);
     }
-  }, [exposeApi, onCursorChange]);
+
+    // We only call onChange if the update was NOT remote and the doc changed
+    if (update.docChanged && !isRemote) {
+      onChange(update.state.doc.toString());
+    }
+  }, [exposeApi, onCursorChange, onChange]);
 
   useEffect(() => { readyCalled.current = false; }, []);
 
@@ -247,7 +283,6 @@ export default function EditorPane({ content, onChange, isDark, focusMode, colla
       <ReactCodeMirror
         ref={cmRef}
         value={content}
-        onChange={onChange}
         onUpdate={onUpdate}
         theme={makeTheme(isDark, typeof window !== 'undefined' ? getComputedStyle(document.documentElement).getPropertyValue('--editor-font').trim() || undefined : undefined)}
         extensions={extensions}

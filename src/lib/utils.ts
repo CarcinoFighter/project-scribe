@@ -61,3 +61,29 @@ export function getCollaboratorColor(id: string) {
   const hash = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return colors[hash % colors.length];
 }
+
+/**
+ * Converts diff-match-patch diffs into CodeMirror 6 ChangeSpec objects.
+ * This allows applying only the specific changes to the document, 
+ * preserving cursor position and undo history.
+ */
+export function getChangesFromDiffs(diffs: [number, string][]) {
+  const changes: { from: number; to: number; insert: string }[] = [];
+  let pos = 0;
+
+  for (const [op, text] of diffs) {
+    if (op === 0) { // EQUAL
+      pos += text.length;
+    } else if (op === 1) { // INSERT
+      changes.push({ from: pos, to: pos, insert: text });
+      // Note: We don't advance pos here because multiple inserts at the same pos 
+      // are handled by the next diffs or the 'insert' field.
+      // But actually, for ChangeSpec, 'from' and 'to' are based on the original document.
+      // Wait, CM6 changes are matched against the initial state.
+    } else if (op === -1) { // DELETE
+      changes.push({ from: pos, to: pos + text.length, insert: '' });
+      pos += text.length;
+    }
+  }
+  return changes;
+}
