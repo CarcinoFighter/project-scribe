@@ -20,11 +20,26 @@ export async function POST(req: NextRequest) {
   }
 
   const payload = verifyToken(token);
-  if (!payload || !payload.adminAccess) {
-    return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+  if (!payload) {
+    return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
   }
 
   try {
+    // 1. Fetch user department to verify permissions
+    const { data: userData, error: userError } = await supabaseAdmin
+      .from('users')
+      .select('department')
+      .eq('id', payload.userId)
+      .single();
+
+    if (userError) throw userError;
+
+    const isLeadership = payload.adminAccess || userData.department === 'Leadership';
+    
+    if (!isLeadership) {
+      return NextResponse.json({ error: 'Assignment permissions required (Leadership or Admin)' }, { status: 403 });
+    }
+
     const {
       assigned_to, // Now expected to be an array of UUIDs
       title,
@@ -69,7 +84,7 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (docError) {
-        console.error('Error creating cancer_doc draft:', docError);
+        console.error('[AssignAPI] Error creating cancer_doc draft:', docError);
       } else {
         document_id = doc.id;
       }
@@ -91,7 +106,7 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (docError) {
-        console.error('Error creating blog draft:', docError);
+        console.error('[AssignAPI] Error creating blog draft:', docError);
       } else {
         document_id = doc.id;
       }
@@ -113,7 +128,7 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (docError) {
-        console.error('Error creating survivor_story draft:', docError);
+        console.error('[AssignAPI] Error creating survivor_story draft:', docError);
       } else {
         document_id = doc.id;
       }
@@ -141,24 +156,33 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Assignment error:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error('[AssignAPI] Assignment database error:', error);
+      return NextResponse.json({ 
+        error: 'Database operation failed', 
+        details: error.message,
+        code: error.code 
+      }, { status: 500 });
     }
 
     // Fire notification to all assignees (DB + push)
-    const { notifyUser } = await import('@/lib/pushNotify');
-    assigned_to.forEach(uid => {
-      notifyUser(uid, {
-        title: '📋 New task assigned to you',
-        body: title,
-        tag: `task-${data.id}`,
-        url: '/tasks',
-      }).catch((e) => console.error('Notification failed:', e));
-    });
+    try {
+      const { notifyUser } = await import('@/lib/pushNotify');
+      assigned_to.forEach(uid => {
+        notifyUser(uid, {
+          title: '📋 New task assigned to you',
+          body: title,
+          tag: `task-${data.id}`,
+          url: '/tasks',
+        }).catch((e) => console.error('[AssignAPI] Notification failed:', e));
+      });
+    } catch (e) {
+      console.error('[AssignAPI] Push notification import failed:', e);
+    }
 
     return NextResponse.json({ success: true, assignment: data, document_id });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error('[AssignAPI] Critical error:', err);
+    return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
   }
 }
 

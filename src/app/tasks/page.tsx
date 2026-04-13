@@ -938,7 +938,7 @@ export default function WorkPage() {
     try {
       const [myRes, allRes] = await Promise.all([
         fetch("/api/tasks"),
-        user?.admin_access ? fetch("/api/tasks/all") : Promise.resolve(null),
+        isLeadership ? fetch("/api/tasks/all") : Promise.resolve(null),
       ]);
 
       if (myRes.ok) {
@@ -1050,7 +1050,7 @@ export default function WorkPage() {
 
   const isAdmin = !!user?.admin_access;
   const assignments =
-    isAdmin && view === "admin" ? allAssignments : myAssignments;
+    isLeadership && view === "admin" ? allAssignments : myAssignments;
 
   const handleTaskClick = (task: Assignment) => {
     setSelectedTask(task);
@@ -1180,7 +1180,7 @@ export default function WorkPage() {
                 </div>
               </div>
             )}
-            {isAdmin && (
+            {isLeadership && (
               <div className="space-y-2">
                 <span className="db-cap block">View Perspective</span>
                 <div className="flex bg-[var(--accent-sub)] p-0.5 border border-[var(--rule)]">
@@ -1268,7 +1268,7 @@ export default function WorkPage() {
         <div className="db-vr hidden md:block" />
 
         <div className="flex items-center gap-2">
-          {isAdmin && (
+          {isLeadership && (
             <div className="hidden md:flex items-center bg-[var(--accent-sub)] p-0.5 border border-[var(--rule)]">
               <button
                 onClick={() => setView("my")}
@@ -1295,7 +1295,7 @@ export default function WorkPage() {
           counts={{
             articles: counts.articles,
             blogs: counts.blogs,
-            tasks: (isAdmin && view === "admin"
+            tasks: (isLeadership && view === "admin"
               ? allAssignments
               : myAssignments
             ).filter((t) => t.status !== "done").length,

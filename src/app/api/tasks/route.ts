@@ -5,12 +5,10 @@ import { unstable_cache } from 'next/cache';
 
 // Cache specifically based on whether it's a global or user-specific fetch
 const getAssignmentsCached = unstable_cache(
-  async (userId: string, isLeadership: boolean) => {
+  async (userId: string) => {
     let query = supabaseAdmin.from('work_assignments').select('*');
     
-    if (!isLeadership) {
-      query = query.or(`assigned_to.eq.${userId},assigned_to_ids.cs.{${userId}},proofreader_id.eq.${userId}`);
-    }
+    query = query.or(`assigned_to.eq.${userId},assigned_to_ids.cs.{${userId}},proofreader_id.eq.${userId}`);
 
     const { data: assignments, error } = await query.order('due_date', { ascending: true });
 
@@ -45,8 +43,8 @@ export async function GET(req: NextRequest) {
 
     const isLeadership = payload.adminAccess || userData.department === 'Leadership';
     
-    // 2. Fetch assignments (conditional based on leadership status)
-    const assignments = await getAssignmentsCached(payload.userId, isLeadership);
+    // 2. Fetch assignments (only user-specific)
+    const assignments = await getAssignmentsCached(payload.userId);
     
     // 3. Enrich assignments with user info and document titles
     const userIds = new Set<string>();
@@ -126,10 +124,10 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  const payload = verifyToken(token);
-  if (!payload) {
-    return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-  }
+    const payload = verifyToken(token);
+    if (!payload) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
 
   try {
     const { 
@@ -141,6 +139,17 @@ export async function PATCH(req: NextRequest) {
     if (!id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
+
+    // 1. Fetch user department to verify permission level
+    const { data: userData, error: userError } = await supabaseAdmin
+      .from('users')
+      .select('department')
+      .eq('id', payload.userId)
+      .single();
+
+    if (userError) throw userError;
+
+    const isLeadership = payload.adminAccess || userData.department === 'Leadership';
 
     const updateData: any = {
       updated_at: new Date().toISOString() 
@@ -165,9 +174,12 @@ export async function PATCH(req: NextRequest) {
       if (due_date !== undefined) updateData.due_date = due_date;
       if (title !== undefined) updateData.title = title;
       if (description !== undefined) updateData.description = description;
-      if (assigned_to_ids !== undefined && payload.adminAccess) {
+      
+      // Allow Leadership or Admin to update assigned_to_ids
+      if (assigned_to_ids !== undefined && isLeadership) {
         updateData.assigned_to_ids = assigned_to_ids;
       }
+
       if (submission_media_url !== undefined) {
         updateData.submission_media_url = submission_media_url;
         updateData.submitted_at = new Date().toISOString();
@@ -179,7 +191,8 @@ export async function PATCH(req: NextRequest) {
       .update(updateData)
       .eq('id', id);
 
-    if (!payload.adminAccess && table === 'work_assignments') {
+    // Filter to own tasks if not Leadership/Admin
+    if (!isLeadership && table === 'work_assignments') {
       query = query.or(`assigned_to.eq.${payload.userId},assigned_to_ids.cs.{${payload.userId}},proofreader_id.eq.${payload.userId}`);
     }
 
@@ -262,18 +275,33 @@ export async function DELETE(req: NextRequest) {
   }
 
   const payload = verifyToken(token);
-  if (!payload || !payload.adminAccess) {
-    return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
-  }
-
-  const { searchParams } = new URL(req.url);
-  const id = searchParams.get('id');
-
-  if (!id) {
-    return NextResponse.json({ error: 'ID is required' }, { status: 400 });
+  if (!payload) {
+    return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
   }
 
   try {
+    // 1. Fetch user department to verify permission level
+    const { data: userData, error: userError } = await supabaseAdmin
+      .from('users')
+      .select('department')
+      .eq('id', payload.userId)
+      .single();
+
+    if (userError) throw userError;
+
+    const isLeadership = payload.adminAccess || userData.department === 'Leadership';
+
+    if (!isLeadership) {
+      return NextResponse.json({ error: 'Delete permissions required (Leadership or Admin)' }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID is required' }, { status: 400 });
+    }
+
     // Verify that the current user assigned the task
     const { data: task, error: fetchError } = await supabaseAdmin
       .from('work_assignments')

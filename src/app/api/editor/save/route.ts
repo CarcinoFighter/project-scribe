@@ -25,6 +25,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
 
+  if (title === 'Loading...') {
+    return NextResponse.json({ error: 'Cannot save while loading' }, { status: 400 });
+  }
+
+  if (title === 'Untitled Document' && (!content || content.length < 5)) {
+    // Avoid cluttering DB with empty untitled documents
+    return NextResponse.json({ success: true, message: 'Skipped saving empty untitled document' });
+  }
+
   try {
     let table = '';
     if (contentType === 'blogs') table = 'blogs';

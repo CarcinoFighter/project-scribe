@@ -158,6 +158,7 @@ function EditorContent() {
   const [sidebarDragging, setSidebarDragging] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [channelReady, setChannelReady] = useState(false);
 
   // Collaboration State
   const { user, loading: userLoading } = useUser();
@@ -270,6 +271,7 @@ function EditorContent() {
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
+          setChannelReady(true);
           await channel.track({
             id: user.id,
             name: user.name,
@@ -277,12 +279,15 @@ function EditorContent() {
             cursor: { line: cursorLine, col: cursorCol },
             version: docVersionRef.current
           });
+        } else {
+          setChannelReady(false);
         }
       });
 
     return () => {
       channel.unsubscribe();
       presenceChannelRef.current = null;
+      setChannelReady(false);
     };
   }, [activeTabId, user]);
 
@@ -473,7 +478,7 @@ function EditorContent() {
 
   // ---- Auto-save (debounced) ----
   useEffect(() => {
-    if (!activeTab || activeTab.title === 'Error loading') return;
+    if (!activeTab || activeTab.isLoading || activeTab.title === 'Loading...' || activeTab.title === 'Error loading') return;
 
     const markUnsaved = setTimeout(() => {
       setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, isSaved: false } : t));
@@ -545,17 +550,18 @@ function EditorContent() {
 
   // ---- Content Broadcasting (Realtime) ----
   useEffect(() => {
-    if (!activeTab || !presenceChannelRef.current || !user) return;
+    if (!activeTab || !presenceChannelRef.current || !user || !channelReady) return;
 
     const t = setTimeout(() => {
-      if (!activeTab || activeTab.title === 'Error loading') return;
+      if (!activeTab || activeTab.title === 'Error loading' || !channelReady) return;
       
       const currentContent = activeTab.content || '';
       const patches = dmp.patch_make(lastBroadcastedContentRef.current, currentContent);
       
-      if (patches.length > 0) {
+      const channel = presenceChannelRef.current;
+      if (patches.length > 0 && channelReady && channel && (channel as any).state === 'joined') {
         docVersionRef.current++;
-        presenceChannelRef.current.send({
+        channel.send({
           type: 'broadcast',
           event: 'patch-update',
           payload: {
@@ -566,7 +572,7 @@ function EditorContent() {
           }
         });
         // Update presence too so others know we advanced our version
-        presenceChannelRef.current.track({
+        channel.track({
           id: user.id,
           name: user.name,
           avatar_url: user.avatar_url,
@@ -578,7 +584,7 @@ function EditorContent() {
     }, 500);
 
     return () => clearTimeout(t);
-  }, [activeTab?.content, activeTabId, user]);
+  }, [activeTab?.content, activeTabId, user, channelReady]);
 
   // ---- Title Management ----
   useEffect(() => {

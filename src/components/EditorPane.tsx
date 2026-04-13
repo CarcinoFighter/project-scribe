@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useEffect } from 'react';
+import { useCallback, useRef, useEffect, useMemo } from 'react';
 import ReactCodeMirror from '@uiw/react-codemirror';
 import type { ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
@@ -260,7 +260,12 @@ export default function EditorPane({ content, onChange, isDark, focusMode, colla
 
   useEffect(() => { readyCalled.current = false; }, []);
 
-  const extensions = [
+  const theme = useMemo(() => {
+    const font = typeof window !== 'undefined' ? getComputedStyle(document.documentElement).getPropertyValue('--editor-font').trim() || undefined : undefined;
+    return makeTheme(isDark, font);
+  }, [isDark]);
+
+  const extensions = useMemo(() => [
     markdown({ base: markdownLanguage, codeLanguages: languages }),
     EditorView.lineWrapping,
     baseTheme,
@@ -282,7 +287,21 @@ export default function EditorPane({ content, onChange, isDark, focusMode, colla
       return Decoration.set(deco, true);
     }),
     keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap, indentWithTab]),
-  ];
+  ], [collaborators]);
+
+  const basicSetup = useMemo(() => ({
+    lineNumbers: true,
+    highlightActiveLine: true,
+    highlightActiveLineGutter: true,
+    foldGutter: false,
+    dropCursor: true,
+    allowMultipleSelections: true,
+    indentOnInput: true,
+    bracketMatching: true,
+    autocompletion: false,
+    syntaxHighlighting: true,
+    searchKeymap: false,
+  }), []);
 
   return (
     <div className={`flex-1 overflow-hidden h-full ${focusMode ? 'focus-mode' : ''}`}>
@@ -290,22 +309,10 @@ export default function EditorPane({ content, onChange, isDark, focusMode, colla
         ref={cmRef}
         value={content}
         onUpdate={onUpdate}
-        theme={makeTheme(isDark, typeof window !== 'undefined' ? getComputedStyle(document.documentElement).getPropertyValue('--editor-font').trim() || undefined : undefined)}
+        theme={theme}
         extensions={extensions}
         style={{ height: '100%' }}
-        basicSetup={{
-          lineNumbers: true,
-          highlightActiveLine: true,
-          highlightActiveLineGutter: true,
-          foldGutter: false,
-          dropCursor: true,
-          allowMultipleSelections: true,
-          indentOnInput: true,
-          bracketMatching: true,
-          autocompletion: false,
-          syntaxHighlighting: true,
-          searchKeymap: false,
-        }}
+        basicSetup={basicSetup}
       />
     </div>
   );

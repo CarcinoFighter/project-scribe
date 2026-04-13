@@ -10,8 +10,25 @@ export async function GET(req: NextRequest) {
   }
 
   const payload = verifyToken(token);
-  if (!payload || !payload.adminAccess) {
-    return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+  if (!payload) {
+    return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+  }
+
+  // 1. Fetch user department to verify permission level
+  const { data: userData, error: userError } = await supabaseAdmin
+    .from('users')
+    .select('department')
+    .eq('id', payload.userId)
+    .single();
+
+  if (userError) {
+    return NextResponse.json({ error: 'Failed to verify permissions' }, { status: 500 });
+  }
+
+  const isLeadership = payload.adminAccess || userData.department === 'Leadership';
+
+  if (!isLeadership) {
+    return NextResponse.json({ error: 'Leadership or Admin access required' }, { status: 403 });
   }
 
   // Fetch ALL assignments
