@@ -71,18 +71,32 @@ export function getChangesFromDiffs(diffs: [number, string][]) {
   const changes: { from: number; to: number; insert: string }[] = [];
   let pos = 0;
 
-  for (const [op, text] of diffs) {
+  for (let i = 0; i < diffs.length; i++) {
+    const [op, text] = diffs[i];
+    
     if (op === 0) { // EQUAL
       pos += text.length;
-    } else if (op === 1) { // INSERT
-      // All inserts at the same position are treated as a single insertion block by CM6
-      // if they are part of the same transaction.
-      changes.push({ from: pos, to: pos, insert: text });
-      // We don't advance 'pos' for inserts because multiple inserts at the same
-      // point are relative to the original document state in a single transaction.
     } else if (op === -1) { // DELETE
-      changes.push({ from: pos, to: pos + text.length, insert: '' });
-      pos += text.length;
+      // Check if the NEXT operation is an INSERT at the same position
+      if (i + 1 < diffs.length && diffs[i+1][0] === 1) {
+        const insertText = diffs[i+1][1];
+        changes.push({ from: pos, to: pos + text.length, insert: insertText });
+        pos += text.length;
+        i++; // Skip the insert
+      } else {
+        changes.push({ from: pos, to: pos + text.length, insert: '' });
+        pos += text.length;
+      }
+    } else if (op === 1) { // INSERT
+      // Check if the NEXT operation is a DELETE at the same position
+      if (i + 1 < diffs.length && diffs[i+1][0] === -1) {
+        const delText = diffs[i+1][1];
+        changes.push({ from: pos, to: pos + delText.length, insert: text });
+        pos += delText.length;
+        i++; // Skip the delete
+      } else {
+        changes.push({ from: pos, to: pos, insert: text });
+      }
     }
   }
   return changes;
