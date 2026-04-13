@@ -187,7 +187,10 @@ function EditorContent() {
     }
 
     const channel = supabase.channel(`editor:${activeTabId}`, {
-      config: { presence: { key: user.id } }
+      config: { 
+        presence: { key: user.id },
+        broadcast: { ack: true, self: false }
+      }
     });
     presenceChannelRef.current = channel;
 
@@ -223,50 +226,20 @@ function EditorContent() {
         setCollaborators(otherUsers);
       })
       .on('broadcast', { event: 'patch-update' }, (payload) => {
-        const { tabId, patch, senderId, version } = payload.payload;
+        const { tabId, patch, senderId } = payload.payload;
         if (senderId !== user.id && tabId === activeTabId) {
-          
-          const processPatch = (p: string, v: number) => {
-            if (editorRef.current) {
-              editorRef.current.applyRemotePatch(p);
-              const mergedContent = editorRef.current.getValue();
-              lastBroadcastedContentRef.current = mergedContent;
-              lastSavedContentRef.current = mergedContent;
-              lastSyncVersionRef.current++;
-              docVersionRef.current = v;
-              
-              setTabs(prev => prev.map(t => {
-                if (t.id !== tabId) return t;
-                return { ...t, content: mergedContent, isSaved: true };
-              }));
-            }
-          };
-
-          const isInitialPatch = docVersionRef.current === 0;
-          const isNextPatch = version === docVersionRef.current + 1;
-          const isFuturePatch = version > docVersionRef.current + 1;
-
-          if (isInitialPatch || isNextPatch) {
-            processPatch(patch, version);
-
-            // Check queue for next versions
-            while (patchQueueRef.current.length > 0 && patchQueueRef.current[0].version === docVersionRef.current + 1) {
-              const next = patchQueueRef.current.shift()!;
-              processPatch(next.patch, next.version);
-            }
-          } else if (isFuturePatch) {
-            // Future patch, queue it
-            patchQueueRef.current.push({ version, patch, senderId });
-            patchQueueRef.current.sort((a, b) => a.version - b.version);
+          if (editorRef.current) {
+            editorRef.current.applyRemotePatch(patch);
+            const mergedContent = editorRef.current.getValue();
+            lastBroadcastedContentRef.current = mergedContent;
+            lastSavedContentRef.current = mergedContent;
+            lastSyncVersionRef.current++;
             
-            // If the queue gets too long, we've likely missed something permanently. 
-            // Jump to the oldest in queue to unblock.
-            if (patchQueueRef.current.length > 20) {
-               const next = patchQueueRef.current.shift()!;
-               processPatch(next.patch, next.version);
-            }
+            setTabs(prev => prev.map(t => {
+              if (t.id !== tabId) return t;
+              return { ...t, content: mergedContent, isSaved: true };
+            }));
           }
-          // If version <= docVersionRef.current, we ignore it (unless it was the initial patch)
         }
       })
       .subscribe(async (status) => {
