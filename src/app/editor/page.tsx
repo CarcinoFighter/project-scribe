@@ -475,7 +475,7 @@ function EditorContent() {
       }
     };
 
-    const interval = setInterval(poll, 300);
+    const interval = setInterval(poll, 3000);
     return () => clearInterval(interval);
   }, [activeTabId]);
 
