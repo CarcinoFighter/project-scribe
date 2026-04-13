@@ -118,20 +118,20 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Sync status back to the linked work_assignment
-    if (status) {
+    // Sync status and title back to the linked work_assignment
+    if (status || title) {
       let taskStatus = status;
       if (status === 'draft') taskStatus = 'in_progress';
-      else if (status === 'review' || status === 'in_review') taskStatus = 'in_review';
       else if (status === 'published') taskStatus = 'done';
+      // Specialized workflow statuses (ready_for_proofreading, etc.) are kept as-is
+
+      const taskUpdate: any = { updated_at: new Date().toISOString() };
+      if (status) taskUpdate.status = taskStatus;
+      if (title)  taskUpdate.title = title;
 
       await supabaseAdmin
         .from('work_assignments')
-        .update({ 
-          status: taskStatus, 
-          title: title,
-          updated_at: new Date().toISOString() 
-        })
+        .update(taskUpdate)
         .eq('document_id', finalId);
     }
 

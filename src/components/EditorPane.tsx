@@ -210,23 +210,29 @@ export default function EditorPane({ content, onChange, isDark, focusMode, colla
         const currentContent = view.state.doc.toString();
         try {
           const patches = dmp.patch_fromText(patchText);
+          
+          // Use patch_apply on the current document, but CodeMirror's
+          // transaction system will help merge it with local changes.
           const [newContent, results] = dmp.patch_apply(patches, currentContent);
           
           if (results.some(r => r)) {
-            // Calculate minimal diffs between current and patched content
+            // Calculate a minimal diff between current state and the patched state
             const diffs = dmp.diff_main(currentContent, newContent);
             dmp.diff_cleanupSemantic(diffs);
+            
             const changes = getChangesFromDiffs(diffs);
             
             if (changes.length > 0) {
+              // Apply changes as an atomic transaction
               view.dispatch({
                 changes,
-                annotations: [Transaction.remote.of(true)], // Mark as remote transaction
+                annotations: [Transaction.remote.of(true)], // Mark as remote to prevent echo
+                userEvent: 'remote.sync', // Help CodeMirror's history reconcile
               });
             }
           }
         } catch (err) {
-          console.error('Remote patch application failed:', err);
+          console.error('[Editor] Remote patch failed:', err);
         }
       },
     };

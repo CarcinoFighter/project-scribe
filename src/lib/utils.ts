@@ -75,11 +75,11 @@ export function getChangesFromDiffs(diffs: [number, string][]) {
     if (op === 0) { // EQUAL
       pos += text.length;
     } else if (op === 1) { // INSERT
+      // All inserts at the same position are treated as a single insertion block by CM6
+      // if they are part of the same transaction.
       changes.push({ from: pos, to: pos, insert: text });
-      // Note: We don't advance pos here because multiple inserts at the same pos 
-      // are handled by the next diffs or the 'insert' field.
-      // But actually, for ChangeSpec, 'from' and 'to' are based on the original document.
-      // Wait, CM6 changes are matched against the initial state.
+      // We don't advance 'pos' for inserts because multiple inserts at the same
+      // point are relative to the original document state in a single transaction.
     } else if (op === -1) { // DELETE
       changes.push({ from: pos, to: pos + text.length, insert: '' });
       pos += text.length;

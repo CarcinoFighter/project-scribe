@@ -521,7 +521,7 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin, use
                   {/* Final Approval for Admin */}
                   {isAdmin && task.status === 'ready_for_upload' && (
                     <button 
-                      onClick={() => handleStatusUpdate('published', 'Final document approved and published.')}
+                      onClick={() => handleStatusUpdate('done', 'Final document approved and published.')}
                       disabled={submitting}
                       className="w-full py-2.5 px-3 flex items-center justify-center gap-2 text-xs font-bold text-white bg-[var(--accent)] rounded-[var(--r-md)] shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50"
                     >

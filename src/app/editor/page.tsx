@@ -477,9 +477,9 @@ function EditorContent() {
 
     const markUnsaved = setTimeout(() => {
       setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, isSaved: false } : t));
-    }, 300);
+    }, 500);
 
-    const saveInterval = activeTab.isShared ? 300 : 1500;
+    const saveInterval = activeTab.isShared ? 1000 : 2000;
 
     const t = setTimeout(async () => {
       try {
@@ -575,7 +575,7 @@ function EditorContent() {
         });
         lastBroadcastedContentRef.current = currentContent;
       }
-    }, 200);
+    }, 500);
 
     return () => clearTimeout(t);
   }, [activeTab?.content, activeTabId, user]);

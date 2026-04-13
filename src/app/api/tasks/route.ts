@@ -146,7 +146,11 @@ export async function PATCH(req: NextRequest) {
       updated_at: new Date().toISOString() 
     };
 
-    if (status !== undefined) updateData.status = status;
+    if (status !== undefined) {
+      let s = status;
+      if (status === 'published') s = 'done';
+      updateData.status = s;
+    }
     if (proofreader_id !== undefined) updateData.proofreader_id = proofreader_id;
 
     // Determine target table and filter table-specific columns
@@ -192,7 +196,9 @@ export async function PATCH(req: NextRequest) {
 
     const updated = data[0];
 
-    // After updating content table, sync work_assignments
+    // --- Bi-directional Sync Logic ---
+    
+    // 1. Sync content table -> work_assignments (Existing logic refined)
     if (table !== 'work_assignments') {
       await supabaseAdmin
         .from('work_assignments')
@@ -202,6 +208,34 @@ export async function PATCH(req: NextRequest) {
           updated_at: new Date().toISOString(),
         })
         .eq('document_id', id);
+    } 
+    // 2. Sync work_assignments -> content table (New logic)
+    else if (updated.document_id && updated.category) {
+      let docTable = '';
+      if (updated.category === 'article') docTable = 'cancer_docs';
+      else if (updated.category === 'blog') docTable = 'blogs';
+      else if (updated.category === 'survivor_story') docTable = 'survivor_stories';
+
+      if (docTable) {
+        const docUpdate: any = { updated_at: new Date().toISOString() };
+        
+        if (status !== undefined) {
+          // Status Mapping
+          if (status === 'done') docUpdate.status = 'published';
+          else if (status === 'in_progress') docUpdate.status = 'draft';
+          else docUpdate.status = status;
+        }
+        
+        if (title !== undefined) {
+          if (docTable === 'survivor_stories') docUpdate.name = title;
+          else docUpdate.title = title;
+        }
+
+        await supabaseAdmin
+          .from(docTable)
+          .update(docUpdate)
+          .eq('id', updated.document_id);
+      }
     }
 
     // Notification Logic
