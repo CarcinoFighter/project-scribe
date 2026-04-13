@@ -36,8 +36,13 @@ export async function POST(req: NextRequest) {
       content: content || '',
       status: status,
       updated_at: new Date().toISOString(),
-      author_id: userId
     };
+
+    // Only set author_id for new documents
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    if (!isUuid) {
+      docData.author_id = userId;
+    }
 
     if (table === 'survivor_stories') {
       docData.name = title;
@@ -52,7 +57,7 @@ export async function POST(req: NextRequest) {
     }
 
     let finalId = id;
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    // isUuid already declared above
 
     if (isUuid) {
       // Update existing Supabase record

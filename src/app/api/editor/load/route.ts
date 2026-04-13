@@ -40,6 +40,15 @@ export async function GET(req: NextRequest) {
           .single();
         
         if (!error && data) {
+          // Check if this document is part of a multi-user assignment
+          const { data: assignment } = await supabaseAdmin
+            .from('work_assignments')
+            .select('assigned_to_ids')
+            .eq('document_id', id)
+            .single();
+
+          const isShared = assignment?.assigned_to_ids && Array.isArray(assignment.assigned_to_ids) && assignment.assigned_to_ids.length > 1;
+
           doc = {
             id: data.id,
             type: table,
@@ -48,6 +57,8 @@ export async function GET(req: NextRequest) {
             status: data.status || 'draft',
             slug: data.slug,
             author_id: data.author_id,
+            author_ids: data.author_ids || [],
+            isShared: !!isShared,
             date: (data.updated_at || data.created_at || new Date().toISOString()).split('T')[0]
           };
           break;
@@ -58,6 +69,7 @@ export async function GET(req: NextRequest) {
     // Fallback to local if not found in Supabase (or not a UUID)
     if (!doc) {
       doc = loadLocalDoc(id);
+      if (doc) doc.isShared = false;
     }
 
     if (!doc) {

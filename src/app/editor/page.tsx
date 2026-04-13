@@ -46,6 +46,7 @@ interface Tab {
   status: 'draft' | 'review' | 'published' | 'ready_for_proofreading' | 'proofreading' | 'ready_for_upload' | 'in_review';
   author_id?: string;
   isSaved: boolean;
+  isShared?: boolean;
   isLoading?: boolean;
 }
 
@@ -358,7 +359,8 @@ function EditorContent() {
           content: DEFAULT_CONTENT,
           slug: '',
           status: 'draft',
-          isSaved: true
+          isSaved: true,
+          isShared: false
         };
         setTabs([defaultTab]);
         setActiveTabId(defaultTab.id);
@@ -422,9 +424,12 @@ function EditorContent() {
 
     const t = setTimeout(async () => {
       try {
-        const tabsToSave = tabsRef.current.filter(tab => tab.title !== 'Error loading' && !tab.isLoading);
+        const tabsToSave = tabsRef.current.filter(tab => tab.title !== 'Error loading' && !tab.isLoading && !tab.isShared);
         if (tabsToSave.length > 0) {
           localStorage.setItem('cs-tabs', JSON.stringify(tabsToSave));
+        } else if (tabsRef.current.length > 0 && tabsRef.current.every(t => t.isShared)) {
+          // If all tabs are shared, we might want to clear or keep existing? 
+          // Actually, let's just not update localStorage with shared tabs.
         }
 
         if (activeTab.title !== 'Untitled Document' && activeTab.slug && activeTab.title !== 'Error loading') {
