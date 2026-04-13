@@ -194,6 +194,8 @@ function EditorContent() {
       .on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState();
         const otherUsers: Collaborator[] = [];
+        let maxRemoteVersion = docVersionRef.current;
+
         for (const key in state) {
           const presences = state[key] as any[];
           presences.forEach(presence => {
@@ -206,8 +208,17 @@ function EditorContent() {
                 lastSeen: Date.now()
               });
             }
+            if (presence.version > maxRemoteVersion) {
+              maxRemoteVersion = presence.version;
+            }
           });
         }
+        
+        // If we joined and others are ahead, catch up our version counter
+        if (maxRemoteVersion > docVersionRef.current) {
+          docVersionRef.current = maxRemoteVersion;
+        }
+
         setCollaborators(otherUsers);
       })
       .on('broadcast', { event: 'patch-update' }, (payload) => {
@@ -263,7 +274,8 @@ function EditorContent() {
             id: user.id,
             name: user.name,
             avatar_url: user.avatar_url,
-            cursor: { line: cursorLine, col: cursorCol }
+            cursor: { line: cursorLine, col: cursorCol },
+            version: docVersionRef.current
           });
         }
       });
@@ -355,16 +367,20 @@ function EditorContent() {
 
       const id = searchParams.get('id');
       const typeFromUrl = searchParams.get('type') as Tab['type'];
+      const isUuid = id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
       
       if (id) {
+        // If it's a database document (UUID), we MUST fetch it to ensure fresh state,
+        // even if it exists in LocalStorage. LocalStorage is only a fallback or for local-only drafts.
         const existing = initialTabs.find(t => t.id === id);
-        if (existing) {
+        
+        if (existing && !isUuid) {
+          // Local-only draft found in LocalStorage
           setTabs(initialTabs);
           setActiveTabId(id);
         } else {
-          // If we have an ID but it's not in our local session tabs, we must fetch it.
-          // Fallback to 'blogs' if type is unknown; the load API will search all tables.
-          const effectiveType = typeFromUrl || 'blogs';
+          // Database document or new tab: Fetch fresh data
+          const effectiveType = typeFromUrl || existing?.type || 'blogs';
           
           const newTab: Tab = {
             id, 
@@ -385,14 +401,23 @@ function EditorContent() {
             .then(res => res.json())
             .then(data => {
               if (data.success) {
-                setTabs(prev => prev.map(t => {
-                  if (t.id === id) {
-                    lastBroadcastedContentRef.current = data.doc.content || '';
-                    lastSavedContentRef.current = data.doc.content || '';
-                    return { ...t, ...data.doc, isLoading: false };
+                setTabs(prev => {
+                  const updated = prev.map(t => {
+                    if (t.id === id) {
+                      lastBroadcastedContentRef.current = data.doc.content || '';
+                      lastSavedContentRef.current = data.doc.content || '';
+                      docVersionRef.current = 0; 
+                      patchQueueRef.current = [];
+                      return { ...t, ...data.doc, isLoading: false };
+                    }
+                    return t;
+                  });
+                  // If we didn't find the tab to update (rare case), add it
+                  if (!updated.find(t => t.id === id)) {
+                    updated.push({ ...data.doc, isLoading: false });
                   }
-                  return t;
-                }));
+                  return updated;
+                });
               } else {
                 setTabs(prev => prev.map(t => t.id === id ? { ...t, title: 'Error loading', isLoading: false } : t));
               }
@@ -577,6 +602,14 @@ function EditorContent() {
             senderId: user.id,
             version: docVersionRef.current
           }
+        });
+        // Update presence too so others know we advanced our version
+        presenceChannelRef.current.track({
+          id: user.id,
+          name: user.name,
+          avatar_url: user.avatar_url,
+          cursor: { line: cursorLine, col: cursorCol },
+          version: docVersionRef.current
         });
         lastBroadcastedContentRef.current = currentContent;
       }
