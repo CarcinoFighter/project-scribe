@@ -165,6 +165,7 @@ function EditorContent() {
   const presenceChannelRef = useRef<any>(null);
   const lastBroadcastedContentRef = useRef<string>('');
   const lastSavedContentRef = useRef<string>('');
+  const lastSyncVersionRef = useRef<number>(0);
 
   // Check mobile
   const [isMobile, setIsMobile] = useState(false);
@@ -219,7 +220,8 @@ function EditorContent() {
               // Only update if at least one patch applied successfully
               if (results.some(r => r)) {
                 lastBroadcastedContentRef.current = mergedContent;
-                lastSavedContentRef.current = mergedContent; // SYNC BOTH REFS
+                lastSavedContentRef.current = mergedContent;
+                lastSyncVersionRef.current++; // ADVANCE VERSION ON BROADCAST
                 return { ...t, content: mergedContent, isSaved: true };
               }
             } catch (err) {
@@ -461,6 +463,7 @@ function EditorContent() {
 
     const t = setTimeout(async () => {
       try {
+        const startVersion = lastSyncVersionRef.current;
         const tabsToSave = tabsRef.current.filter(tab => tab.title !== 'Error loading' && !tab.isLoading && !tab.isShared);
         if (tabsToSave.length > 0) {
           localStorage.setItem('cs-tabs', JSON.stringify(tabsToSave));
@@ -502,8 +505,11 @@ function EditorContent() {
             const data = await res.json();
             const newId = data.doc?.id;
             
-            lastSavedContentRef.current = currentContent;
-            lastBroadcastedContentRef.current = currentContent; // SYNC BOTH REFS
+            // Only update refs if no broadcasts happened in the meantime
+            if (lastSyncVersionRef.current === startVersion) {
+              lastSavedContentRef.current = currentContent;
+              lastBroadcastedContentRef.current = currentContent;
+            }
             
             setTabs(prev => prev.map(t => {
               if (t.id === activeTabId) {

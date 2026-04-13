@@ -50,11 +50,17 @@ export async function POST(req: NextRequest) {
         try {
           const patches = dmp.patch_fromText(patch);
           const [mergedContent, results] = dmp.patch_apply(patches, currentDoc.content || '');
-          // We accept the merge even if some patches fail (best effort)
-          finalContent = mergedContent;
+          
+          // Check if any part of the patch was actually applied
+          if (results.some(r => r === true)) {
+            finalContent = mergedContent;
+          } else {
+            // If all patches failed or were redundant, keep the current content
+            finalContent = currentDoc.content || '';
+          }
         } catch (err) {
           console.error('Patch application failed on server:', err);
-          // Fallback to sending full content if patch fails or we could just use old content
+          finalContent = currentDoc.content || ''; // Be safe, don't overwrite with garbage
         }
       }
     }
