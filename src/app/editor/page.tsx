@@ -170,6 +170,9 @@ function EditorContent() {
   const lastSyncVersionRef = useRef<number>(0);
   const docVersionRef = useRef<number>(0);
   const patchQueueRef = useRef<{ version: number, patch: string, senderId: string }[]>([]);
+  // Tracks the last content we fetched FROM the DB (from other users' perspective)
+  // Used by the polling fallback to detect remote-only changes without reverting local edits
+  const lastRemoteSyncedContentRef = useRef<string>('');
 
   // Check mobile
   const [isMobile, setIsMobile] = useState(false);
@@ -302,6 +305,7 @@ function EditorContent() {
           // Base = remoteApplied: our local changes (mergedContent - remoteApplied)
           // will be detected by the broadcasting effect and sent to the remote user.
           lastBroadcastedContentRef.current = remoteApplied;
+          lastRemoteSyncedContentRef.current = remoteApplied;
           lastSavedContentRef.current = mergedContent;
           lastSyncVersionRef.current++;
           
@@ -363,16 +367,22 @@ function EditorContent() {
         if (!data.success) return;
 
         const freshContent = data.doc.content || '';
-        const localContent = editorRef.current?.getValue() ?? tab.content;
+        const prevRemote = lastRemoteSyncedContentRef.current;
 
-        if (freshContent !== localContent) {
-          const patches = dmp.patch_make(localContent, freshContent);
-          const patchText = dmp.patch_toText(patches);
-          if (patchText && editorRef.current) {
-            editorRef.current.applyRemotePatch(patchText);
-          }
-          const merged = editorRef.current?.getValue() ?? freshContent;
-          lastBroadcastedContentRef.current = merged;
+        // Only act if DB content changed since we last polled
+        if (freshContent === prevRemote) return;
+        lastRemoteSyncedContentRef.current = freshContent;
+
+        // Apply only the remote delta (prevRemote→fresh) on top of local content
+        // This preserves any local typing while incorporating others' changes
+        const remotePatches = dmp.patch_make(prevRemote, freshContent);
+        if (remotePatches.length === 0) return;
+
+        const patchText = dmp.patch_toText(remotePatches);
+        if (editorRef.current) {
+          editorRef.current.applyRemotePatch(patchText);
+          const merged = editorRef.current.getValue();
+          lastBroadcastedContentRef.current = freshContent;
           lastSavedContentRef.current = merged;
           setTabs(prev => prev.map(t => t.id === tabId ? { ...t, content: merged, isSaved: true } : t));
         }
@@ -413,6 +423,61 @@ function EditorContent() {
     }, 30_000);
     return () => clearInterval(interval);
   }, [user, channelReady, cursorLine, cursorCol]);
+
+  // ---- DB Polling fallback (guaranteed sync even if Realtime broadcast drops) ----
+  // Polls every 3s for any content changes from other users in the DB.
+  // Only applies the DIFF of remote-only changes — never reverts local edits.
+  useEffect(() => {
+    const isUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+    const poll = async () => {
+      const tabId = activeTabId;
+      if (!tabId || !isUuid(tabId)) return;
+
+      const tab = tabsRef.current.find(t => t.id === tabId);
+      if (!tab || tab.isLoading || tab.title === 'Loading...') return;
+
+      try {
+        const res = await fetch(`/api/editor/load?id=${tabId}&type=${tab.type}`);
+        const data = await res.json();
+        if (!data.success) return;
+
+        const freshContent: string = data.doc.content || '';
+        const prevRemote = lastRemoteSyncedContentRef.current;
+
+        // Only act if DB content has changed since our last poll
+        if (freshContent === prevRemote) return;
+        lastRemoteSyncedContentRef.current = freshContent;
+
+        // Compute ONLY the remote delta (what changed in DB relative to our last poll)
+        // Apply that delta on top of our current local content (preserves local edits)
+        const localContent = editorRef.current?.getValue() ?? tab.content;
+        const remotePatches = dmp.patch_make(prevRemote, freshContent);
+        if (remotePatches.length === 0) return;
+
+        const patchText = dmp.patch_toText(remotePatches);
+        if (editorRef.current) {
+          editorRef.current.applyRemotePatch(patchText);
+          const merged = editorRef.current.getValue();
+
+          // Only update state if content actually changed
+          if (merged !== localContent) {
+            lastBroadcastedContentRef.current = freshContent; // treat fresh as new base
+            lastSavedContentRef.current = merged;
+            lastSyncVersionRef.current++;
+            setTabs(prev => prev.map(t =>
+              t.id === tabId ? { ...t, content: merged, isSaved: true } : t
+            ));
+          }
+        }
+      } catch (e) {
+        // Silently ignore poll errors (network blip etc)
+      }
+    };
+
+    const interval = setInterval(poll, 3000);
+    return () => clearInterval(interval);
+  }, [activeTabId]);
 
   // Update presence on cursor move
   useEffect(() => {
@@ -513,6 +578,7 @@ function EditorContent() {
                 if (t.id === id) {
                   lastBroadcastedContentRef.current = data.doc.content || '';
                   lastSavedContentRef.current = data.doc.content || '';
+                  lastRemoteSyncedContentRef.current = data.doc.content || '';
                   docVersionRef.current = 0; 
                   patchQueueRef.current = [];
                   return { ...t, ...data.doc, isLoading: false };
@@ -582,6 +648,7 @@ function EditorContent() {
                 if (t.id === id) {
                   lastBroadcastedContentRef.current = data.doc.content || '';
                   lastSavedContentRef.current = data.doc.content || '';
+                  lastRemoteSyncedContentRef.current = data.doc.content || '';
                   return { ...t, ...data.doc, isLoading: false };
                 }
                 return t;
