@@ -13,7 +13,7 @@ import { searchKeymap, openSearchPanel } from '@codemirror/search';
 import { createTheme } from '@uiw/codemirror-themes';
 import { tags as t } from '@lezer/highlight';
 import type { EditorAPI, Collaborator } from '@/types';
-import { getCollaboratorColor, getChangesFromDiffs } from '@/lib/utils';
+import { getCollaboratorColor } from '@/lib/utils';
 import { diff_match_patch } from 'diff-match-patch';
 
 const dmp = new diff_match_patch();
@@ -210,32 +210,18 @@ export default function EditorPane({ content, onChange, isDark, focusMode, colla
         const currentContent = view.state.doc.toString();
         try {
           const patches = dmp.patch_fromText(patchText);
-          const [newContent, results] = dmp.patch_apply(patches, currentContent);
+          const [newContent] = dmp.patch_apply(patches, currentContent);
           
-          if (results.some(r => r)) {
-            const diffs = dmp.diff_main(currentContent, newContent);
-            dmp.diff_cleanupSemantic(diffs);
-            
-            const changes = getChangesFromDiffs(diffs);
-            
-            if (changes.length > 0) {
-              try {
-                // Try fine-grained atomic transaction
-                view.dispatch({
-                  changes,
-                  annotations: [Transaction.remote.of(true)],
-                  userEvent: 'remote.sync',
-                });
-              } catch (cmErr) {
-                console.warn('[Editor] Fine-grained patch failed, falling back to full replace:', cmErr);
-                // Fallback: replace whole document
-                view.dispatch({
-                  changes: { from: 0, to: currentContent.length, insert: newContent },
-                  annotations: [Transaction.remote.of(true)],
-                  userEvent: 'remote.sync',
-                });
-              }
-            }
+          // Only dispatch if content actually changed
+          if (newContent !== currentContent) {
+            // Preserve cursor position
+            const cursor = view.state.selection.main.head;
+            view.dispatch({
+              changes: { from: 0, to: currentContent.length, insert: newContent },
+              annotations: [Transaction.remote.of(true)],
+              userEvent: 'remote.sync',
+              selection: { anchor: Math.min(cursor, newContent.length) },
+            });
           }
         } catch (err) {
           console.error('[Editor] Remote patch failed completely:', err);

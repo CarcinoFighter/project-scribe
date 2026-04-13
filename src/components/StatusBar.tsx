@@ -16,6 +16,8 @@ interface Props {
   onSetWordGoal: (g: number) => void;
   isMobile?: boolean;
   onToggleView?: () => void;
+  collabStatus?: 'offline' | 'connecting' | 'online';
+  collaboratorCount?: number;
 }
 
 function GoalRing({ words, goal }: { words: number; goal: number }) {
@@ -45,7 +47,7 @@ function GoalRing({ words, goal }: { words: number; goal: number }) {
   );
 }
 
-export default function StatusBar({ stats, cursorLine, cursorCol, isSaved, viewMode, wordGoal, goalCelebrated = false, onSetWordGoal, isMobile, onToggleView }: Props) {
+export default function StatusBar({ stats, cursorLine, cursorCol, isSaved, viewMode, wordGoal, goalCelebrated = false, onSetWordGoal, isMobile, onToggleView, collabStatus, collaboratorCount = 0 }: Props) {
   const [editingGoal, setEditingGoal] = useState(false);
   const [goalInput, setGoalInput] = useState('');
 
@@ -179,6 +181,26 @@ export default function StatusBar({ stats, cursorLine, cursorCol, isSaved, viewM
         </span>
 
         <div className="db-vr mx-2" />
+
+        {/* Collab status indicator */}
+        {collabStatus && collabStatus !== 'offline' && (
+          <span className="flex items-center gap-1" title={collabStatus === 'online' ? `${collaboratorCount} collaborator${collaboratorCount !== 1 ? 's' : ''} online` : 'Connecting…'}>
+            <span
+              style={{
+                display: 'inline-block',
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                background: collabStatus === 'online' ? '#4ade80' : 'var(--accent)',
+                animation: collabStatus === 'connecting' ? 'db-blink 1s step-start infinite' : collabStatus === 'online' && collaboratorCount > 0 ? 'db-blink 2.5s ease-in-out infinite' : 'none',
+                flexShrink: 0,
+              }}
+            />
+            <span className="hidden sm:inline db-cap" style={{ fontSize: '10px', color: collabStatus === 'online' ? '#4ade80' : 'var(--accent)' }}>
+              {collabStatus === 'connecting' ? 'Connecting' : collaboratorCount > 0 ? `${collaboratorCount} online` : 'Synced'}
+            </span>
+          </span>
+        )}
 
         <span className="flex items-center gap-1" style={{ color: isSaved ? 'var(--accent)' : 'var(--mid)', transition: 'color 0.2s' }}>
           {isSaved

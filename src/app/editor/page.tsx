@@ -159,6 +159,7 @@ function EditorContent() {
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [channelReady, setChannelReady] = useState(false);
+  const [collabStatus, setCollabStatus] = useState<'offline' | 'connecting' | 'online'>('offline');
 
   // Collaboration State
   const { user, loading: userLoading } = useUser();
@@ -183,13 +184,17 @@ function EditorContent() {
   useEffect(() => {
     if (!user || !activeTabId || activeTabId === 'ls-active' || activeTabId.startsWith('new-')) {
       setCollaborators([]);
+      setChannelReady(false);
+      setCollabStatus('offline');
       return;
     }
+
+    setCollabStatus('connecting');
 
     const channel = supabase.channel(`editor:${activeTabId}`, {
       config: { 
         presence: { key: user.id },
-        broadcast: { ack: true, self: false }
+        broadcast: { ack: false, self: false }
       }
     });
     presenceChannelRef.current = channel;
@@ -199,11 +204,13 @@ function EditorContent() {
         const state = channel.presenceState();
         const otherUsers: Collaborator[] = [];
         let maxRemoteVersion = docVersionRef.current;
+        let othersPresent = false;
 
         for (const key in state) {
           const presences = state[key] as any[];
           presences.forEach(presence => {
             if (presence.id !== user.id) {
+              othersPresent = true;
               otherUsers.push({
                 id: presence.id,
                 name: presence.name,
@@ -211,56 +218,115 @@ function EditorContent() {
                 cursor: presence.cursor,
                 lastSeen: Date.now()
               });
-            }
-            if (presence.version > maxRemoteVersion) {
-              maxRemoteVersion = presence.version;
+              if ((presence.version ?? 0) > maxRemoteVersion) {
+                maxRemoteVersion = presence.version;
+              }
             }
           });
         }
         
-        // If we joined and others are ahead, catch up our version counter
-        if (maxRemoteVersion > docVersionRef.current) {
+        // If others are ahead, re-fetch fresh content from DB to catch up
+        if (othersPresent && maxRemoteVersion > docVersionRef.current) {
           docVersionRef.current = maxRemoteVersion;
+          // Re-fetch fresh content so late-joiners get up-to-date state
+          const currentTabId = activeTabId;
+          const tab = tabsRef.current.find(t => t.id === currentTabId);
+          if (tab && !tab.isLoading) {
+            fetch(`/api/editor/load?id=${currentTabId}&type=${tab.type}`)
+              .then(r => r.json())
+              .then(data => {
+                if (data.success) {
+                  const freshContent = data.doc.content || '';
+                  lastBroadcastedContentRef.current = freshContent;
+                  lastSavedContentRef.current = freshContent;
+                  if (editorRef.current) {
+                    editorRef.current.applyRemotePatch(
+                      // synthesize a patch from current to fresh
+                      (() => {
+                        const cur = editorRef.current!.getValue();
+                        if (cur === freshContent) return '';
+                        const patches = dmp.patch_make(cur, freshContent);
+                        return dmp.patch_toText(patches);
+                      })()
+                    );
+                    const merged = editorRef.current.getValue();
+                    setTabs(prev => prev.map(t => t.id === currentTabId ? { ...t, content: merged, isSaved: true } : t));
+                  }
+                }
+              })
+              .catch(() => {});
+          }
         }
 
         setCollaborators(otherUsers);
       })
-      .on('broadcast', { event: 'patch-update' }, (payload) => {
-        const { tabId, patch, senderId } = payload.payload;
-        if (senderId !== user.id && tabId === activeTabId) {
-          if (editorRef.current) {
-            editorRef.current.applyRemotePatch(patch);
-            const mergedContent = editorRef.current.getValue();
-            lastBroadcastedContentRef.current = mergedContent;
-            lastSavedContentRef.current = mergedContent;
-            lastSyncVersionRef.current++;
-            
-            setTabs(prev => prev.map(t => {
-              if (t.id !== tabId) return t;
-              return { ...t, content: mergedContent, isSaved: true };
-            }));
+      .on('presence', { event: 'join' }, ({ newPresences }) => {
+        // When someone joins, update collaborators list
+        setCollaborators(prev => {
+          const incoming = (newPresences as any[]).filter(p => p.id !== user.id).map(p => ({
+            id: p.id,
+            name: p.name,
+            avatar_url: p.avatar_url,
+            cursor: p.cursor,
+            lastSeen: Date.now()
+          }));
+          const merged = [...prev];
+          for (const inc of incoming) {
+            if (!merged.find(c => c.id === inc.id)) merged.push(inc);
           }
+          return merged;
+        });
+      })
+      .on('presence', { event: 'leave' }, ({ leftPresences }) => {
+        const leftIds = new Set((leftPresences as any[]).map(p => p.id));
+        setCollaborators(prev => prev.filter(c => !leftIds.has(c.id)));
+      })
+      .on('broadcast', { event: 'patch-update' }, (payload) => {
+        const { tabId, patch, senderId } = payload.payload ?? {};
+        if (!patch || !senderId || senderId === user.id) return;
+        if (tabId !== activeTabId) return;
+        
+        if (editorRef.current) {
+          editorRef.current.applyRemotePatch(patch);
+          const mergedContent = editorRef.current.getValue();
+          lastBroadcastedContentRef.current = mergedContent;
+          lastSavedContentRef.current = mergedContent;
+          lastSyncVersionRef.current++;
+          
+          setTabs(prev => prev.map(t => {
+            if (t.id !== tabId) return t;
+            return { ...t, content: mergedContent, isSaved: true };
+          }));
         }
       })
       .subscribe(async (status) => {
+        console.log('[Collab] channel status:', status);
         if (status === 'SUBSCRIBED') {
           setChannelReady(true);
-          await channel.track({
-            id: user.id,
-            name: user.name,
-            avatar_url: user.avatar_url,
-            cursor: { line: cursorLine, col: cursorCol },
-            version: docVersionRef.current
-          });
-        } else {
+          setCollabStatus('online');
+          try {
+            await channel.track({
+              id: user.id,
+              name: user.name,
+              avatar_url: user.avatar_url,
+              cursor: { line: cursorLine, col: cursorCol },
+              version: docVersionRef.current
+            });
+          } catch (e) {
+            console.warn('[Collab] track failed:', e);
+          }
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
           setChannelReady(false);
+          setCollabStatus('offline');
         }
+        // Don't reset on intermediate statuses like 'joining'
       });
 
     return () => {
       channel.unsubscribe();
       presenceChannelRef.current = null;
       setChannelReady(false);
+      setCollabStatus('offline');
     };
   }, [activeTabId, user]);
 
@@ -523,41 +589,56 @@ function EditorContent() {
 
   // ---- Content Broadcasting (Realtime) ----
   useEffect(() => {
-    if (!activeTab || !presenceChannelRef.current || !user || !channelReady) return;
+    if (!activeTab || !activeTab.content || activeTab.isLoading) return;
+    if (!presenceChannelRef.current || !user || !channelReady) return;
+    // Only broadcast for persisted (UUID) docs
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(activeTabId);
+    if (!isUuid) return;
 
-    const t = setTimeout(() => {
-      if (!activeTab || activeTab.title === 'Error loading' || !channelReady) return;
-      
-      const currentContent = activeTab.content || '';
-      const patches = dmp.patch_make(lastBroadcastedContentRef.current, currentContent);
-      
+    const t = setTimeout(async () => {
+      if (!channelReady) return;
       const channel = presenceChannelRef.current;
-      if (patches.length > 0 && channelReady && channel) {
-        docVersionRef.current++;
-        channel.send({
+      if (!channel) return;
+
+      const currentContent = activeTab.content || '';
+      const base = lastBroadcastedContentRef.current;
+      if (currentContent === base) return; // no change
+
+      const patches = dmp.patch_make(base, currentContent);
+      if (patches.length === 0) return;
+
+      docVersionRef.current++;
+      const patchText = dmp.patch_toText(patches);
+
+      try {
+        const res = await channel.send({
           type: 'broadcast',
           event: 'patch-update',
           payload: {
             tabId: activeTabId,
-            patch: dmp.patch_toText(patches),
+            patch: patchText,
             senderId: user.id,
             version: docVersionRef.current
           }
-        }).then((res: any) => {
-          if (res !== 'ok') console.warn('Broadcast failed:', res);
         });
-        
-        // Update presence too so others know we advanced our version
-        channel.track({
+        if (res !== 'ok') console.warn('[Collab] Broadcast result:', res);
+      } catch (e) {
+        console.warn('[Collab] Broadcast error:', e);
+      }
+
+      // Update presence so others know our version
+      try {
+        await channel.track({
           id: user.id,
           name: user.name,
           avatar_url: user.avatar_url,
           cursor: { line: cursorLine, col: cursorCol },
           version: docVersionRef.current
         });
-        lastBroadcastedContentRef.current = currentContent;
-      }
-    }, 500);
+      } catch (e) {}
+
+      lastBroadcastedContentRef.current = currentContent;
+    }, 300);
 
     return () => clearTimeout(t);
   }, [activeTab?.content, activeTabId, user, channelReady]);
@@ -1011,6 +1092,8 @@ function EditorContent() {
         onSetWordGoal={setWordGoal}
         isMobile={isMobile}
         onToggleView={() => setViewMode(viewMode === 'editor' ? 'preview' : 'editor')}
+        collabStatus={collabStatus}
+        collaboratorCount={collaborators.length}
       />
 
       {showCmd && <CommandPalette isDark={isDark} onClose={() => setShowCmd(false)} onCommand={handleCommand} isMobile={isMobile} />}
