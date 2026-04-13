@@ -12,6 +12,7 @@ import { searchKeymap, openSearchPanel } from '@codemirror/search';
 import { createTheme } from '@uiw/codemirror-themes';
 import { tags as t } from '@lezer/highlight';
 import type { EditorAPI, Collaborator } from '@/types';
+import { getCollaboratorColor } from '@/lib/utils';
 
 const makeTheme = (dark: boolean, fontFamily?: string) =>
   createTheme({
@@ -229,8 +230,7 @@ export default function EditorPane({ content, onChange, isDark, focusMode, colla
         try {
           const pos = view.state.doc.line(Math.min(collab.cursor.line, view.state.doc.lines)).from + 
                      Math.min(collab.cursor.col - 1, view.state.doc.line(Math.min(collab.cursor.line, view.state.doc.lines)).length);
-          const colors = ['#f87171', '#fb923c', '#fbbf24', '#a3e635', '#4ade80', '#2dd4bf', '#22d3ee', '#60a5fa', '#818cf8', '#a78bfa', '#c084fc', '#f472b6'];
-          const color = colors[collab.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) % colors.length];
+          const color = getCollaboratorColor(collab.id);
           deco.push(Decoration.widget({
             widget: new CursorWidget(collab.name, color, collab.avatar_url),
             side: 1

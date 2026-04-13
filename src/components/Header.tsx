@@ -15,6 +15,7 @@ import type { ViewMode, Collaborator } from '@/types';
 import AccountMenu from './AccountMenu';
 import NotifPanel, { Notif } from './NotifPanel';
 import { usePWAInstall } from '@/lib/usePWAInstall';
+import { getCollaboratorColor } from '@/lib/utils';
 
 interface HeaderProps {
   user: any;
@@ -387,7 +388,14 @@ export default function Header({
                 <div
                   key={c.id}
                   className="db-avatar"
-                  style={{ width: 20, height: 20, fontSize: 8, zIndex: 10 }}
+                  style={{ 
+                    width: 20, 
+                    height: 20, 
+                    fontSize: 8, 
+                    zIndex: 10,
+                    border: `1.5px solid ${getCollaboratorColor(c.id)}`,
+                    boxShadow: `0 0 4px ${getCollaboratorColor(c.id)}44`
+                  }}
                   title={c.name}
                 >
                   {c.avatar_url
@@ -498,11 +506,23 @@ export default function Header({
             onClick={handleAccountClick}
           >
             {user?.avatar_url ? (
-              <div style={{ width: 20, height: 20, overflow: 'hidden', border: '1px solid var(--rule)', flexShrink: 0 }}>
+              <div style={{ 
+                width: 20, 
+                height: 20, 
+                overflow: 'hidden', 
+                border: `1.5px solid ${getCollaboratorColor(user.id)}`, 
+                flexShrink: 0,
+                boxShadow: `0 0 4px ${getCollaboratorColor(user.id)}44`
+              }}>
                 <Image src={user.avatar_url} alt="Profile" width={20} height={20} />
               </div>
             ) : (
-              <div className="db-avatar" style={{ width: 20, height: 20 }}>
+              <div className="db-avatar" style={{ 
+                width: 20, 
+                height: 20,
+                border: `1.5px solid ${getCollaboratorColor(user?.id || '')}`,
+                boxShadow: `0 0 4px ${getCollaboratorColor(user?.id || '')}44`
+              }}>
                 {user?.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || 'S'}
               </div>
             )}

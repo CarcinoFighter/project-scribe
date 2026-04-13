@@ -41,3 +41,23 @@ export function fmtDate(iso: string) {
 export function fmtWords(n: number) { 
   return n >= 1000 ? `${(n/1000).toFixed(1)}k` : String(n); 
 }
+
+export function getCollaboratorColor(id: string) {
+  const colors = [
+    '#f87171', // red
+    '#fb923c', // orange
+    '#fbbf24', // amber
+    '#a3e635', // lime
+    '#4ade80', // green
+    '#2dd4bf', // teal
+    '#22d3ee', // cyan
+    '#60a5fa', // blue
+    '#818cf8', // indigo
+    '#a78bfa', // violet
+    '#c084fc', // purple
+    '#f472b6', // pink
+  ];
+  if (!id) return colors[0];
+  const hash = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return colors[hash % colors.length];
+}
