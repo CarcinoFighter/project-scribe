@@ -39,6 +39,12 @@ export async function POST(req: NextRequest) {
       adminAccess: user.admin_access,
     });
 
+    // Resolve client IP (supports reverse-proxy setups)
+    const forwarded = req.headers.get('x-forwarded-for');
+    const ipAddress = forwarded
+      ? forwarded.split(',')[0].trim()
+      : (req.headers.get('x-real-ip') ?? '127.0.0.1');
+
     // Insert into login_sessions
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
@@ -49,6 +55,8 @@ export async function POST(req: NextRequest) {
         user_id: user.id,
         token: token,
         expires_at: expiresAt.toISOString(),
+        last_used_at: new Date().toISOString(),
+        ip_address: ipAddress,
       });
 
     if (sessionError) {

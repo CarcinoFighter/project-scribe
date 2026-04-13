@@ -14,6 +14,18 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
   }
 
+  // Update last_used_at for this session (fire-and-forget, non-blocking)
+  supabaseAdmin
+    .from('login_sessions')
+    .update({ last_used_at: new Date().toISOString() })
+    .eq('token', token)
+    .eq('user_id', payload.userId)
+    .then(({ error: sessionUpdateError }) => {
+      if (sessionUpdateError) {
+        console.warn('Failed to update last_used_at:', sessionUpdateError.message);
+      }
+    });
+
   // Fetch fresh user data from DB
   const { data: user, error } = await supabaseAdmin
     .from('users')
