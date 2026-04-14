@@ -18,15 +18,14 @@ export async function GET(req: NextRequest) {
 
   try {
     // Fetch from all tables where user is the proofreader and status is 'proofreading'
-    const [blogs, stories, docs, tasks] = await Promise.all([
+    const [blogs, stories, docs] = await Promise.all([
       supabaseAdmin.from('blogs').select('*').eq('proofreader_id', userId).eq('status', 'proofreading'),
       supabaseAdmin.from('survivor_stories').select('*').eq('proofreader_id', userId).eq('status', 'proofreading'),
       supabaseAdmin.from('cancer_docs').select('*').eq('proofreader_id', userId).eq('status', 'proofreading'),
-      supabaseAdmin.from('work_assignments').select('*').eq('proofreader_id', userId).eq('status', 'proofreading'),
     ]);
 
-    if (blogs.error || stories.error || docs.error || tasks.error) {
-      console.error('Error fetching proofreader queue:', { blogs: blogs.error, stories: stories.error, docs: docs.error, tasks: tasks.error });
+    if (blogs.error || stories.error || docs.error) {
+      console.error('Error fetching proofreader queue:', { blogs: blogs.error, stories: stories.error, docs: docs.error });
       return NextResponse.json({ error: 'Failed to fetch proofreader queue' }, { status: 500 });
     }
 
@@ -34,7 +33,6 @@ export async function GET(req: NextRequest) {
       ...(blogs.data || []).map(b => ({ ...b, type: 'blogs' })),
       ...(stories.data || []).map(s => ({ ...s, type: 'survivor_stories' })),
       ...(docs.data || []).map(d => ({ ...d, type: 'cancer_docs' })),
-      ...(tasks.data || []).map(t => ({ ...t, type: 'tasks', author_id: t.assigned_to })),
     ];
 
     if (allDocsRaw.length === 0) {

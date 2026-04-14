@@ -238,22 +238,6 @@ const WRITERS_BLOCK_SECTIONS = [
     hasEditor: true,
     table: "survivor_stories",
   },
-  {
-    key: "awareness_post",
-    label: "Awareness Posts",
-    icon: Megaphone,
-    color: "#f59e0b",
-    hasEditor: false,
-    table: null,
-  },
-  {
-    key: "task",
-    label: "Task Assignments",
-    icon: Briefcase,
-    color: "#6b7280",
-    hasEditor: false,
-    table: null,
-  },
 ];
 
 const KNOWN_CATEGORIES: Record<
@@ -1414,22 +1398,7 @@ export default function WorkPage() {
                         return acc;
                       }, {} as Record<string, any>);
 
-                      const allSections = [
-                        ...renderedSections,
-                        ...dynamicNativeCategories.map((cat) => ({
-                          key: cat,
-                          department: "Writers' Block",
-                          label: cat.charAt(0).toUpperCase() + cat.slice(1).replace(/_/g, " "),
-                          icon: Layers,
-                          color: "#6b7280",
-                          hasEditor: false,
-                          table: null,
-                        })),
-                        ...Object.values(foreignSections).sort((a, b) => {
-                          if (a.department !== b.department) return a.department.localeCompare(b.department);
-                          return a.key.localeCompare(b.key);
-                        }),
-                      ];
+                      const allSections = renderedSections;
 
                       return allSections.map((section: any) => {
                         const isNative = !section.department || section.department === "Writers' Block";
@@ -1604,7 +1573,7 @@ export default function WorkPage() {
                               icon: resolvedIcon,
                               color: known?.color || deptColor,
                               hasEditor: ["article", "blog", "survivor_story"].includes(cat),
-                              table: null,
+                              table: "",
                             }}
                             tasks={sectionTasks}
                             onCompleteClick={handleCompleteClick}
