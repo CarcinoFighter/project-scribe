@@ -666,13 +666,6 @@ export default function QueuesPage() {
       <PageHeader
         pageTitle="Queues"
         hideSearch={true}
-        user={user}
-        isDark={isDark}
-        onToggleTheme={toggleTheme}
-        onOpenSettings={() => {}}
-        notifs={notifs}
-        unreadCount={unreadCount}
-        onMarkAllRead={handleMarkAllRead}
         mobileMenuOpen={mobileMenuOpen}
         setMobileMenuOpen={setMobileMenuOpen}
       />

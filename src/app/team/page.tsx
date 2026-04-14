@@ -222,13 +222,6 @@ export default function TeamPage() {
       <PageHeader
         pageTitle="Team"
         hideSearch={true}
-        user={currentUser}
-        isDark={isDark}
-        onToggleTheme={toggleTheme}
-        onOpenSettings={() => setShowSettings(true)}
-        notifs={notifs}
-        unreadCount={unreadCount}
-        onMarkAllRead={handleMarkAllRead}
         mobileMenuOpen={mobileMenuOpen}
         setMobileMenuOpen={setMobileMenuOpen}
       >
