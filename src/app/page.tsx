@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useUser } from '@/lib/useUser';
 import { useTheme } from '@/lib/useTheme';
+import PageHeader from '@/components/PageHeader';
 import AccountMenu from '@/components/AccountMenu';
 import Toast from '@/components/Toast';
 import TaskSubmissionModal from '@/components/TaskSubmissionModal';
@@ -276,9 +277,7 @@ function DashboardContent() {
   const [sortBy,           setSortBy]           = useState<SortKey>('date');
   const [filter,           setFilter]           = useState<FilterStatus>('all');
   const [ctxMenu,          setCtxMenu]          = useState<CtxPos | null>(null);
-  const [showNotifPanel,   setShowNotifPanel]   = useState(false);
-  const [showAccountMenu,  setShowAccountMenu]  = useState(false);
-  const [accountMenuPos,   setAccountMenuPos]   = useState<{ top: number; right: number } | null>(null);
+  const [mobileMenuOpen,   setMobileMenuOpen]   = useState(false);
   const [wordGoal,         setWordGoal]         = useState(0);
   const [tasks,            setTasks]            = useState<Task[]>([]);
   const [selectedDept,     setSelectedDept]     = useState<string | null>(null);
@@ -287,9 +286,6 @@ function DashboardContent() {
   const [tasksLoading,     setTasksLoading]     = useState(true);
   const [activeDeptKey,    setActiveDeptKey]    = useState<string | null>(null);
 
-  const notifRef       = useRef<HTMLDivElement>(null);
-  const accountBtnRef  = useRef<HTMLButtonElement>(null);
-  const accountRef     = useRef<HTMLDivElement>(null);
   const appSettingsRef = useRef<AppSettings>(DEFAULT_SETTINGS);
 
   useEffect(() => { appSettingsRef.current = appSettings; }, [appSettings]);
@@ -326,17 +322,9 @@ function DashboardContent() {
     const h = (e: KeyboardEvent) => {
       const mod = e.ctrlKey || e.metaKey;
       if (mod && e.key === 'k') { e.preventDefault(); setShowCmd(c => !c); }
-      if (e.key === 'Escape') { setShowCmd(false); setCtxMenu(null); setShowNotifPanel(false); setShowAccountMenu(false); }
+      if (e.key === 'Escape') { setShowCmd(false); setCtxMenu(null); }
     };
     window.addEventListener('keydown', h); return () => window.removeEventListener('keydown', h);
-  }, []);
-
-  useEffect(() => {
-    const h = (e: MouseEvent) => {
-      if (!notifRef.current?.contains(e.target as Node)) setShowNotifPanel(false);
-      if (!accountBtnRef.current?.contains(e.target as Node)) setShowAccountMenu(false);
-    };
-    document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h);
   }, []);
 
   const showToastMsg = useCallback((msg: string) => setToast(msg), []);
@@ -407,101 +395,59 @@ function DashboardContent() {
     { id: 'team',     label: 'Team',        icon: Users,     count: null,                       href: '/team'  },
   ] as const).filter(item => isFullSidebar || (item.id !== 'articles' && item.id !== 'blogs'));
 
+  // Determine page title based on active navigation
+  const getPageTitle = () => {
+    switch (activeNav) {
+      case 'articles': return 'Articles';
+      case 'blogs': return 'Blog Posts';
+      case 'home':
+      default: return 'Overview';
+    }
+  };
+
   return (
     <div className={`db-root${isDark ? ' dark' : ''}`}>
-     
-
-      {/* ══ HEADER — newspaper masthead ══════════════════════════════════════ */}
-      <header className="db-header">
-
-        {/* Brand */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginRight: 0, flexShrink: 0, userSelect: 'none' }}>
-          <Image src="/logo.svg" alt="Carcino" width={15} height={18} style={{ height: 'auto' }} priority />
-          <span style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1, color: 'var(--ink)' }}>
-            <span className="hidden sm:inline">Carcino</span> Vantage
-          </span>
-        </div>
-
-        <div className="db-vr" />
-
-        {/* Search */}
-        <button className="db-search" onClick={() => setShowCmd(true)} title="Search (Ctrl+K)">
+      
+      {/* ══ HEADER — using PageHeader component ══════════════════════════════════════ */}
+      <PageHeader
+        pageTitle={getPageTitle()}
+        hideSearch={true}
+        user={user}
+        isDark={isDark}
+        onToggleTheme={toggleTheme}
+        onOpenSettings={() => setShowSettings(true)}
+        notifs={notifs}
+        unreadCount={unreadCount}
+        onMarkAllRead={handleMarkAllRead}
+        mobileMenuOpen={mobileMenuOpen}
+        setMobileMenuOpen={setMobileMenuOpen}
+      >
+        {/* Custom children - Search trigger button */}
+        <button 
+          className="db-search hidden md:flex" 
+          onClick={() => setShowCmd(true)} 
+          title="Search (Ctrl+K)"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '5px 10px',
+            background: 'transparent',
+            border: '1px solid var(--rule)',
+            borderRadius: '4px',
+            fontFamily: 'var(--ff-mono)',
+            fontSize: 10,
+            letterSpacing: '0.04em',
+            color: 'var(--mid)',
+            cursor: 'pointer',
+            transition: 'all 0.15s',
+          }}
+        >
           <Search size={11} strokeWidth={1.8} />
           <span>Search or command…</span>
-          <span className="db-kbd hidden md:inline-block">⌘K</span>
+          <span className="db-kbd" style={{ marginLeft: 'auto' }}>⌘K</span>
         </button>
-
-        <div style={{ flex: 1 }} />
-
-        {/* Right actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-
-          {/* Bell */}
-          <div ref={notifRef} style={{ position: 'relative' }}>
-            <button className={`db-icon-btn${showNotifPanel ? ' active' : ''}`}
-              onClick={() => { setShowNotifPanel(o => !o); setShowAccountMenu(false); }}
-              title="Notifications">
-              <Bell size={13} strokeWidth={1.8} />
-              {unreadCount > 0 && <span className="db-badge" style={{ animation: 'db-blink 2.2s step-start infinite' }} />}
-            </button>
-            {showNotifPanel && (
-              <NotifPanel
-                notifs={notifs}
-                onMarkAllRead={handleMarkAllRead}
-                onClose={() => setShowNotifPanel(false)}
-              />
-            )}
-          </div>
-
-          {/* Theme toggle */}
-          <button className="db-icon-btn" onClick={toggleTheme} title={isDark ? 'Light mode' : 'Dark mode'}>
-            {isDark ? <Sun size={13} strokeWidth={1.8} /> : <Moon size={13} strokeWidth={1.8} />}
-          </button>
-
-          <div className="db-vr" />
-
-          {/* New doc */}
-          <Link href="/editor">
-            <button className="db-btn" style={{ padding: '6px 12px' }}>
-              <Plus size={10} strokeWidth={2.2} />
-              <span className="hidden sm:inline">New</span>
-            </button>
-          </Link>
-
-          <div className="db-vr" />
-
-          {/* Account */}
-          <div ref={accountRef} style={{ position: 'relative' }}>
-            <button
-              ref={accountBtnRef}
-              className="db-ghost"
-              style={{ gap: 6, padding: '3px 8px 3px 4px' }}
-              onClick={() => {
-                if (!showAccountMenu && accountBtnRef.current) {
-                  const r = accountBtnRef.current.getBoundingClientRect();
-                  setAccountMenuPos({ top: r.bottom + 5, right: window.innerWidth - r.right });
-                }
-                setShowAccountMenu(o => !o); setShowNotifPanel(false);
-              }}
-            >
-              {user?.avatar_url ? (
-                <div style={{ width: 20, height: 20, overflow: 'hidden', border: '1px solid var(--rule)', flexShrink: 0 }}>
-                  <Image src={user.avatar_url} alt="Profile" width={20} height={20} />
-                </div>
-              ) : (
-                <div className="db-avatar" style={{ width: 20, height: 20 }}>
-                  {user?.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || 'S'}
-                </div>
-              )}
-              <span className="hidden md:block" style={{ fontFamily: 'var(--ff-ui)', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.06em', color: 'var(--ink)' }}>
-                {user?.name || ''}
-              </span>
-              <ChevronDown className="hidden sm:block" size={10} strokeWidth={2} style={{ color: 'var(--mid)' }} />
-            </button>
-          </div>
-
-        </div>
-      </header>
+      </PageHeader>
 
       {/* ══ BODY ════════════════════════════════════════════════════════════ */}
       <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
@@ -712,13 +658,6 @@ function DashboardContent() {
       {showCmd && <CommandPalette docs={allDocs} onClose={() => setShowCmd(false)} onCommand={handleCommand} />}
       {ctxMenu && <DocContextMenu pos={ctxMenu} docs={allDocs} onStar={toggleStar} onDelete={deleteDoc} onOpen={() => router.push('/editor')} onClose={() => setCtxMenu(null)} />}
       {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
-
-      {showAccountMenu && accountMenuPos && createPortal(
-        <div style={{ position: 'fixed', top: accountMenuPos.top, right: accountMenuPos.right, zIndex: 9960 }} onMouseDown={e => e.stopPropagation()}>
-          <AccountMenu user={user} onClose={() => setShowAccountMenu(false)} onToast={showToastMsg} onOpenSettings={() => setShowSettings(true)} />
-        </div>,
-        document.body
-      )}
 
       {showSettings && (
         <SettingsModal 

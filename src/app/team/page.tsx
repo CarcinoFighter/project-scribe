@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { useUser } from "@/lib/useUser";
 import { createPortal } from "react-dom";
+import PageHeader from "@/components/PageHeader";
 import AccountMenu from "@/components/AccountMenu";
 import MobileNav from "@/components/MobileNav";
 import { Sidebar } from "@/components/Sidebar";
@@ -86,27 +87,6 @@ const TAPE_ITEMS = [
   "RESEARCH",
 ];
 
-function Logo({ size = 16 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={Math.round(size * 1.2)}
-      viewBox="0 0 20 24"
-      fill="none"
-      aria-hidden
-    >
-      <path
-        d="M9.13307 5.97435C9.21934 5.23291 9.33279 4.80925 9.89802 4.0092C10.9029 2.80263 11.6709 2.67501 12.9912 2.4556L13.0042 2.45344C14.8586 2.34816 15.7395 3.26056 16.1799 4.26653C16.6203 5.27251 16.5553 7.03881 16.4233 7.9863C16.2913 8.93378 15.7627 11.4166 12.7608 13.8614C13.5837 14.1538 13.6573 14.1074 14.65 14.2561C15.6004 13.2384 16.1436 12.4864 17.5128 10.8405C18.882 9.19453 19.661 6.91014 19.8772 5.50646C20.0934 4.10278 20.1438 2.45344 18.9963 1.26031C17.8489 0.0671784 15.5888 -0.131673 14.198 0.067179C12.8072 0.266031 10.3732 1.26031 8.68105 2.6289C6.98888 3.9975 6.20076 5.50646 5.57488 7.5418C4.949 9.57714 5.30938 11.2467 6.08485 13.332C7.40174 16.0707 9.01717 17.9291 10.4196 18.8415C11.822 19.7539 12.8072 20.2451 14.3487 22.842C16.2495 19.8123 16.9991 18.6706 18.4632 16.9465C17.5128 15.7767 16.2842 15.1142 13.8735 14.7825C11.4627 14.4508 10.6865 13.6665 10.2341 13.6478C9.78183 13.6291 9.26057 13.6244 9.09831 13.5776C8.93605 13.5309 8.89093 13.5242 8.76218 13.2384C8.62326 12.7331 8.76218 11.9985 8.76218 11.8932C8.76218 11.7879 8.54197 11.6476 8.54197 11.5072C8.54197 11.3668 8.61607 11.2835 8.77377 11.2031C8.77377 11.2031 8.41448 11.0042 8.41448 10.8405C8.41448 10.6767 8.57673 10.0567 8.54197 9.91637C8.50721 9.776 7.68429 9.60054 7.83497 9.3198C7.98565 9.03906 9.16153 7.60314 9.30692 7.30785C9.45232 7.01256 9.15359 6.6787 9.13307 5.97435Z"
-        fill="currentColor"
-      />
-      <path
-        d="M8.00883 18.0928C5.32942 19.6789 3.54237 20.5984 1.2981 21.2277L0 24C1.2981 23.9064 5.74874 21.7424 9.23739 19.169L8.00883 18.0928Z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
-
 export default function TeamPage() {
   const router = useRouter();
   const { user: currentUser, loading: userLoading } = useUser();
@@ -130,14 +110,7 @@ export default function TeamPage() {
   const [showInviteModal, setShowInviteModal] = useState(false);
 
   const [toast, setToast] = useState<string | null>(null);
-  const [showAccountMenu, setShowAccountMenu] = useState(false);
-  const [accountMenuPos, setAccountMenuPos] = useState<{
-    top: number;
-    right: number;
-  } | null>(null);
-  const [showNotifPanel, setShowNotifPanel] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const accountBtnRef = useRef<HTMLButtonElement>(null);
 
   const [counts, setCounts] = useState<{
     articles: number;
@@ -245,66 +218,21 @@ export default function TeamPage() {
 
   return (
     <div className={`db-root${isDark ? " dark" : ""}`}>
-      {/* ── HEADER ─────────────────────────────────────────────────────────── */}
-      <header className="db-header">
-        {/* Brand + breadcrumb */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            flexShrink: 0,
-            userSelect: "none",
-          }}
-        >
-          <Link
-            href="/"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              color: "var(--ink)",
-              textDecoration: "none",
-            }}
-          >
-            <Logo size={14} />
-            <span
-              style={{
-                fontFamily: "var(--ff-display)",
-                fontSize: 15,
-                fontWeight: 700,
-                letterSpacing: "-0.02em",
-                lineHeight: 1,
-              }}
-            >
-              <span className="hidden sm:inline"> Carcino</span> Vantage
-            </span>
-          </Link>
-          <span
-            style={{
-              color: "var(--rule)",
-              fontSize: 14,
-              fontFamily: "var(--ff-mono)",
-            }}
-          >
-            /
-          </span>
-          <span
-            style={{
-              fontFamily: "var(--ff-mono)",
-              fontSize: 9,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-              color: "var(--mid)",
-            }}
-          >
-            Team
-          </span>
-        </div>
-
-        <div className="db-vr" />
-
-        {/* Search — hidden on mobile */}
+      {/* ── HEADER — using PageHeader component ─────────────────────────────── */}
+      <PageHeader
+        pageTitle="Team"
+        hideSearch={true}
+        user={currentUser}
+        isDark={isDark}
+        onToggleTheme={toggleTheme}
+        onOpenSettings={() => setShowSettings(true)}
+        notifs={notifs}
+        unreadCount={unreadCount}
+        onMarkAllRead={handleMarkAllRead}
+        mobileMenuOpen={mobileMenuOpen}
+        setMobileMenuOpen={setMobileMenuOpen}
+      >
+        {/* Custom search input for Team page */}
         <div
           className="hidden md:flex"
           style={{
@@ -346,149 +274,7 @@ export default function TeamPage() {
             onBlur={(e) => (e.currentTarget.style.borderColor = "var(--rule)")}
           />
         </div>
-
-        <div style={{ flex: 1 }} />
-
-        {/* Right controls */}
-        <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-          {/* Theme toggle */}
-          <button
-            className="db-icon-btn"
-            onClick={toggleTheme}
-            title={isDark ? "Light mode" : "Dark mode"}
-          >
-            {isDark ? (
-              <Sun size={13} strokeWidth={1.8} />
-            ) : (
-              <Moon size={13} strokeWidth={1.8} />
-            )}
-          </button>
-
-          {/* Settings */}
-          <button
-            className="db-icon-btn"
-            onClick={() => setShowSettings(true)}
-            title="Settings"
-          >
-            <Settings size={13} strokeWidth={1.8} />
-          </button>
-
-          {/* Notifications */}
-          <button
-            className="db-icon-btn"
-            style={{ position: "relative" }}
-            onClick={() => setShowNotifPanel((o) => !o)}
-            title="Notifications"
-          >
-            <Bell size={13} strokeWidth={1.8} />
-            {unreadCount > 0 && (
-              <span
-                style={{
-                  position: "absolute",
-                  top: 3,
-                  right: 3,
-                  width: 6,
-                  height: 6,
-                  background: "var(--accent)",
-                  borderRadius: "50%",
-                  border: "1px solid var(--paper)",
-                }}
-              />
-            )}
-          </button>
-
-          {unreadCount > 0 && (
-            <button
-              className="db-ghost hidden sm:flex"
-              style={{ padding: "3px 7px", gap: 4 }}
-              onClick={handleMarkAllRead}
-              title="Mark all read"
-            >
-              <Check size={10} strokeWidth={2} />
-              <span
-                style={{
-                  fontFamily: "var(--ff-mono)",
-                  fontSize: 8,
-                  letterSpacing: "0.08em",
-                }}
-              >
-                All read
-              </span>
-            </button>
-          )}
-
-          <div className="db-vr" />
-
-          {/* Mobile menu toggle */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="db-icon-btn md:hidden"
-            title="Menu"
-          >
-            {mobileMenuOpen ? <X size={16} /> : <Menu size={16} />}
-          </button>
-
-          {/* Account */}
-          <button
-            ref={accountBtnRef}
-            className="db-ghost"
-            style={{ gap: 6, padding: "3px 8px 3px 4px" }}
-            onClick={() => {
-              if (!showAccountMenu && accountBtnRef.current) {
-                const r = accountBtnRef.current.getBoundingClientRect();
-                setAccountMenuPos({
-                  top: r.bottom + 5,
-                  right: window.innerWidth - r.right,
-                });
-              }
-              setShowAccountMenu((o) => !o);
-            }}
-          >
-            {currentUser?.avatar_url ? (
-              <div
-                style={{
-                  width: 20,
-                  height: 20,
-                  overflow: "hidden",
-                  border: "1px solid var(--rule)",
-                }}
-              >
-                <Image
-                  src={currentUser.avatar_url}
-                  alt="Profile"
-                  width={20}
-                  height={20}
-                />
-              </div>
-            ) : (
-              <div className="db-avatar" style={{ width: 20, height: 20 }}>
-                {currentUser?.name
-                  ?.split(" ")
-                  .map((n: string) => n[0])
-                  .join("")
-                  .slice(0, 2) || "U"}
-              </div>
-            )}
-            <span
-              className="hidden md:block"
-              style={{
-                fontFamily: "var(--ff-mono)",
-                fontSize: 9.5,
-                fontWeight: 500,
-                letterSpacing: "0.06em",
-                color: "var(--ink)",
-              }}
-            >
-              {currentUser?.name || ""}
-            </span>
-            <ChevronDown
-              size={10}
-              className="hidden sm:block"
-              style={{ color: "var(--mid)" }}
-            />
-          </button>
-        </div>
-      </header>
+      </PageHeader>
 
       {/* Mobile menu panel */}
       {mobileMenuOpen && (
@@ -543,7 +329,6 @@ export default function TeamPage() {
               <button
                 className="db-ghost justify-center text-xs py-2"
                 onClick={() => {
-                  setShowNotifPanel(!showNotifPanel);
                   setMobileMenuOpen(false);
                 }}
               >
@@ -1097,25 +882,6 @@ export default function TeamPage() {
       </Suspense>
 
       {/* Overlays */}
-      {showAccountMenu &&
-        accountMenuPos &&
-        createPortal(
-          <div
-            style={{
-              position: "fixed",
-              top: accountMenuPos.top,
-              right: accountMenuPos.right,
-              zIndex: 9960,
-            }}
-          >
-            <AccountMenu
-              user={currentUser}
-              onClose={() => setShowAccountMenu(false)}
-              onToast={(m) => setToast(m)}
-            />
-          </div>,
-          document.body,
-        )}
       {showSettings && (
         <SettingsModal
           settings={settings}

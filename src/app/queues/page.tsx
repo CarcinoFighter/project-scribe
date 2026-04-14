@@ -25,13 +25,12 @@ import {
 } from "lucide-react";
 import { useUser } from "@/lib/useUser";
 import { useNotifications } from "@/lib/useNotifications";
+import PageHeader from "@/components/PageHeader";
 import Toast from "@/components/Toast";
 import MediaViewerModal from "@/components/MediaViewerModal";
 import MultiPersonSelect from "@/components/MultiPersonSelect";
-import Header from "@/components/Header";
 import MobileNav from "@/components/MobileNav";
 import { Sidebar } from "@/components/Sidebar";
-import { DEPARTMENTS } from "@/config/departments";
 import {
   loadSettings,
   applySettings,
@@ -504,6 +503,7 @@ export default function QueuesPage() {
     blogs: 0,
   });
   const [starredDocs, setStarredDocs] = useState<any[]>([]);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const {
     notifications: notifs,
     unreadCount,
@@ -662,17 +662,19 @@ export default function QueuesPage() {
 
   return (
     <div className={`db-root ${isDark ? "dark" : ""}`}>
-      <Header
+      {/* ── HEADER — using PageHeader component ─────────────────────────────── */}
+      <PageHeader
+        pageTitle="Queues"
+        hideSearch={true}
         user={user}
-        notifs={notifs}
-        unreadCount={unreadCount}
         isDark={isDark}
         onToggleTheme={toggleTheme}
-        onOpenCmd={() => {}}
-        onOpenSearch={() => {}}
         onOpenSettings={() => {}}
+        notifs={notifs}
+        unreadCount={unreadCount}
         onMarkAllRead={handleMarkAllRead}
-        onToast={(m) => setToast(m)}
+        mobileMenuOpen={mobileMenuOpen}
+        setMobileMenuOpen={setMobileMenuOpen}
       />
 
       <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
