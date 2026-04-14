@@ -1,6 +1,20 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+/**
+ * PageHeader — self-contained sticky header for all non-editor pages.
+ *
+ * All shared state is managed internally:
+ *   • Theme  (useTheme)
+ *   • User   (useUser)
+ *   • Notifs (useNotifications)
+ *   • SettingsModal
+ *   • Toast
+ *
+ * Pages only need to wire up what's page-specific:
+ *   pageTitle, search props, children slot, mobileMenuOpen/setMobileMenuOpen
+ */
+
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { createPortal } from 'react-dom';
@@ -12,306 +26,357 @@ import {
   Settings,
   Menu,
   X,
-  Check,
+  ChevronDown,
+  Command,
 } from 'lucide-react';
-import AccountMenu from '@/components/AccountMenu';
-import NotifPanel, { Notif } from '@/components/NotifPanel';
 
-interface PageHeaderProps {
+import { useTheme }         from '@/lib/useTheme';
+import { useUser }          from '@/lib/useUser';
+import { useNotifications } from '@/lib/useNotifications';
+import AccountMenu          from '@/components/AccountMenu';
+import NotifPanel           from '@/components/NotifPanel';
+import Toast                from '@/components/Toast';
+import SettingsModal, {
+  loadSettings,
+  saveSettings,
+  applySettings,
+  type AppSettings,
+} from '@/components/SettingsModal';
+
+// ─── Props ───────────────────────────────────────────────────────────────────
+
+export interface PageHeaderProps {
+  /** Breadcrumb label shown after the logo. */
   pageTitle: string;
-  searchValue?: string;
-  onSearchChange?: (value: string) => void;
+
+  /** Search field — pass these to enable an inline search bar. */
+  searchValue?:       string;
+  onSearchChange?:    (value: string) => void;
   searchPlaceholder?: string;
-  hideSearch?: boolean;
-  user?: any;
-  isDark: boolean;
-  onToggleTheme: () => void;
-  onOpenSettings: () => void;
-  notifs?: Notif[];
-  unreadCount?: number;
-  onMarkAllRead?: () => void;
-  mobileMenuOpen?: boolean;
+  hideSearch?:        boolean;
+
+  /** Mobile menu toggle — managed by the parent page (content varies). */
+  mobileMenuOpen?:    boolean;
   setMobileMenuOpen?: (open: boolean) => void;
+
+  /** Extra controls injected between the spacer and the right controls. */
   children?: React.ReactNode;
 }
 
+// ─── Logo ────────────────────────────────────────────────────────────────────
+
 function Logo({ size = 16 }: { size?: number }) {
   return (
-    <svg
+    <Image
+      src="/logo.svg"
+      alt="Carcino Vantage"
       width={size}
       height={Math.round(size * 1.2)}
-      viewBox="0 0 20 24"
-      fill="none"
-      aria-hidden
-    >
-      <path
-        d="M9.13307 5.97435C9.21934 5.23291 9.33279 4.80925 9.89802 4.0092C10.9029 2.80263 11.6709 2.67501 12.9912 2.4556L13.0042 2.45344C14.8586 2.34816 15.7395 3.26056 16.1799 4.26653C16.6203 5.27251 16.5553 7.03881 16.4233 7.9863C16.2913 8.93378 15.7627 11.4166 12.7608 13.8614C13.5837 14.1538 13.6573 14.1074 14.65 14.2561C15.6004 13.2384 16.1436 12.4864 17.5128 10.8405C18.882 9.19453 19.661 6.91014 19.8772 5.50646C20.0934 4.10278 20.1438 2.45344 18.9963 1.26031C17.8489 0.0671784 15.5888 -0.131673 14.198 0.067179C12.8072 0.266031 10.3732 1.26031 8.68105 2.6289C6.98888 3.9975 6.20076 5.50646 5.57488 7.5418C4.949 9.57714 5.30938 11.2467 6.08485 13.332C7.40174 16.0707 9.01717 17.9291 10.4196 18.8415C11.822 19.7539 12.8072 20.2451 14.3487 22.842C16.2495 19.8123 16.9991 18.6706 18.4632 16.9465C17.5128 15.7767 16.2842 15.1142 13.8735 14.7825C11.4627 14.4508 10.6865 13.6665 10.2341 13.6478C9.78183 13.6291 9.26057 13.6244 9.09831 13.5776C8.93605 13.5309 8.89093 13.5242 8.76218 13.2384C8.62326 12.7331 8.76218 11.9985 8.76218 11.8932C8.76218 11.7879 8.54197 11.6476 8.54197 11.5072C8.54197 11.3668 8.61607 11.2835 8.77377 11.2031C8.77377 11.2031 8.41448 11.0042 8.41448 10.8405C8.41448 10.6767 8.57673 10.0567 8.54197 9.91637C8.50721 9.776 7.68429 9.60054 7.83497 9.3198C7.98565 9.03906 9.16153 7.60314 9.30692 7.30785C9.45232 7.01256 9.15359 6.6787 9.13307 5.97435Z"
-        fill="currentColor"
-      />
-      <path
-        d="M8.00883 18.0928C5.32942 19.6789 3.54237 20.5984 1.2981 21.2277L0 24C1.2981 23.9064 5.74874 21.7424 9.23739 19.169L8.00883 18.0928Z"
-        fill="currentColor"
-      />
-    </svg>
+      style={{ width: size, height: 'auto' }}
+    />
   );
 }
 
+// ─── Component ───────────────────────────────────────────────────────────────
+
 export default function PageHeader({
   pageTitle,
-  searchValue = '',
+  searchValue        = '',
   onSearchChange,
-  searchPlaceholder = 'Search...',
-  hideSearch = false,
-  user,
-  isDark,
-  onToggleTheme,
-  onOpenSettings,
-  notifs = [],
-  unreadCount = 0,
-  onMarkAllRead,
-  mobileMenuOpen = false,
+  searchPlaceholder  = 'Search…',
+  hideSearch         = false,
+  mobileMenuOpen     = false,
   setMobileMenuOpen,
   children,
 }: PageHeaderProps) {
-  const [showAccountMenu, setShowAccountMenu] = useState(false);
-  const [accountMenuPos, setAccountMenuPos] = useState<{
-    top: number;
-    right: number;
-  } | null>(null);
+
+  // ── Shared hooks ────────────────────────────────────────────────────────────
+  const { isDark, toggleTheme }                       = useTheme();
+  const { user }                                      = useUser();
+  const { notifications, unreadCount, markAllRead }   = useNotifications();
+
+  // ── Settings ────────────────────────────────────────────────────────────────
+  const [showSettings, setShowSettings] = useState(false);
+  const [settings, setSettings]         = useState<AppSettings>(() => loadSettings());
+
+  // ── Toast ───────────────────────────────────────────────────────────────────
+  const [toast, setToast] = useState<string | null>(null);
+
+  // ── Notification panel ──────────────────────────────────────────────────────
   const [showNotifPanel, setShowNotifPanel] = useState(false);
-  const accountBtnRef = useRef<HTMLButtonElement>(null);
+  const [notifPanelPos,  setNotifPanelPos]  = useState<{ top: number; right: number } | null>(null);
+  const notifBtnRef  = useRef<HTMLButtonElement>(null);
+  const notifPanelRef = useRef<HTMLDivElement>(null);
 
-  const handleAccountMenuClick = () => {
-    if (!showAccountMenu && accountBtnRef.current) {
-      const r = accountBtnRef.current.getBoundingClientRect();
-      setAccountMenuPos({
-        top: r.bottom + 5,
-        right: window.innerWidth - r.right,
-      });
+  // ── Account menu ────────────────────────────────────────────────────────────
+  const [showAccountMenu, setShowAccountMenu] = useState(false);
+  const [accountMenuPos,  setAccountMenuPos]  = useState<{ top: number; right: number } | null>(null);
+  const accountBtnRef  = useRef<HTMLButtonElement>(null);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
+
+  // ── Search focus state (for visual feedback) ────────────────────────────────
+  const [searchFocused, setSearchFocused] = useState(false);
+
+  // ── Scroll shadow ───────────────────────────────────────────────────────────
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 4);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // ── Outside-click: close both menus ────────────────────────────────────────
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Node;
+      const insideNotif =
+        notifBtnRef.current?.contains(target) ||
+        notifPanelRef.current?.contains(target);
+      if (!insideNotif) setShowNotifPanel(false);
+
+      const insideAccount =
+        accountBtnRef.current?.contains(target) ||
+        accountMenuRef.current?.contains(target);
+      if (!insideAccount) setShowAccountMenu(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // ── Keyboard: close menus on Escape ────────────────────────────────────────
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowNotifPanel(false);
+        setShowAccountMenu(false);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  // ── Handlers ────────────────────────────────────────────────────────────────
+  const handleNotifClick = useCallback(() => {
+    if (!showNotifPanel && notifBtnRef.current) {
+      const rect = notifBtnRef.current.getBoundingClientRect();
+      const right = Math.max(8, window.innerWidth - rect.right);
+      setNotifPanelPos({ top: rect.bottom + 7, right });
     }
-    setShowAccountMenu((o) => !o);
-  };
+    setShowNotifPanel(prev => !prev);
+    setShowAccountMenu(false);
+  }, [showNotifPanel]);
 
+  const handleAccountClick = useCallback(() => {
+    if (!showAccountMenu && accountBtnRef.current) {
+      const rect = accountBtnRef.current.getBoundingClientRect();
+      setAccountMenuPos({ top: rect.bottom + 5, right: window.innerWidth - rect.right });
+    }
+    setShowAccountMenu(prev => !prev);
+    setShowNotifPanel(false);
+  }, [showAccountMenu]);
+
+  const handleMarkAllRead = useCallback(async () => {
+    await markAllRead();
+    setToast('All notifications marked as read');
+  }, [markAllRead]);
+
+  // ── User initials ───────────────────────────────────────────────────────────
+  const initials = user?.name
+    ?.split(' ')
+    .map((n: string) => n[0])
+    .join('')
+    .slice(0, 2) || '?';
+
+  // ─── Render ─────────────────────────────────────────────────────────────────
   return (
     <>
+      {/* ── Header ────────────────────────────────────────────────────────── */}
       <header
         style={{
-          position: 'sticky',
-          top: 0,
-          left: 0,
-          right: 0,
-          width: '100%',
-          background: 'var(--paper)',
-          borderBottom: '1px solid var(--rule)',
-          padding: '12px 16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          zIndex: 40,
+          position:        'sticky',
+          top:             0,
+          left:            0,
+          right:           0,
+          width:           '100%',
+          background:      'var(--paper)',
+          borderBottom:    '1px solid var(--rule)',
+          padding:         '0 14px',
+          display:         'flex',
+          alignItems:      'center',
+          gap:             8,
+          height:          44,
+          zIndex:          40,
+          // Subtle elevation on scroll
+          boxShadow:       scrolled ? '0 1px 12px rgba(0,0,0,0.07)' : 'none',
+          transition:      'box-shadow 0.2s ease',
         }}
       >
-        {/* Logo + Title */}
-        <Link
-          href="/"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            color: 'var(--ink)',
-            textDecoration: 'none',
-            lineHeight: 1,
-          }}
-        >
-          <Logo size={14} />
-          <span
+        {/* ── Logo + Breadcrumb ──────────────────────────────────────────── */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 0, flexShrink: 0, userSelect: 'none' }}>
+          <Link
+            href="/"
             style={{
-              fontFamily: 'var(--ff-display)',
-              fontSize: 15,
-              fontWeight: 700,
-              letterSpacing: '-0.02em',
-              lineHeight: 1,
+              display:        'flex',
+              alignItems:     'center',
+              gap:            7,
+              color:          'var(--ink)',
+              textDecoration: 'none',
+              padding:        '4px 8px 4px 2px',
+              borderRadius:   3,
+              transition:     'opacity 0.15s',
             }}
+            onMouseEnter={e => (e.currentTarget.style.opacity = '0.7')}
+            onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
           >
-            <span className="hidden sm:inline"> Carcino</span> Vantage
-          </span>
-        </Link>
+            <Logo size={14} />
+            <span style={{
+              fontFamily:    'var(--ff-display)',
+              fontSize:      14,
+              fontWeight:    700,
+              letterSpacing: '-0.02em',
+              lineHeight:    1,
+            }}>
+              <span className="hidden sm:inline">Carcino</span> Vantage
+            </span>
+          </Link>
 
-        {/* Separator */}
-        <div
-          className="db-vr"
-          style={{ marginTop: 0 }}
-        />
-
-        {/* Page Title */}
-        <span
-          style={{
+          {/* Slash separator */}
+          <span style={{
             fontFamily: 'var(--ff-mono)',
-            fontSize: 9,
+            fontSize:   13,
+            color:      'var(--rule)',
+            margin:     '0 2px',
+            userSelect: 'none',
+          }}>
+            /
+          </span>
+
+          {/* Page title */}
+          <span style={{
+            fontFamily:    'var(--ff-mono)',
+            fontSize:      9,
             letterSpacing: '0.14em',
             textTransform: 'uppercase',
-            color: 'var(--mid)',
-          }}
-        >
-          {pageTitle}
-        </span>
+            color:         'var(--mid)',
+            padding:       '0 6px',
+          }}>
+            {pageTitle}
+          </span>
+        </div>
 
-        <div
-          className="db-vr"
-          style={{ marginTop: 0 }}
-        />
+        <div className="db-vr" style={{ marginTop: 0 }} />
 
-        {/* Search — hidden on mobile */}
+        {/* ── Search bar (desktop) ───────────────────────────────────────── */}
         {!hideSearch && (
           <div
             className="hidden md:flex"
             style={{
-              position: 'relative',
-              flex: 1,
-              maxWidth: 320,
-              alignItems: 'center',
+              position:  'relative',
+              flex:      1,
+              maxWidth:  300,
+              alignItems:'center',
             }}
           >
             <Search
               size={11}
               style={{
-                position: 'absolute',
-                left: 10,
-                color: 'var(--mid)',
+                position:      'absolute',
+                left:          10,
+                color:         searchFocused ? 'var(--accent)' : 'var(--mid)',
                 pointerEvents: 'none',
+                transition:    'color 0.15s',
               }}
             />
             <input
               type="text"
               placeholder={searchPlaceholder}
               value={searchValue}
-              onChange={(e) => onSearchChange?.(e.target.value)}
+              onChange={e => onSearchChange?.(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
               style={{
-                width: '100%',
-                background: 'transparent',
-                border: '1px solid var(--rule)',
-                padding: '5px 10px 5px 28px',
-                fontFamily: 'var(--ff-mono)',
-                fontSize: 10,
+                width:         '100%',
+                background:    searchFocused ? 'var(--accent-sub)' : 'transparent',
+                border:        `1px solid ${searchFocused ? 'var(--accent)' : 'var(--rule)'}`,
+                padding:       '5px 32px 5px 28px',
+                fontFamily:    'var(--ff-mono)',
+                fontSize:      10,
                 letterSpacing: '0.04em',
-                color: 'var(--ink)',
-                outline: 'none',
-                transition: 'border-color 0.15s',
+                color:         'var(--ink)',
+                outline:       'none',
+                transition:    'border-color 0.15s, background 0.15s',
               }}
-              onFocus={(e) =>
-                (e.currentTarget.style.borderColor = 'var(--accent)')
-              }
-              onBlur={(e) =>
-                (e.currentTarget.style.borderColor = 'var(--rule)')
-              }
             />
+            {/* ⌘K hint */}
+            <span
+              className="hidden lg:flex"
+              style={{
+                position:      'absolute',
+                right:         8,
+                fontFamily:    'var(--ff-mono)',
+                fontSize:      8,
+                letterSpacing: '0.06em',
+                color:         'var(--mid)',
+                opacity:       searchFocused ? 0 : 0.7,
+                display:       'flex',
+                alignItems:    'center',
+                gap:           2,
+                pointerEvents: 'none',
+                transition:    'opacity 0.15s',
+              }}
+            >
+              <Command size={8} strokeWidth={1.8} />K
+            </span>
           </div>
         )}
 
+        {/* ── Flex spacer ───────────────────────────────────────────────── */}
         <div style={{ flex: 1 }} />
 
-        {/* Custom children (right-aligned slot) */}
+        {/* ── Page-specific controls (children slot) ────────────────────── */}
         {children}
 
-        {/* Right controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          {/* Theme toggle - unified with other buttons */}
+        {/* ── Right controls ────────────────────────────────────────────── */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+
+          {/* Theme toggle */}
           <button
             className="db-icon-btn"
-            onClick={onToggleTheme}
-            title={isDark ? 'Light mode' : 'Dark mode'}
-            style={{
-              padding: '4px',
-              borderRadius: '4px',
-              border: '1px solid transparent',
-              transition: 'all 0.15s',
-              cursor: 'pointer',
-            }}
+            onClick={toggleTheme}
+            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
           >
-            {isDark ? (
-              <Sun size={13} strokeWidth={1.8} />
-            ) : (
-              <Moon size={13} strokeWidth={1.8} />
-            )}
+            {isDark
+              ? <Sun  size={13} strokeWidth={1.8} style={{ color: 'var(--mid)' }} />
+              : <Moon size={13} strokeWidth={1.8} style={{ color: 'var(--mid)' }} />}
           </button>
 
           {/* Settings */}
           <button
             className="db-icon-btn"
-            onClick={onOpenSettings}
+            onClick={() => setShowSettings(true)}
             title="Settings"
-            style={{
-              padding: '4px',
-              borderRadius: '4px',
-              border: '1px solid transparent',
-              transition: 'all 0.15s',
-              cursor: 'pointer',
-            }}
           >
-            <Settings size={13} strokeWidth={1.8} />
+            <Settings size={13} strokeWidth={1.8} style={{ color: 'var(--mid)' }} />
           </button>
 
           {/* Notifications */}
           <button
-            className="db-icon-btn"
-            style={{
-              position: 'relative',
-              padding: '4px',
-              borderRadius: '4px',
-              border: '1px solid transparent',
-              transition: 'all 0.15s',
-              cursor: 'pointer',
-            }}
-            onClick={() => setShowNotifPanel((o) => !o)}
+            ref={notifBtnRef}
+            className={`db-icon-btn${showNotifPanel ? ' active' : ''}`}
+            onClick={handleNotifClick}
             title="Notifications"
+            style={{ position: 'relative' }}
           >
-            <Bell size={13} strokeWidth={1.8} />
+            <Bell size={13} strokeWidth={1.8} style={{ color: 'var(--mid)' }} />
             {unreadCount > 0 && (
               <span
-                style={{
-                  position: 'absolute',
-                  top: 2,
-                  right: 2,
-                  width: 6,
-                  height: 6,
-                  background: 'var(--accent)',
-                  borderRadius: '50%',
-                  border: '1px solid var(--paper)',
-                }}
+                className="db-badge"
+                style={{ animation: 'db-blink 2.4s step-start infinite' }}
               />
             )}
           </button>
 
-          {/* Mark all read button */}
-          {unreadCount > 0 && (
-            <button
-              className="db-ghost hidden sm:flex"
-              style={{
-                padding: '3px 7px',
-                gap: 4,
-                borderRadius: '4px',
-                border: '1px solid var(--rule)',
-                transition: 'all 0.15s',
-              }}
-              onClick={onMarkAllRead}
-              title="Mark all read"
-            >
-              <Check size={10} strokeWidth={2} />
-              <span
-                style={{
-                  fontFamily: 'var(--ff-mono)',
-                  fontSize: 8,
-                  letterSpacing: '0.08em',
-                }}
-              >
-                All read
-              </span>
-            </button>
-          )}
-
-          <div
-            className="db-vr"
-            style={{ marginTop: 0 }}
-          />
+          <div className="db-vr" style={{ marginTop: 0, margin: '0 4px' }} />
 
           {/* Mobile menu toggle */}
           {setMobileMenuOpen && (
@@ -319,112 +384,173 @@ export default function PageHeader({
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="db-icon-btn md:hidden"
               title="Menu"
-              style={{
-                padding: '4px',
-                borderRadius: '4px',
-                border: '1px solid transparent',
-                transition: 'all 0.15s',
-              }}
             >
-              {mobileMenuOpen ? <X size={16} /> : <Menu size={16} />}
+              {mobileMenuOpen
+                ? <X    size={15} strokeWidth={1.8} />
+                : <Menu size={15} strokeWidth={1.8} />}
             </button>
           )}
 
-          {/* Account menu */}
+          {/* Account button */}
           <button
             ref={accountBtnRef}
             className="db-ghost"
             style={{
-              gap: 6,
+              gap:     5,
               padding: '3px 8px 3px 4px',
-              borderRadius: '4px',
-              border: '1px solid var(--rule)',
-              transition: 'all 0.15s',
+              border:  `1px solid ${showAccountMenu ? 'var(--accent)' : 'var(--rule)'}`,
+              background: showAccountMenu ? 'var(--accent-sub)' : 'transparent',
+              transition: 'border-color 0.15s, background 0.15s',
             }}
-            onClick={handleAccountMenuClick}
+            onClick={handleAccountClick}
+            aria-label="Account menu"
           >
+            {/* Avatar */}
             {user?.avatar_url ? (
-              <div
-                style={{
-                  width: 20,
-                  height: 20,
-                  borderRadius: '50%',
-                  overflow: 'hidden',
-                  border: '1px solid var(--rule)',
-                }}
-              >
+              <div style={{
+                width:    20,
+                height:   20,
+                overflow: 'hidden',
+                border:   '1px solid var(--rule)',
+                flexShrink: 0,
+              }}>
                 <Image
                   src={user.avatar_url}
                   alt={user.name || 'User'}
                   width={20}
                   height={20}
-                  style={{ width: '100%', height: '100%' }}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
               </div>
             ) : (
-              <div
-                style={{
-                  width: 20,
-                  height: 20,
-                  borderRadius: '50%',
-                  background: 'var(--accent)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--paper)',
-                  fontSize: 10,
-                  fontWeight: 700,
-                }}
-              >
-                {user?.name?.charAt(0)?.toUpperCase() || '?'}
+              <div style={{
+                width:          20,
+                height:         20,
+                background:     'var(--accent)',
+                display:        'flex',
+                alignItems:     'center',
+                justifyContent: 'center',
+                color:          'var(--paper)',
+                fontFamily:     'var(--ff-display)',
+                fontWeight:     700,
+                fontSize:       9,
+                flexShrink:     0,
+                letterSpacing:  '0.04em',
+              }}>
+                {initials}
               </div>
             )}
+
+            {/* Name — desktop only */}
+            <span
+              className="hidden md:block"
+              style={{
+                fontFamily:    'var(--ff-mono)',
+                fontSize:      9.5,
+                fontWeight:    500,
+                letterSpacing: '0.05em',
+                color:         'var(--ink)',
+                maxWidth:      100,
+                overflow:      'hidden',
+                textOverflow:  'ellipsis',
+                whiteSpace:    'nowrap',
+              }}
+            >
+              {user?.name || ''}
+            </span>
+
+            <ChevronDown
+              size={9}
+              strokeWidth={2}
+              style={{
+                color:     'var(--mid)',
+                transform: showAccountMenu ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition:'transform 0.2s ease',
+              }}
+              className="hidden sm:block"
+            />
           </button>
         </div>
       </header>
 
-      {/* Account Menu Portal */}
-      {showAccountMenu &&
-        accountMenuPos &&
-        createPortal(
-          <div
-            style={{
-              position: 'fixed',
-              top: accountMenuPos.top,
-              right: accountMenuPos.right,
-              zIndex: 1000,
-            }}
-          >
-            <AccountMenu
-              onClose={() => setShowAccountMenu(false)}
-              user={user}
-            />
-          </div>,
-          document.body
-        )}
+      {/* ── Accent rule at bottom of header (decorative) ──────────────────── */}
+      <div
+        aria-hidden
+        style={{
+          position:   'sticky',
+          top:        44,
+          left:       0,
+          right:      0,
+          height:     1,
+          zIndex:     39,
+          background: 'linear-gradient(90deg, transparent 0%, var(--accent) 40%, var(--accent) 60%, transparent 100%)',
+          opacity:    0.18,
+          pointerEvents: 'none',
+        }}
+      />
 
-      {/* Notifications Panel Portal */}
-      {showNotifPanel &&
-        createPortal(
-          <div
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              zIndex: 999,
+      {/* ── Notification panel portal ──────────────────────────────────────── */}
+      {showNotifPanel && notifPanelPos && createPortal(
+        <div
+          ref={notifPanelRef}
+          style={{
+            position: 'fixed',
+            top:      notifPanelPos.top,
+            right:    notifPanelPos.right,
+            zIndex:   9960,
+            maxWidth: 'calc(100vw - 16px)',
+          }}
+        >
+          <NotifPanel
+            notifs={notifications}
+            onMarkAllRead={handleMarkAllRead}
+            onClose={() => setShowNotifPanel(false)}
+          />
+        </div>,
+        document.body
+      )}
+
+      {/* ── Account menu portal ────────────────────────────────────────────── */}
+      {showAccountMenu && accountMenuPos && createPortal(
+        <div
+          ref={accountMenuRef}
+          style={{
+            position: 'fixed',
+            top:      accountMenuPos.top,
+            right:    accountMenuPos.right,
+            zIndex:   9960,
+          }}
+        >
+          <AccountMenu
+            user={user}
+            onClose={() => setShowAccountMenu(false)}
+            onToast={setToast}
+            onOpenSettings={() => {
+              setShowAccountMenu(false);
+              setShowSettings(true);
             }}
-            onClick={() => setShowNotifPanel(false)}
-          >
-            <NotifPanel
-              notifs={notifs}
-              onMarkAllRead={onMarkAllRead}
-              onClose={() => setShowNotifPanel(false)}
-            />
-          </div>,
-          document.body
-        )}
+            isDark={isDark}
+            onToggleTheme={toggleTheme}
+          />
+        </div>,
+        document.body
+      )}
+
+      {/* ── Settings modal ─────────────────────────────────────────────────── */}
+      {showSettings && (
+        <SettingsModal
+          settings={settings}
+          onClose={() => setShowSettings(false)}
+          onChange={next => {
+            setSettings(next);
+            saveSettings(next);
+            applySettings(next);
+          }}
+        />
+      )}
+
+      {/* ── Toast ─────────────────────────────────────────────────────────── */}
+      {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
     </>
   );
 }
