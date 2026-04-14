@@ -15,7 +15,8 @@ import ConfirmModal from '@/components/ConfirmModal';
 import MetadataPanel from '@/components/MetadataPanel';
 import SettingsModal, { loadSettings, saveSettings, applySettings, DEFAULT_SETTINGS, THEMES } from '@/components/SettingsModal';
 import type { AppSettings } from '@/components/SettingsModal';
-import { X, Plus, FileText, BookOpen, Heart, Loader2, Menu } from 'lucide-react';
+import InitialTypeModal from '@/components/InitialTypeModal';
+import { X, Plus, FileText, BookOpen, Heart, Loader2, Menu, Sparkles } from 'lucide-react';
 import { useUser } from '@/lib/useUser';
 import { DARK_TO_LIGHT, LIGHT_TO_DARK } from '@/lib/useTheme';
 import { supabase } from '@/lib/supabase';
@@ -65,6 +66,7 @@ function makeTemplates() {
     'tpl-blog': `# Blog Post Title\n\n*Published on ${today}*\n\n## Introduction\n\nWrite a compelling opening paragraph.\n`,
     'tpl-article': `# Article Title\n\n**Abstract:** A brief summary.\n\n## Introduction\n\nContext here.\n`,
     'tpl-notes': `# Meeting Notes\n\n**Date:** ${today}\n\n## Agenda\n\n- [ ] Item one\n`,
+    'tpl-story': `# My Survivor Story\n\n*By [Your Name]*\n\n## The Beginning\n\nShare how your journey started.\n`,
   } as Record<string, string>;
 }
 
@@ -161,6 +163,7 @@ function EditorContent() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [channelReady, setChannelReady] = useState(false);
   const [collabStatus, setCollabStatus] = useState<'offline' | 'connecting' | 'online'>('offline');
+  const [pendingTypeTabId, setPendingTypeTabId] = useState<string | null>(null);
 
   // Collaboration State
   const { user, loading: userLoading } = useUser();
@@ -618,6 +621,7 @@ function EditorContent() {
       };
       setTabs([defaultTab]);
       setActiveTabId(defaultTab.id);
+      setPendingTypeTabId(defaultTab.id);
 
     } catch (e) {
       console.error('Failed to initialize editor:', e);
@@ -877,6 +881,7 @@ function EditorContent() {
     };
     setTabs(prev => [...prev, newTab]);
     setActiveTabId(id);
+    setPendingTypeTabId(id);
     setMobileMenuOpen(false);
   }, []);
 
@@ -1275,6 +1280,26 @@ function EditorContent() {
 
       {toastMsg && (
         <Toast message={toastMsg} onDismiss={() => setToastMsg(null)} />
+      )}
+
+      {pendingTypeTabId && (
+        <InitialTypeModal
+          onSelect={(type) => {
+            const templates = makeTemplates();
+            let content = '# New Document\n\n';
+            if (type === 'blogs') content = templates['tpl-blog'];
+            if (type === 'cancer_docs') content = templates['tpl-article'];
+            if (type === 'survivor_stories') content = templates['tpl-story'];
+            
+            setTabs(prev => prev.map(t => 
+              t.id === pendingTypeTabId 
+                ? { ...t, type, content, isSaved: false } 
+                : t
+            ));
+            setPendingTypeTabId(null);
+          }}
+          onClose={() => setPendingTypeTabId(null)}
+        />
       )}
 
       {showSettings && (
