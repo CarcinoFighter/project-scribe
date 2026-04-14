@@ -15,14 +15,19 @@ import {
   THEMES,
 } from '@/components/SettingsModal';
 
-/** Dark ↔ Light theme pairs. Extend as new paired themes are added. */
-const DARK_TO_LIGHT: Record<string, string> = {
-  'default-dark':      'default-light',
-  'catppuccin-mocha':  'catppuccin-latte',
-  'solarized-dark':    'solarized-light',
-  'gruvbox-dark':      'gruvbox-light',
+/**
+ * Dark ↔ Light theme pairs.
+ * Themes listed here toggle to their counterpart; all other themes
+ * fall back to default-light (if dark) or default-dark (if light).
+ * Extend here whenever a new paired theme is added to SettingsModal.
+ */
+export const DARK_TO_LIGHT: Record<string, string> = {
+  'default-dark':     'default-light',
+  'catppuccin-mocha': 'catppuccin-latte',
+  'solarized-dark':   'solarized-light',
+  'gruvbox-dark':     'gruvbox-light',
 };
-const LIGHT_TO_DARK: Record<string, string> = Object.fromEntries(
+export const LIGHT_TO_DARK: Record<string, string> = Object.fromEntries(
   Object.entries(DARK_TO_LIGHT).map(([k, v]) => [v, k])
 );
 

@@ -17,6 +17,7 @@ import SettingsModal, { loadSettings, saveSettings, applySettings, DEFAULT_SETTI
 import type { AppSettings } from '@/components/SettingsModal';
 import { X, Plus, FileText, BookOpen, Heart, Loader2, Menu } from 'lucide-react';
 import { useUser } from '@/lib/useUser';
+import { DARK_TO_LIGHT, LIGHT_TO_DARK } from '@/lib/useTheme';
 import { supabase } from '@/lib/supabase';
 import type { Collaborator } from '@/types';
 import Toast from '@/components/Toast';
@@ -964,18 +965,15 @@ function EditorContent() {
       case 'view-preview': setViewMode('preview'); break;
       case 'theme': {
         const currentTheme = appSettingsRef.current.theme;
-        
-        // Define map for toggling between light and dark variants
-        const themeMap: Record<string, string> = {
-          'default-dark': 'default-light',
-          'default-light': 'default-dark',
-          'catppuccin-mocha': 'catppuccin-latte',
-          'catppuccin-latte': 'catppuccin-mocha',
-          'solarized-dark': 'solarized-light',
-          'solarized-light': 'solarized-dark'
-        };
 
-        const nextTheme = themeMap[currentTheme] || 'default-dark';
+        // Use the shared paired-theme maps. For themes without a counterpart,
+        // fall back to the appropriate default so the toggle always crosses
+        // the dark/light boundary (never stays on the same side).
+        const isDarkTheme = THEMES[currentTheme]?.dark ?? true;
+        const nextTheme =
+          isDarkTheme
+            ? (DARK_TO_LIGHT[currentTheme] ?? 'default-light')
+            : (LIGHT_TO_DARK[currentTheme] ?? 'default-dark');
         const next = { ...appSettingsRef.current, theme: nextTheme };
         
         setAppSettings(next); 
