@@ -409,6 +409,19 @@ export function applySettings(s: AppSettings): boolean {
     root.style.setProperty('--accent-glow',    h + '40');
   }
 
+  // Sync design-system token aliases with the freshly-applied theme vars.
+  // We read from root.style (the inline declarations we just set) so the
+  // alias receives the concrete value — not a var() chain that could break
+  // if the CSS cascade order ever changes.
+  root.style.setProperty('--ink',        root.style.getPropertyValue('--text'));
+  root.style.setProperty('--paper',      root.style.getPropertyValue('--bg'));
+  root.style.setProperty('--cream',      root.style.getPropertyValue('--bg-alt'));
+  root.style.setProperty('--mid',        root.style.getPropertyValue('--text-4'));
+  root.style.setProperty('--rule',       root.style.getPropertyValue('--border'));
+  root.style.setProperty('--tape-bg',    root.style.getPropertyValue('--bg-deep'));
+  root.style.setProperty('--accent-dim', root.style.getPropertyValue('--accent-subtle'));
+  root.style.setProperty('--accent-sub', root.style.getPropertyValue('--accent-subtle2'));
+
   // Editor display vars
   const edFont = EDITOR_FONTS.find(f => f.id === s.editorFont)?.stack ?? EDITOR_FONTS[0].stack;
   root.style.setProperty('--editor-font',        edFont);
@@ -430,12 +443,29 @@ export function applySettings(s: AppSettings): boolean {
 /* ─────────────────────────────────────────────────────────── */
 /*  Persistence                                                 */
 /* ─────────────────────────────────────────────────────────── */
+
+/**
+ * localStorage key for settings cache.
+ * Supabase user metadata is the source of truth; localStorage is a fast-read
+ * cache that is written whenever settings are saved (so pages read the correct
+ * theme immediately on mount, before the auth round-trip completes).
+ */
+const SETTINGS_KEY = 'cs-settings';
+
 export function loadSettings(): AppSettings {
+  if (typeof window === 'undefined') return { ...DEFAULT_SETTINGS };
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (raw) return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+  } catch {}
   return { ...DEFAULT_SETTINGS };
 }
 
 export function saveSettings(s: AppSettings): void {
-  // Persistence is now handled via Supabase metadata updates in parent components.
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+  } catch {}
 }
 
 /* ─────────────────────────────────────────────────────────── */

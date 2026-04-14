@@ -1172,6 +1172,7 @@ function EditorContent() {
                 content={activeTab.content}
                 onChange={(c) => updateActiveTab({ content: c })}
                 isDark={isDark}
+                themeId={appSettings.theme}
                 focusMode={focusMode}
                 collaborators={collaborators}
                 onCursorChange={(l, c) => { setCursorLine(l); setCursorCol(c); setActiveLine(l); }}

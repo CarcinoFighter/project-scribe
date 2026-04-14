@@ -18,42 +18,67 @@ import { diff_match_patch } from 'diff-match-patch';
 
 const dmp = new diff_match_patch();
 
-const makeTheme = (dark: boolean, fontFamily?: string) =>
-  createTheme({
-    theme: dark ? 'dark' : 'light',
+/** Read the current theme's CSS custom properties from the document root. */
+function readThemeVars() {
+  if (typeof window === 'undefined') return null;
+  const s = getComputedStyle(document.documentElement);
+  const g = (v: string) => s.getPropertyValue(v).trim();
+  return {
+    accent: g('--accent')  || '#9875c1',
+    text:   g('--text')    || '#f0f0f0',
+    text3:  g('--text-3')  || '#b8b8b8',
+    text4:  g('--text-4')  || '#787878',
+  };
+}
+
+/**
+ * Build a CodeMirror theme from the active CSS variables so the editor
+ * always matches the selected app theme (Catppuccin, Nord, Gruvbox, etc.)
+ * instead of being locked to the default purple palette.
+ */
+const makeTheme = (isDark: boolean, fontFamily?: string) => {
+  const v = readThemeVars();
+  const accent = v?.accent ?? '#9875c1';
+  const text   = v?.text   ?? (isDark ? '#f0f0f0' : '#1a1028');
+  const text3  = v?.text3  ?? (isDark ? '#b8b8b8' : '#4a4458');
+  const text4  = v?.text4  ?? (isDark ? '#787878' : '#9a8ab8');
+
+  return createTheme({
+    theme: isDark ? 'dark' : 'light',
     settings: {
-      background: 'transparent',
-      foreground: dark ? '#e8dff5' : '#1a1028',
-      caret: '#9875c1',
-      selection: 'rgba(152,117,193,0.22)',
-      selectionMatch: 'rgba(152,117,193,0.12)',
-      lineHighlight: dark ? 'rgba(152,117,193,0.06)' : 'rgba(152,117,193,0.05)',
-      gutterBackground: 'transparent',
-      gutterForeground: dark ? 'rgba(152,117,193,0.30)' : 'rgba(120,90,170,0.35)',
-      gutterActiveForeground: '#9875c1',
-      gutterBorder: 'transparent',
+      background:             'transparent',
+      foreground:             text,
+      caret:                  accent,
+      selection:              `${accent}${isDark ? '38' : '30'}`,
+      selectionMatch:         `${accent}20`,
+      lineHighlight:          `${accent}0e`,
+      gutterBackground:       'transparent',
+      gutterForeground:       text4,
+      gutterActiveForeground: accent,
+      gutterBorder:           'transparent',
       fontFamily: fontFamily ?? "'Google Sans Flex','Google Sans','DM Mono',sans-serif",
     },
     styles: [
-      { tag: [t.heading1, t.heading2, t.heading3, t.heading4, t.heading5, t.heading6], color: dark ? '#c8a8f0' : '#5a3a98', fontWeight: '700' },
-      { tag: t.emphasis, fontStyle: 'italic', color: dark ? '#d4c0f0' : '#3d2860' },
-      { tag: t.strong, fontWeight: '700', color: dark ? '#ece5ff' : '#1a1028' },
-      { tag: t.strikethrough, textDecoration: 'line-through', color: dark ? '#7a6898' : '#9a8ab8' },
-      { tag: t.link, color: dark ? '#b899e0' : '#7040b0' },
-      { tag: t.url, color: dark ? '#9875c1' : '#6040a8', textDecoration: 'underline' },
-      { tag: t.quote, color: dark ? '#9880b8' : '#6858a0', fontStyle: 'italic' },
-      { tag: t.monospace, color: dark ? '#c4a8e8' : '#6a40a0', background: dark ? 'rgba(152,117,193,0.12)' : 'rgba(152,117,193,0.09)', padding: '0 3px' },
-      { tag: t.keyword, color: dark ? '#c4a0e8' : '#7040b0', fontWeight: '600' },
-      { tag: t.string, color: dark ? '#e8a870' : '#b84820' },
-      { tag: t.comment, color: dark ? '#6a5880' : '#9a8ab8', fontStyle: 'italic' },
-      { tag: t.number, color: dark ? '#c4a8f0' : '#5a3d9a' },
-      { tag: [t.function(t.variableName), t.definition(t.variableName)], color: dark ? '#80beff' : '#3a6ab0' },
-      { tag: t.typeName, color: dark ? '#c4a0e8' : '#7040b0' },
-      { tag: t.bool, color: dark ? '#9875c1' : '#7040b0' },
-      { tag: t.operator, color: dark ? '#8a7098' : '#7868a8' },
-      { tag: t.punctuation, color: dark ? '#8a7098' : '#7868a8' },
+      { tag: [t.heading1, t.heading2, t.heading3, t.heading4, t.heading5, t.heading6], color: accent, fontWeight: '700' },
+      { tag: t.emphasis,                            fontStyle: 'italic', color: text3 },
+      { tag: t.strong,                              fontWeight: '700',   color: text  },
+      { tag: t.strikethrough,                       textDecoration: 'line-through', color: text4 },
+      { tag: t.link,                                color: accent },
+      { tag: t.url,                                 color: accent, textDecoration: 'underline' },
+      { tag: t.quote,                               color: text3, fontStyle: 'italic' },
+      { tag: t.monospace,                           color: accent, background: `${accent}18`, padding: '0 3px' },
+      { tag: t.keyword,                             color: accent, fontWeight: '600' },
+      { tag: t.string,                              color: isDark ? '#e8a870' : '#b84820' },
+      { tag: t.comment,                             color: text4, fontStyle: 'italic' },
+      { tag: t.number,                              color: accent },
+      { tag: [t.function(t.variableName), t.definition(t.variableName)], color: isDark ? '#80beff' : '#3a6ab0' },
+      { tag: t.typeName,                            color: accent },
+      { tag: t.bool,                                color: accent },
+      { tag: t.operator,                            color: text4 },
+      { tag: t.punctuation,                         color: text4 },
     ],
   });
+};
 
 const baseTheme = EditorView.theme({
   '&': { height: '100%' },
@@ -61,7 +86,7 @@ const baseTheme = EditorView.theme({
   '.cm-content': { 
     padding: '24px 16px 80px', 
     maxWidth: '100%',
-    caretColor: '#9875c1',
+    caretColor: 'var(--accent)',
     fontSize: '15px',
   },
   '.cm-line': { 
@@ -69,7 +94,7 @@ const baseTheme = EditorView.theme({
     letterSpacing: '0.006em',
     lineHeight: '1.6',
   },
-  '.cm-cursor': { borderLeftWidth: '2px', borderLeftColor: '#9875c1' },
+  '.cm-cursor': { borderLeftWidth: '2px', borderLeftColor: 'var(--accent)' },
   '.cm-gutters': { borderRight: 'none', paddingRight: '4px', minWidth: '40px' },
   '.cm-activeLineGutter': { background: 'transparent' },
   '@media (min-width: 768px)': {
@@ -146,13 +171,15 @@ interface Props {
   content: string;
   onChange: (v: string) => void;
   isDark: boolean;
+  /** Active theme ID — triggers editor re-theme when switching dark→dark or light→light */
+  themeId?: string;
   focusMode: boolean;
   collaborators: Collaborator[];
   onCursorChange: (line: number, col: number) => void;
   onReady: (api: EditorAPI) => void;
 }
 
-export default function EditorPane({ content, onChange, isDark, focusMode, collaborators, onCursorChange, onReady }: Props) {
+export default function EditorPane({ content, onChange, isDark, themeId, focusMode, collaborators, onCursorChange, onReady }: Props) {
   const cmRef = useRef<ReactCodeMirrorRef>(null);
   const readyCalled = useRef(false);
 
@@ -255,7 +282,9 @@ export default function EditorPane({ content, onChange, isDark, focusMode, colla
   const theme = useMemo(() => {
     const font = typeof window !== 'undefined' ? getComputedStyle(document.documentElement).getPropertyValue('--editor-font').trim() || undefined : undefined;
     return makeTheme(isDark, font);
-  }, [isDark]);
+  // themeId ensures we recompute even when isDark doesn't change (e.g. Nord → Dracula)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDark, themeId]);
 
   const extensions = useMemo(() => [
     markdown({ base: markdownLanguage, codeLanguages: languages }),

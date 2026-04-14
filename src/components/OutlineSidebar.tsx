@@ -98,8 +98,10 @@ export default function OutlineSidebar({
           'md:transition-[max-width,opacity] md:duration-300 md:ease-out',
           isOpen ? 'md:opacity-100 md:pointer-events-auto' : 'md:opacity-0 md:pointer-events-none',
         )}
-        // Mobile width is always set; desktop max-width is driven by the <style> below
-        style={{ width, maxWidth: '85vw' }}
+        // Mobile: width is always set (sidebar is fixed, not in flow).
+        // Desktop: max-width is driven solely by the <style> tag below so
+        // the collapse to 0 isn't blocked by an inline maxWidth declaration.
+        style={{ width }}
       >
         {/* Inner panel — always `width` px; <aside> clips it on desktop collapse */}
         <div
