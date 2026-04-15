@@ -13,12 +13,12 @@ import { useUser } from '@/lib/useUser';
 import { useTheme } from '@/lib/useTheme';
 import ImageCropModal from '@/components/ImageCropModal';
 import SettingsModal, {
-  loadSettings,
   saveSettings,
   applySettings,
   DEFAULT_SETTINGS,
   type AppSettings,
 } from '@/components/SettingsModal';
+import { resolveSettings } from '@/lib/theme';
 import { Settings } from 'lucide-react';
 
 /* ── Logo ─────────────────────────────────────────────────── */
@@ -76,7 +76,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!user || userLoading) return;
     const meta = user.metadata || {};
-    const s = meta.settings || loadSettings();
+    const s = resolveSettings(meta.settings);
     setSettings(s);
     applySettings(s);
   }, [user, userLoading]);
@@ -437,6 +437,7 @@ export default function ProfilePage() {
           onClose={() => setShowSettings(false)}
           onChange={next => {
             setSettings(next);
+            saveSettings(next);
             applySettings(next);
             if (user) {
               const meta = user.metadata || {};

@@ -24,9 +24,10 @@ import {
   saveSettings,
   applySettings,
   THEMES,
-  DEFAULT_SETTINGS,
   type AppSettings,
-} from '@/components/SettingsModal';
+  DARK_TO_LIGHT,
+  LIGHT_TO_DARK,
+} from '@/lib/theme';
 
 /* ─────────────────────────────────────────────────────────────────── */
 /*  Dark ↔ Light theme pairs                                           */
@@ -37,17 +38,6 @@ import {
 /*  Add a new entry here whenever a paired theme is added to          */
 /*  SettingsModal.                                                     */
 /* ─────────────────────────────────────────────────────────────────── */
-export const DARK_TO_LIGHT: Record<string, string> = {
-  'default-dark':     'default-light',
-  'catppuccin-mocha': 'catppuccin-latte',
-  'solarized-dark':   'solarized-light',
-  'gruvbox-dark':     'gruvbox-light',
-};
-
-export const LIGHT_TO_DARK: Record<string, string> = Object.fromEntries(
-  Object.entries(DARK_TO_LIGHT).map(([dark, light]) => [light, dark])
-);
-
 /* ─────────────────────────────────────────────────────────────────── */
 /*  Helpers                                                             */
 /* ─────────────────────────────────────────────────────────────────── */

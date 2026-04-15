@@ -13,12 +13,12 @@ import GuidedTour from '@/components/GuidedTour';
 import CommandPalette from '@/components/CommandPalette';
 import ConfirmModal from '@/components/ConfirmModal';
 import MetadataPanel from '@/components/MetadataPanel';
-import SettingsModal, { loadSettings, saveSettings, applySettings, DEFAULT_SETTINGS, THEMES } from '@/components/SettingsModal';
+import SettingsModal, { saveSettings, applySettings, DEFAULT_SETTINGS, THEMES } from '@/components/SettingsModal';
 import type { AppSettings } from '@/components/SettingsModal';
 import InitialTypeModal from '@/components/InitialTypeModal';
 import { X, Plus, FileText, BookOpen, Heart, Loader2, Menu, Sparkles } from 'lucide-react';
 import { useUser } from '@/lib/useUser';
-import { DARK_TO_LIGHT, LIGHT_TO_DARK } from '@/lib/useTheme';
+import { DARK_TO_LIGHT, LIGHT_TO_DARK, resolveSettings } from '@/lib/theme';
 import { supabase } from '@/lib/supabase';
 import type { Collaborator } from '@/types';
 import Toast from '@/components/Toast';
@@ -558,7 +558,7 @@ function EditorContent() {
       if (goal) setWordGoal(parseInt(goal, 10) || 0);
       if (!toured) setShowTour(true);
 
-      const s = meta.settings || loadSettings();
+      const s = resolveSettings(meta.settings);
       setAppSettings(s);
       setIsDark(applySettings(s));
 
@@ -696,7 +696,7 @@ function EditorContent() {
 
         if (activeTab.title !== 'Error loading') {
           const currentContent = activeTab.content || '';
-          let body: any = {
+          const body: any = {
             id: activeTab.id.startsWith('new-') ? null : activeTab.id,
             title: activeTab.title,
             slug: activeTab.slug,

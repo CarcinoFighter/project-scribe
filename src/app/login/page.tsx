@@ -6,7 +6,7 @@ import {
   Mail, Lock, ArrowRight, Eye, EyeOff,
   PenTool, Palette, Code2, Megaphone, Users,
 } from 'lucide-react';
-import { loadSettings, applySettings, saveSettings, THEMES } from '@/components/SettingsModal';
+import { DARK_TO_LIGHT, LIGHT_TO_DARK, loadSettings, applySettings, saveSettings, THEMES } from '@/lib/theme';
 
 /* ─── Department data ──────────────────────────────────────────── */
 const DEPTS = [
@@ -18,16 +18,6 @@ const DEPTS = [
 ];
 
 /* ─── Theme helpers ─────────────────────────────────────────────── */
-const DARK_TO_LIGHT: Record<string, string> = {
-  'default-dark':     'default-light',
-  'catppuccin-mocha': 'catppuccin-latte',
-  'solarized-dark':   'solarized-light',
-  'gruvbox-dark':     'gruvbox-light',
-};
-const LIGHT_TO_DARK: Record<string, string> = Object.fromEntries(
-  Object.entries(DARK_TO_LIGHT).map(([k, v]) => [v, k])
-);
-
 /* ─── Logo ─────────────────────────────────────────────────────── */
 function Logo({ size = 20 }: { size?: number }) {
   return (

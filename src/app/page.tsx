@@ -24,7 +24,8 @@ import PageHeader from '@/components/PageHeader';
 import AccountMenu from '@/components/AccountMenu';
 import Toast from '@/components/Toast';
 import TaskSubmissionModal from '@/components/TaskSubmissionModal';
-import SettingsModal, { AppSettings, loadSettings, saveSettings, applySettings, DEFAULT_SETTINGS } from '@/components/SettingsModal';
+import SettingsModal, { AppSettings, saveSettings, applySettings, DEFAULT_SETTINGS } from '@/components/SettingsModal';
+import { resolveSettings } from '@/lib/theme';
 
 import DevelopmentDashboard from '@/components/DevelopmentDashboard';
 import MarketingDashboard from '@/components/MarketingDashboard';
@@ -298,7 +299,7 @@ function DashboardContent() {
       const goal = meta.wordGoal;
       if (goal) setWordGoal(parseInt(goal, 10) || 0);
 
-      const s = meta.settings || loadSettings();
+      const s = resolveSettings(meta.settings);
       setAppSettings(s);
       applySettings(s);
     } catch {}
@@ -658,6 +659,7 @@ function DashboardContent() {
           onClose={() => setShowSettings(false)} 
           onChange={next => { 
             setAppSettings(next); 
+            saveSettings(next);
             applySettings(next);
             if (user) {
               const meta = user.metadata || {};
