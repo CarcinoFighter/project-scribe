@@ -38,6 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning className={dmMono.className}>
       <head>
+        
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -50,7 +51,33 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-startup-image" href="/splash-1242x2208.png" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3)" />
         <link rel="apple-touch-startup-image" href="/splash-1125x2436.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" />
         <link rel="apple-touch-startup-image" href="/splash-1242x2688.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)" />
-      </head>
+      
+      <script
+  dangerouslySetInnerHTML={{
+    __html: `
+      (function() {
+        try {
+          var s = localStorage.getItem('cs-settings');
+          var theme = 'default-dark';
+          if (s) {
+            var parsed = JSON.parse(s);
+            if (parsed && parsed.theme) theme = parsed.theme;
+          } else {
+            // No saved preference — use device colour scheme
+            if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+              theme = 'default-light';
+            }
+          }
+          // Map theme ID to dark flag
+          var lightThemes = ['default-light','catppuccin-latte','solarized-light','gruvbox-light','paper'];
+          var isDark = lightThemes.indexOf(theme) === -1;
+          if (isDark) document.documentElement.classList.add('dark');
+        } catch(e) {}
+      })();
+    `,
+  }}
+/>
+</head>
       <body>
         <div id="pwa-splash">
           <div className="splash-content">
