@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     id: 'carcino-vantage',
     name: 'Carcino Vantage',
     short_name: 'Vantage',
-    description: 'A Premium Markdown Editor for focused writing.',
+    description: 'A powerful and centralised platform for the Carcino Team.',
     start_url: '/',
     display: 'standalone',
     background_color: '#0c0b0f',
