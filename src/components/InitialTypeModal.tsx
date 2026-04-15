@@ -1,311 +1,281 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import Image from 'next/image';
-import { FileText, BookOpen, Heart, X } from 'lucide-react';
+import { ArrowRight, BookOpen, FileText, Heart, X } from 'lucide-react';
+
+type DocumentType = 'blogs' | 'survivor_stories' | 'cancer_docs';
 
 interface InitialTypeModalProps {
-  onSelect: (type: 'blogs' | 'survivor_stories' | 'cancer_docs') => void;
+  onSelect: (type: DocumentType) => void;
   onClose: () => void;
 }
 
+type Option = {
+  id: DocumentType;
+  label: string;
+  description: string;
+  icon: typeof FileText;
+  color: string;
+};
+
+const OPTIONS: Option[] = [
+  {
+    id: 'cancer_docs',
+    label: 'Article',
+    description: 'For research pieces, explainers, and structured long-form writing.',
+    icon: FileText,
+    color: 'var(--accent)',
+  },
+  {
+    id: 'blogs',
+    label: 'Blog Post',
+    description: 'For updates, opinion pieces, and web content that needs momentum.',
+    icon: BookOpen,
+    color: '#cf7a20',
+  },
+  {
+    id: 'survivor_stories',
+    label: 'Survivor Story',
+    description: 'For personal journeys, reflections, and narrative-driven writing.',
+    icon: Heart,
+    color: '#be4b68',
+  },
+];
+
 export default function InitialTypeModal({ onSelect, onClose }: InitialTypeModalProps) {
-  const options = [
-    {
-      id: 'cancer_docs' as const,
-      label: 'Article',
-      description: 'Formal articles, research reports, and medical documentation.',
-      icon: FileText,
-      color: 'var(--accent)',
-      num: '01',
-      tag: 'Research',
-    },
-    {
-      id: 'blogs' as const,
-      label: 'Blog Post',
-      description: 'Engaging web content, opinion pieces, and updates.',
-      icon: BookOpen,
-      color: '#c97a20',
-      num: '02',
-      tag: 'Editorial',
-    },
-    {
-      id: 'survivor_stories' as const,
-      label: 'Survivor Story',
-      description: 'Personal narratives, journey highlights, and tributes.',
-      icon: Heart,
-      color: '#b03030',
-      num: '03',
-      tag: 'Narrative',
-    },
-  ];
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+        return;
+      }
+
+      if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
+        event.preventDefault();
+        setActiveIndex((current) => (current + 1) % OPTIONS.length);
+        return;
+      }
+
+      if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
+        event.preventDefault();
+        setActiveIndex((current) => (current - 1 + OPTIONS.length) % OPTIONS.length);
+        return;
+      }
+
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        onSelect(OPTIONS[activeIndex].id);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeIndex, onClose, onSelect]);
 
   return createPortal(
-    <div 
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-      style={{ background: 'rgba(14, 12, 16, 0.8)' }}
-      onClick={onClose}
-    >
-      <div 
-        className="relative w-full max-w-[800px] bg-[var(--paper)] overflow-hidden db-rise-0"
+    <div className="db-overlay" onClick={onClose}>
+      <div
+        className="db-modal db-rise-0"
         style={{
-          border: '1px solid var(--rule)',
-          borderTop: '2px solid var(--accent)',
-          maxHeight: '90vh',
+          maxWidth: '640px',
+          maxHeight: 'min(88vh, 680px)',
           overflowY: 'auto',
+          background: 'var(--paper)',
         }}
-        onClick={e => e.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex flex-col md:flex-row min-h-[480px]">
-          {/* Left Panel - Editorial */}
-          <div 
-            className="md:w-[42%] p-10 flex flex-col justify-between relative"
-            style={{ background: 'var(--accent-sub)' }}
+        <div style={{ padding: '22px 22px 18px', borderBottom: '1px solid var(--rule)' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+              gap: 16,
+            }}
           >
-            {/* Subtle texture overlay */}
-            <div 
-              className="absolute inset-0 pointer-events-none opacity-[0.03]"
-              style={{
-                backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, var(--ink) 2px, var(--ink) 4px)'
-              }}
-            />
-
-            <div className="relative z-10">
-              <div 
-                className="w-14 h-14 bg-[var(--paper)] border border-[var(--accent)] flex items-center justify-center mb-8"
+            <div>
+              <div
+                className="db-cap"
+                style={{
+                  color: 'var(--accent)',
+                  letterSpacing: '0.18em',
+                  marginBottom: 6,
+                }}
               >
-                <Image src="/logo.svg" alt="Vantage" width={26} height={32} priority />
+                Document
               </div>
-              
-              <h1 
-                style={{ 
-                  fontFamily: 'var(--ff-display)', 
-                  fontSize: '28px', 
-                  fontWeight: 700, 
-                  lineHeight: 1.05, 
-                  letterSpacing: '-0.025em',
+              <h2
+                style={{
+                  margin: 0,
+                  fontFamily: 'var(--ff-display)',
+                  fontSize: '28px',
+                  fontWeight: 700,
+                  lineHeight: 1,
+                  letterSpacing: '-0.04em',
                   color: 'var(--ink)',
-                  marginBottom: '20px'
                 }}
               >
-                Welcome to<br />
-                <em style={{ color: 'var(--accent)', fontStyle: 'italic' }}>Vantage Editor</em>
-                <span style={{ color: 'var(--accent)' }}>.</span>
-              </h1>
-              
-              {/* Triple rule */}
-              <div className="flex flex-col gap-[2px] mb-6 w-16">
-                <div style={{ height: '1px', background: 'var(--rule)' }} />
-                <div style={{ height: '2px', background: 'var(--ink)' }} />
-                <div style={{ height: '1px', background: 'var(--rule)' }} />
-              </div>
-              
-              <p 
-                style={{ 
-                  fontFamily: 'var(--ff-ui)', 
-                  fontSize: '13px', 
-                  lineHeight: 1.6, 
+                Choose a type
+              </h2>
+              <p
+                style={{
+                  margin: '10px 0 0',
+                  maxWidth: 460,
+                  fontFamily: 'var(--ff-ui)',
+                  fontSize: 13,
+                  lineHeight: 1.65,
                   color: 'var(--mid)',
-                  letterSpacing: '0.01em'
                 }}
               >
-                Document the journey with clarity and purpose. Select a format to begin composing your piece.
+                Pick the kind of document you want to create. You can change it later from the metadata panel.
               </p>
             </div>
-            
-            <div className="relative z-10 mt-8">
-              <div 
-                className="h-[1px] w-full mb-4"
-                style={{ background: 'var(--rule)' }}
-              />
-              <div className="flex items-center justify-between">
-                <span 
-                  className="db-cap"
-                  style={{ 
-                    fontSize: '9px', 
-                    color: 'var(--mid)',
-                    letterSpacing: '0.18em'
-                  }}
-                >
-                  Editor Session
-                </span>
-                <span 
-                  className="db-cap"
-                  style={{ 
-                    fontSize: '9px', 
-                    color: 'var(--accent)', 
-                    letterSpacing: '0.12em',
-                    fontWeight: 600
-                  }}
-                >
-                  READY ✦
-                </span>
-              </div>
-            </div>
+
+            <button
+              type="button"
+              className="db-icon-btn"
+              onClick={onClose}
+              aria-label="Close modal"
+              style={{ width: 34, height: 34, border: '1px solid var(--rule)' }}
+            >
+              <X size={15} strokeWidth={1.9} />
+            </button>
           </div>
+        </div>
 
-          {/* Right Panel - Selection */}
-          <div className="flex-1 p-10 bg-[var(--paper)] flex flex-col">
-            <div className="flex justify-between items-start mb-8">
-              <div>
-                <span 
-                  className="db-cap block mb-2"
-                  style={{ fontSize: '8px', letterSpacing: '0.22em', opacity: 0.6 }}
-                >
-                  New Document
-                </span>
-                <h2 
-                  style={{ 
-                    fontFamily: 'var(--ff-display)', 
-                    fontSize: '20px', 
-                    fontWeight: 700, 
-                    color: 'var(--ink)',
-                    letterSpacing: '-0.02em'
-                  }}
-                >
-                  Choose Format
-                </h2>
-              </div>
-              <button 
-                onClick={onClose}
-                className="db-icon-btn"
-                style={{ 
-                  width: '28px', 
-                  height: '28px',
-                  border: '1px solid var(--rule)',
-                  background: 'transparent',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                <X size={14} strokeWidth={1.8} style={{ color: 'var(--mid)' }} />
-              </button>
-            </div>
+        <div style={{ padding: '16px 22px' }}>
+          <div style={{ display: 'grid', gap: 12 }}>
+            {OPTIONS.map((option, index) => {
+              const Icon = option.icon;
+              const isActive = index === activeIndex;
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {options.map((opt) => (
+              return (
                 <button
-                  key={opt.id}
-                  onClick={() => onSelect(opt.id)}
-                  className="group relative w-full flex items-center gap-4 p-4 text-left transition-all duration-150"
+                  key={option.id}
+                  type="button"
+                  onMouseEnter={() => setActiveIndex(index)}
+                  onFocus={() => setActiveIndex(index)}
+                  onClick={() => onSelect(option.id)}
                   style={{
-                    background: 'var(--cream)',
-                    border: '1px solid var(--rule)',
-                    borderLeft: '2px solid transparent',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderLeftColor = opt.color;
-                    e.currentTarget.style.background = 'var(--paper)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderLeftColor = 'transparent';
-                    e.currentTarget.style.background = 'var(--cream)';
+                    display: 'grid',
+                    gridTemplateColumns: '48px minmax(0, 1fr) auto',
+                    alignItems: 'center',
+                    gap: 14,
+                    width: '100%',
+                    padding: '14px',
+                    textAlign: 'left',
+                    border: isActive ? `1px solid ${option.color}` : '1px solid var(--rule)',
+                    background: isActive ? 'var(--cream)' : 'var(--paper)',
+                    boxShadow: isActive ? 'var(--sh-xs)' : 'none',
+                    transition: 'border-color 0.15s, background 0.15s, box-shadow 0.15s',
+                    cursor: 'pointer',
                   }}
                 >
-                  {/* Icon */}
-                  <div 
-                    className="w-10 h-10 flex-shrink-0 flex items-center justify-center border transition-colors duration-150"
-                    style={{ 
-                      borderColor: 'var(--rule)',
-                      background: 'transparent',
-                      color: opt.color,
+                  <div
+                    style={{
+                      width: 48,
+                      height: 48,
+                      display: 'grid',
+                      placeItems: 'center',
+                      border: `1px solid ${isActive ? option.color : 'var(--rule)'}`,
+                      color: option.color,
+                      background: 'var(--paper)',
                     }}
                   >
-                    <opt.icon size={18} strokeWidth={1.8} />
+                    <Icon size={18} strokeWidth={1.9} />
                   </div>
-                  
-                  {/* Content */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="flex items-center gap-3 mb-1">
-                      <h3 
-                        style={{ 
-                          fontFamily: 'var(--ff-display)', 
-                          fontSize: '15px', 
-                          fontWeight: 700, 
-                          color: 'var(--ink)',
-                          letterSpacing: '-0.01em'
-                        }}
-                      >
-                        {opt.label}
-                      </h3>
-                      <span 
-                        className="db-cap"
-                        style={{ 
-                          fontSize: '7px', 
-                          padding: '2px 6px',
-                          border: '1px solid var(--rule)',
-                          color: 'var(--mid)',
-                          letterSpacing: '0.14em',
-                          opacity: 0,
-                          transition: 'opacity 0.15s, border-color 0.15s, color 0.15s'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.opacity = '1';
-                          e.currentTarget.style.borderColor = opt.color;
-                          e.currentTarget.style.color = opt.color;
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.opacity = '0';
-                          e.currentTarget.style.borderColor = 'var(--rule)';
-                          e.currentTarget.style.color = 'var(--mid)';
-                        }}
-                      >
-                        {opt.tag}
-                      </span>
-                    </div>
-                    <p 
-                      style={{ 
-                        fontSize: '11px', 
-                        color: 'var(--mid)', 
-                        lineHeight: 1.4,
-                        fontFamily: 'var(--ff-ui)',
-                        letterSpacing: '0.01em'
+
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        marginBottom: 4,
+                        flexWrap: 'wrap',
                       }}
                     >
-                      {opt.description}
+                      <h3
+                        style={{
+                          margin: 0,
+                          fontFamily: 'var(--ff-display)',
+                          fontSize: 20,
+                          fontWeight: 700,
+                          lineHeight: 1,
+                          letterSpacing: '-0.03em',
+                          color: 'var(--ink)',
+                        }}
+                      >
+                        {option.label}
+                      </h3>
+                      <span
+                        className="db-cap"
+                        style={{
+                          color: option.color,
+                          letterSpacing: '0.14em',
+                        }}
+                      >
+                        {String(index + 1).padStart(2, '0')}
+                      </span>
+                    </div>
+
+                    <p
+                      style={{
+                        margin: 0,
+                        fontFamily: 'var(--ff-ui)',
+                        fontSize: 13,
+                        lineHeight: 1.6,
+                        color: 'var(--text-2)',
+                      }}
+                    >
+                      {option.description}
                     </p>
                   </div>
 
-                  {/* Num */}
-                  <span 
-                    style={{ 
-                      fontFamily: 'var(--ff-display)',
-                      fontStyle: 'italic',
-                      fontSize: '11px',
-                      color: 'var(--mid)',
-                      opacity: 0.25,
-                      width: '20px',
-                      textAlign: 'right'
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      color: isActive ? option.color : 'var(--mid)',
+                      fontFamily: 'var(--ff-mono)',
+                      fontSize: 10,
+                      letterSpacing: '0.12em',
+                      textTransform: 'uppercase',
                     }}
                   >
-                    {opt.num}
-                  </span>
+                    <span>Select</span>
+                    <ArrowRight size={14} strokeWidth={1.8} />
+                  </div>
                 </button>
-              ))}
-            </div>
-
-            {/* Footer note */}
-            <div 
-              className="mt-auto pt-6 mt-8"
-              style={{ borderTop: '1px solid var(--rule)' }}
-            >
-              <p 
-                style={{ 
-                  fontSize: '10px', 
-                  color: 'var(--mid)',
-                  fontFamily: 'var(--ff-mono)',
-                  letterSpacing: '0.06em',
-                  textAlign: 'center'
-                }}
-              >
-                You can always change the document type later in the metadata panel.
-              </p>
-            </div>
+              );
+            })}
           </div>
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 14,
+            padding: '14px 22px 18px',
+            borderTop: '1px solid var(--rule)',
+            fontFamily: 'var(--ff-mono)',
+            fontSize: 10,
+            letterSpacing: '0.08em',
+            color: 'var(--mid)',
+          }}
+        >
+          <span>Arrow keys move</span>
+          <span>Enter selects</span>
+          <span>Esc closes</span>
         </div>
       </div>
     </div>,
     document.body
   );
 }
+
