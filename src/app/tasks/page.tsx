@@ -863,7 +863,7 @@ function DepartmentPlaceholder({
 
 export default function WorkPage() {
   const router = useRouter();
-  const { user, loading: loadingUser } = useUser();
+  const { user, loading: loadingUser, updateMetadata } = useUser();
   const [myAssignments, setMyAssignments] = useState<Assignment[]>([]);
   const [allAssignments, setAllAssignments] = useState<Assignment[]>([]);
   const [showCmd, setShowCmd] = useState(false);
@@ -900,15 +900,53 @@ export default function WorkPage() {
     markAllRead: handleMarkAllRead,
     markRead: handleMarkRead,
   } = useNotifications();
+  const hasRestored = useRef(false);
 
   // Leadership is defined as admin access OR explicitly being in the Leadership department
   const isLeadership = !!user?.admin_access || user?.department === "Leadership";
+  const pageTitle = "TASKS";
 
   useEffect(() => {
     if (!loadingUser && user === null) {
       router.push("/login");
     }
+
+    // Restore last config from metadata or local storage (ONLY ONCE)
+    if (user && !hasRestored.current) {
+      const config = user.metadata?.lastTasksConfig;
+      if (config) {
+        if (config.dept) setActiveDeptKey(config.dept);
+        if (config.view) setView(config.view);
+        hasRestored.current = true;
+      } else {
+        const local = localStorage.getItem("tasks_last_config");
+        if (local) {
+          try {
+            const parsed = JSON.parse(local);
+            if (parsed.dept) setActiveDeptKey(parsed.dept);
+            if (parsed.view) setView(parsed.view);
+          } catch {}
+        }
+        hasRestored.current = true;
+      }
+    }
   }, [user, loadingUser, router]);
+
+  // Persist config changes
+  useEffect(() => {
+    if (!user || !hasRestored.current) return;
+    const config = { dept: activeDeptKey, view };
+    localStorage.setItem("tasks_last_config", JSON.stringify(config));
+
+    if (isLeadership) {
+      const currentMeta = user.metadata || {};
+      // Avoid infinite loop by checking if metadata is actually different
+      const last = currentMeta.lastTasksConfig;
+      if (last?.dept !== activeDeptKey || last?.view !== view) {
+        updateMetadata({ ...currentMeta, lastTasksConfig: config });
+      }
+    }
+  }, [activeDeptKey, view, user, isLeadership, updateMetadata]);
 
   // Apply saved settings on mount (theme, accent colour, fonts, etc.)
   useEffect(() => {
@@ -943,8 +981,8 @@ export default function WorkPage() {
   useEffect(() => {
     if (user !== undefined) fetchWork();
 
-    // Set default department to user's department if it exists
-    if (user?.department) {
+    // Only set default if we don't have a persisted state (persisted state handled above)
+    if (user?.department && !user.metadata?.lastTasksConfig && !localStorage.getItem("tasks_last_config")) {
       setActiveDeptKey(user.department);
     }
   }, [user, fetchWork]);
@@ -1136,6 +1174,14 @@ export default function WorkPage() {
         onToast={(m) => setToast(m)}
         mobileMenuOpen={mobileMenuOpen}
         setMobileMenuOpen={setMobileMenuOpen}
+        breadcrumb={
+          <div className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-1.5 no-underline">
+              <Image src="/logo.svg" alt="Vantage" width={14} height={16} />
+              <span className="hidden sm:inline font-bold text-sm tracking-tight text-[var(--ink)]">Vantage</span>
+            </Link>
+          </div>
+        }
         extraMobileContent={
           <div className="space-y-4">
             {isLeadership && (
@@ -1192,80 +1238,56 @@ export default function WorkPage() {
           </div>
         }
       >
-        {/* Department Selector — specific to Tasks page */}
-        {isLeadership && (
-          <div className="relative hidden sm:block">
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="db-ghost px-2 py-1 flex items-center gap-1.5"
-            >
-              <Layers size={13} className="text-[var(--accent)]" />
-              <span className="text-[11px] font-bold uppercase tracking-tight">
-                {activeDeptKey}
-              </span>
-              <ChevronR
-                size={10}
-                className={`ml-1 transition-transform ${isMenuOpen ? "rotate-90" : "rotate-0"}`}
-              />
-            </button>
-
-            {isMenuOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-[250]"
-                  onClick={() => setIsMenuOpen(false)}
-                />
-                <div
-                  className="absolute top-full left-0 mt-1 w-52 bg-[var(--paper)] border border-[var(--rule)] shadow-xl z-[300]"
-                  style={{ borderTop: "2px solid var(--accent)" }}
-                >
-                  <div className="p-2 border-b border-[var(--rule)]">
-                    <span className="db-cap">Select Board</span>
-                  </div>
-                  <div className="p-1">
-                    {DEPARTMENTS.map((dept) => {
-                      const isActive = activeDeptKey === dept.key;
-                      return (
-                        <button
-                          key={dept.key}
-                          onClick={() => {
-                            setActiveDeptKey(dept.key);
-                            setIsMenuOpen(false);
-                          }}
-                          className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-[11px] font-bold text-left hover:bg-[var(--accent-sub)] ${isActive ? "text-[var(--accent)]" : "text-[var(--mid)]"}`}
-                        >
-                          <dept.icon
-                            size={13}
-                            className={isActive ? dept.color : "text-current"}
-                          />
-                          {dept.label.toUpperCase()}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-        <div className="db-vr hidden md:block" />
-
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 ml-2">
           {isLeadership && (
-            <div className="hidden md:flex items-center bg-[var(--accent-sub)] p-0.5 border border-[var(--rule)]">
-              <button
-                onClick={() => setView("my")}
-                className={`db-filter-btn px-3 py-1 ${view === "my" ? "active" : ""}`}
+            <div className="relative">
+              {/* Department Toggler (Header) */}
+              <button 
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="db-ghost p-0 flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-[var(--mid)] hover:text-[var(--accent)]"
               >
-                My Assignments
+                {activeDeptKey}
+                <ChevronDown size={10} strokeWidth={2.5} className={`transition-transform ${isMenuOpen ? "rotate-180" : ""}`} />
               </button>
-              <button
-                onClick={() => setView("admin")}
-                className={`db-filter-btn px-3 py-1 ${view === "admin" ? "active" : ""}`}
-              >
-                Team Board
-              </button>
+
+              {/* Department Menu Dropdown */}
+              {isMenuOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-[250]"
+                    onClick={() => setIsMenuOpen(false)}
+                  />
+                  <div
+                    className="absolute top-full left-0 mt-3 w-52 bg-[var(--paper)] border border-[var(--rule)] shadow-2xl z-[300] anim-fade-in"
+                    style={{ borderTop: "2px solid var(--accent)" }}
+                  >
+                    <div className="p-2 border-b border-[var(--rule)]">
+                      <span className="db-cap">Select Board</span>
+                    </div>
+                    <div className="p-1">
+                      {DEPARTMENTS.map((dept) => {
+                        const isActive = activeDeptKey === dept.key;
+                        return (
+                          <button
+                            key={dept.key}
+                            onClick={() => {
+                              setActiveDeptKey(dept.key);
+                              setIsMenuOpen(false);
+                            }}
+                            className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-[10px] font-bold text-left hover:bg-[var(--accent-sub)] ${isActive ? "text-[var(--accent)] bg-[var(--accent-sub)]" : "text-[var(--mid)]"}`}
+                          >
+                            <dept.icon
+                              size={12}
+                              className={isActive ? dept.color : "text-current"}
+                            />
+                            {dept.label.toUpperCase()}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -1300,14 +1322,21 @@ export default function WorkPage() {
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-3 border-b-2 border-[var(--ink)]">
                 <div>
                   <p className="db-page-sub mb-1">Board · {activeDeptKey}</p>
-                  <h1 className="db-page-title">
-                    {isAdmin
-                      ? view === "admin"
-                        ? "TEAM"
-                        : "MY"
-                      : "ASSIGNMENT"}{" "}
-                    <em>BOARD</em>
-                  </h1>
+                  {isLeadership ? (
+                    <button 
+                      onClick={() => setView(view === "my" ? "admin" : "my")}
+                      className="db-page-title group flex items-center gap-3 text-left hover:opacity-80 transition-opacity"
+                    >
+                      <span>
+                        {view === "admin" ? "TEAM" : "MY"} <em>BOARD</em>
+                      </span>
+                      <ChevronDown size={28} className="text-[var(--accent)] opacity-20 group-hover:opacity-100 transition-opacity" />
+                    </button>
+                  ) : (
+                    <h1 className="db-page-title">
+                      ASSIGNMENT <em>BOARD</em>
+                    </h1>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2">

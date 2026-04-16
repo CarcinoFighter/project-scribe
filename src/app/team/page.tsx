@@ -271,7 +271,7 @@ export default function TeamPage() {
 
       {/* Mobile menu panel */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-x-0 top-[42px] bg-[var(--paper)] border-b border-[var(--rule)] z-40 p-4 space-y-4 max-h-[calc(100vh-42px)] overflow-y-auto anim-fade-in">
+        <div className="md:hidden fixed inset-x-0 top-[42px] bg-[var(--paper)] border-b border-[var(--rule)] z-40 p-4 space-y-4 max-h-[calc(100dvh-42px)] overflow-y-auto anim-fade-in">
           <div className="space-y-4">
             <div className="space-y-2">
               <span className="db-cap block">Search Team</span>

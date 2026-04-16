@@ -442,6 +442,53 @@ function DashboardContent() {
           <span className="db-kbd" style={{ marginLeft: 'auto' }}>⌘K</span>
         </button>
       </PageHeader>
+      
+      {/* ── Mobile menu panel ────────────────────────────────────────────── */}
+      {mobileMenuOpen && (
+        <div className="md:hidden fixed inset-x-0 top-[42px] bg-[var(--paper)] border-b border-[var(--rule)] z-40 p-4 space-y-4 max-h-[calc(100dvh-42px)] overflow-y-auto anim-fade-in">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <span className="db-cap block">Workspace Navigation</span>
+              <div className="grid grid-cols-1 gap-1">
+                {NAV_ITEMS.map((item, i) => {
+                  const isActive = activeNav === (item.id as string);
+                  return (
+                    <button
+                      key={item.id}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-left hover:bg-[var(--accent-sub)] ${isActive ? "text-[var(--accent)] bg-[var(--accent-sub)]" : "text-[var(--mid)]"}`}
+                      onClick={() => {
+                        if (item.href) router.push(item.href);
+                        else setActiveNav(item.id as any);
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <span className="db-nav-num" style={{ fontStyle: 'italic', fontFamily: 'var(--ff-display)', width: 14 }}>{String(i + 1).padStart(2, '0')}</span>
+                      <item.icon size={13} className={isActive ? "text-[var(--accent)]" : "text-current"} />
+                      {item.label.toUpperCase()}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 border-t border-[var(--rule)] pt-4">
+              <button
+                className="db-ghost justify-center text-xs py-2"
+                onClick={() => { toggleTheme(); }}
+              >
+                {isDark ? <Sun size={14} className="mr-2" /> : <Moon size={14} className="mr-2" />}
+                {isDark ? 'Light' : 'Dark'}
+              </button>
+              <button
+                className="db-ghost justify-center text-xs py-2"
+                onClick={() => { setShowSettings(true); setMobileMenuOpen(false); }}
+              >
+                <Settings size={14} className="mr-2" /> Settings
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ══ BODY ════════════════════════════════════════════════════════════ */}
       <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
@@ -569,7 +616,7 @@ function DashboardContent() {
                   {(activeDeptKey === 'Design Lab'  || (activeDeptKey === 'Leadership' && selectedDept === 'Design Lab'))  && <DesignLabDashboard />}
                   {(activeDeptKey === "Writers' Block" || !activeDeptKey || (activeDeptKey === 'Leadership' && selectedDept === "Writers' Block")) && (
                     <WritersDashboard
-                      user={user} allDocs={allDocs} fmtWords={fmtWords}
+                      user={user as any} allDocs={allDocs} fmtWords={fmtWords}
                       totalWords={totalWords} weekWords={weekWords}
                       published={published} drafts={drafts} goalProgress={goalProgress}
                       docsLoading={docsLoading} tasksLoading={tasksLoading}
@@ -650,7 +697,7 @@ function DashboardContent() {
 
       {/* ══ OVERLAYS ════════════════════════════════════════════════════════ */}
       {showCmd && <CommandPalette docs={allDocs} onClose={() => setShowCmd(false)} onCommand={handleCommand} />}
-      {ctxMenu && <DocContextMenu pos={ctxMenu} docs={allDocs} onStar={toggleStar} onDelete={deleteDoc} onOpen={() => router.push('/editor')} onClose={() => setCtxMenu(null)} />}
+      {ctxMenu && <DocContextMenu pos={ctxMenu as any} docs={allDocs} onStar={toggleStar} onDelete={deleteDoc} onOpen={() => router.push('/editor')} onClose={() => setCtxMenu(null)} />}
       {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
 
       {showSettings && (
@@ -675,8 +722,9 @@ function DashboardContent() {
           taskTitle={submittingTask.title}
           onClose={() => setSubmittingTask(null)}
           onSuccess={() => {
+            const id = submittingTask.id;
             setSubmittingTask(null);
-            setTasks(ts => ts.map(t => t.id === submittingTask.id ? { ...t, status: 'done' } : t));
+            setTasks(ts => ts.map(t => t.id === id ? { ...t, status: 'done' } : t));
             setToast('Task submitted for review successfully');
           }}
         />

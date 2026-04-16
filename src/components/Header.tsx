@@ -34,6 +34,7 @@ interface HeaderProps {
   // Breadcrumb
   pageTitle?: string;
   pageTitleHref?: string;
+  breadcrumb?: React.ReactNode;
 
   // Slot for extra header content
   children?: React.ReactNode;
@@ -117,6 +118,7 @@ export default function Header({
   setMobileMenuOpen,
   onOpenTour,
   extraMobileContent,
+  breadcrumb,
 }: HeaderProps) {
   const router = useRouter();
 
@@ -215,27 +217,33 @@ export default function Header({
           </>
         )}
 
-        {/* ── Brand / Logo ─────────────────────────────────────────────── */}
+        {/* ── Brand / Logo / Breadcrumb ─────────────────────────────────────────────── */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, userSelect: 'none' }}>
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'inherit', textDecoration: 'none' }}>
-            <Image src="/logo.svg" alt="Vantage" width={15} height={18} style={{ height: 'auto' }} priority />
-            <span className="hidden sm:inline" style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1, color: 'var(--ink)' }}>
-              Vantage
-            </span>
-          </Link>
-          {pageTitle && (
+          {breadcrumb ? (
+            breadcrumb
+          ) : (
             <>
-              <span style={{ color: 'var(--rule)', fontSize: 14, fontFamily: 'var(--ff-mono)' }}>/</span>
-              {pageTitleHref ? (
-                <Link href={pageTitleHref} style={{ textDecoration: 'none' }}>
-                  <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--mid)' }}>
-                    {pageTitle}
-                  </span>
-                </Link>
-              ) : (
-                <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--mid)' }}>
-                  {pageTitle}
+              <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'inherit', textDecoration: 'none' }}>
+                <Image src="/logo.svg" alt="Vantage" width={15} height={18} style={{ height: 'auto' }} priority />
+                <span className="hidden sm:inline" style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1, color: 'var(--ink)' }}>
+                  Vantage
                 </span>
+              </Link>
+              {pageTitle && (
+                <>
+                  <span style={{ color: 'var(--rule)', fontSize: 14, fontFamily: 'var(--ff-mono)' }}>/</span>
+                  {pageTitleHref ? (
+                    <Link href={pageTitleHref} style={{ textDecoration: 'none' }}>
+                      <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--mid)' }}>
+                        {pageTitle}
+                      </span>
+                    </Link>
+                  ) : (
+                    <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--mid)' }}>
+                      {pageTitle}
+                    </span>
+                  )}
+                </>
               )}
             </>
           )}
@@ -553,7 +561,7 @@ export default function Header({
 
       {/* ── Mobile menu panel ────────────────────────────────────────────── */}
       {mobileMenuOpen && setMobileMenuOpen && (
-        <div className="md:hidden fixed inset-x-0 top-[42px] bg-[var(--paper)] border-b border-[var(--rule)] z-40 p-4 space-y-4 max-h-[calc(100vh-42px)] overflow-y-auto">
+        <div className="md:hidden fixed inset-x-0 top-[42px] bg-[var(--paper)] border-b border-[var(--rule)] z-40 p-4 space-y-4 max-h-[calc(100dvh-42px)] overflow-y-auto">
 
           {/* ── Document rename + save ── */}
           {hasEditorCtx && (
