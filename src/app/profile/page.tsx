@@ -158,8 +158,8 @@ export default function ProfilePage() {
       <header className="db-header">
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink)', textDecoration: 'none', flexShrink: 0 }}>
           <Logo size={14} />
-          <span style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1 }}>
-            Carcino<span className="hidden sm:inline"> Vantage</span>
+          <span className="hidden sm:inline" style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1 }}>
+            Carcino Vantage
           </span>
         </Link>
         <span style={{ color: 'var(--rule)', fontSize: 14, fontFamily: 'var(--ff-mono)', margin: '0 8px' }}>/</span>

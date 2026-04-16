@@ -219,8 +219,8 @@ export default function Header({
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, userSelect: 'none' }}>
           <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'inherit', textDecoration: 'none' }}>
             <Image src="/logo.svg" alt="Vantage" width={15} height={18} style={{ height: 'auto' }} priority />
-            <span style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1, color: 'var(--ink)' }}>
-            Vantage
+            <span className="hidden sm:inline" style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1, color: 'var(--ink)' }}>
+              Vantage
             </span>
           </Link>
           {pageTitle && (

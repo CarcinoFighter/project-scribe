@@ -229,7 +229,7 @@ export default function PageHeader({
             onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
           >
             <Logo size={14} />
-            <span style={{
+            <span className="hidden sm:inline" style={{
               fontFamily:    'var(--ff-display)',
               fontSize:      14,
               fontWeight:    700,
