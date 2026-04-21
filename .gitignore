@@ -45,3 +45,6 @@ public/sw.js
 public/workbox-*.js
 public/fallback-*.js
 public/swe-worker-*.js
+
+# local drafts
+/drafts/
