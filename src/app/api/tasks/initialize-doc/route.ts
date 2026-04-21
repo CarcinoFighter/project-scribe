@@ -99,10 +99,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Invalidate caches
+    // @ts-ignore Next.js 15+ revalidateTag signature
     revalidateTag('all-tasks');
     if (assignment.assigned_to_ids) {
+      // @ts-ignore
       assignment.assigned_to_ids.forEach((uid: string) => revalidateTag(`user-tasks-${uid}`));
     } else if (assignment.assigned_to) {
+      // @ts-ignore
       revalidateTag(`user-tasks-${assignment.assigned_to}`);
     }
 

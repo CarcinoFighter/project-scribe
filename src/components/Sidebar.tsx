@@ -34,16 +34,24 @@ export function Sidebar({
 }: SidebarProps) {
   const router = useRouter();
 
-  const NAV_ITEMS = ([
+  type NavItem = {
+    id: string;
+    label: string;
+    icon: React.ElementType;
+    count: number | null | undefined;
+    href: string;
+  };
+
+  const NAV_ITEMS: NavItem[] = [
     { id: 'home',     label: 'Overview',    icon: Home,      count: null,                 href: '/'      },
     { id: 'queues',   label: 'Queues',      icon: Layers,    count: null,                 href: '/queues' },
     { id: 'articles', label: 'Articles',    icon: FileText,  count: counts.articles,      href: '/?nav=articles' },
     { id: 'blogs',    label: 'Blog Posts',  icon: BookOpen,  count: counts.blogs,         href: '/?nav=blogs'    },
     { id: 'tasks',    label: 'Assignments', icon: Briefcase, count: counts.tasks || null, href: '/tasks' },
     { id: 'team',     label: 'Team',        icon: Users,     count: null,                 href: '/team'  },
-  ] as const).filter(item => isFullSidebar || (item.id !== 'articles' && item.id !== 'blogs'));
+  ].filter(item => isFullSidebar || (item.id !== 'articles' && item.id !== 'blogs'));
 
-  const handleNav = (item: typeof NAV_ITEMS[number]) => {
+  const handleNav = (item: NavItem) => {
     if (onNavClick && (item.id === 'articles' || item.id === 'blogs' || item.id === 'home')) {
       onNavClick(item.id);
     } else if (item.href) {
