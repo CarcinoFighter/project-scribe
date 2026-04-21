@@ -3,6 +3,8 @@
 import { useState, useCallback, useEffect, useRef, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { useSearchParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
 import type { ViewMode, EditorAPI, DocumentStats } from '@/types';
 import Header from '@/components/Header';
 import OutlineSidebar from '@/components/OutlineSidebar';

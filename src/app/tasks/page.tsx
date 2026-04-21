@@ -1013,9 +1013,8 @@ export default function WorkPage() {
     if (task.category === "task") {
       setSubmittingTask({ id: task.id, title: task.title });
     } else if (["article", "blog", "survivor_story"].includes(task.category)) {
-      // Don't allow direct done — open editor instead
-      const t = task.category === 'article' ? 'cancer_docs' : task.category === 'blog' ? 'blogs' : 'survivor_stories';
-      router.push(`/editor?id=${task.document_id}&type=${t}`);
+      // Instead of redirecting, open the details modal to allow workflow actions (e.g. proofreading)
+      setSelectedTask(task);
     } else {
       handleComplete(task.id);
     }
