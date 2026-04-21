@@ -1,22 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { unstable_cache } from 'next/cache';
+import { unstable_cache, revalidateTag } from 'next/cache';
 
-// Cache specifically based on whether it's a global or user-specific fetch
+// Cache key helper
+const getUserTasksTag = (userId: string) => `user-tasks-${userId}`;
+
 const getAssignmentsCached = unstable_cache(
   async (userId: string) => {
     let query = supabaseAdmin.from('work_assignments').select('*');
-    
     query = query.or(`assigned_to.eq.${userId},assigned_to_ids.cs.{${userId}},proofreader_id.eq.${userId}`);
-
     const { data: assignments, error } = await query.order('due_date', { ascending: true });
-
     if (error) throw error;
-    return assignments;
+    return assignments || [];
   },
-  ['user-assignments'],
-  { revalidate: 300 } // 5 minutes
+  ['user-tasks'],
+  { revalidate: 300, tags: ['all-tasks'] }
 );
 
 export async function GET(req: NextRequest) {
@@ -44,6 +43,7 @@ export async function GET(req: NextRequest) {
     const isLeadership = payload.adminAccess || userData.department === 'Leadership';
     
     // 2. Fetch assignments (only user-specific)
+    // Key isolation is handled by unstable_cache arguments
     const assignments = await getAssignmentsCached(payload.userId);
     
     // 3. Enrich assignments with user info and document titles
@@ -261,6 +261,16 @@ export async function PATCH(req: NextRequest) {
       }).catch(e => console.error('Notify assigner failed:', e));
     }
 
+    // Invalidate caches
+    revalidateTag('all-tasks');
+    revalidateTag(getUserTasksTag(payload.userId));
+    if (updated.assigned_to_ids) {
+      updated.assigned_to_ids.forEach((uid: string) => revalidateTag(getUserTasksTag(uid)));
+    } else if (updated.assigned_to) {
+      revalidateTag(getUserTasksTag(updated.assigned_to));
+    }
+    if (updated.proofreader_id) revalidateTag(getUserTasksTag(updated.proofreader_id));
+
     return NextResponse.json({ success: true, assignment: updated });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
@@ -326,6 +336,10 @@ export async function DELETE(req: NextRequest) {
       console.error('Delete assignment error:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    // Invalidate caches
+    revalidateTag('all-tasks');
+    revalidateTag(getUserTasksTag(payload.userId));
 
     return NextResponse.json({ success: true });
   } catch (err: any) {

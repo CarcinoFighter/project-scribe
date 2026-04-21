@@ -15,9 +15,11 @@ export default function MobileNav({ activeNav, pendingTasksCount = 0, isFullSide
   const NAV_ITEMS = ([
     { id: 'home',     label: 'Overview',    icon: Home,      href: '/' },
     { id: 'queues',   label: 'Queues',      icon: Layers,    href: '/queues' },
+    { id: 'articles', label: 'Articles',    icon: FileText,  href: '/?nav=articles' },
+    { id: 'blogs',    label: 'Blog Posts',  icon: BookOpen,  href: '/?nav=blogs' },
     { id: 'tasks',    label: 'Assignments', icon: Briefcase, href: '/tasks' },
     { id: 'team',     label: 'Team',        icon: Users,     href: '/team' },
-  ] as const).filter(item => isFullSidebar || (item.id !== 'queues'));
+  ] as const);
 
   return (
     <nav className="db-mobile-nav">

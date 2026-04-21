@@ -37,14 +37,16 @@ export function Sidebar({
   const NAV_ITEMS = ([
     { id: 'home',     label: 'Overview',    icon: Home,      count: null,                 href: '/'      },
     { id: 'queues',   label: 'Queues',      icon: Layers,    count: null,                 href: '/queues' },
-    { id: 'articles', label: 'Articles',    icon: FileText,  count: counts.articles,      href: null     },
-    { id: 'blogs',    label: 'Blog Posts',  icon: BookOpen,  count: counts.blogs,         href: null     },
+    { id: 'articles', label: 'Articles',    icon: FileText,  count: counts.articles,      href: '/?nav=articles' },
+    { id: 'blogs',    label: 'Blog Posts',  icon: BookOpen,  count: counts.blogs,         href: '/?nav=blogs'    },
     { id: 'tasks',    label: 'Assignments', icon: Briefcase, count: counts.tasks || null, href: '/tasks' },
     { id: 'team',     label: 'Team',        icon: Users,     count: null,                 href: '/team'  },
-  ] as const).filter(item => isFullSidebar || (item.id !== 'articles' && item.id !== 'blogs' && item.id !== 'queues'));
+  ] as const).filter(item => isFullSidebar || (item.id !== 'articles' && item.id !== 'blogs'));
 
   const handleNav = (item: typeof NAV_ITEMS[number]) => {
-    if (item.href) {
+    if (onNavClick && (item.id === 'articles' || item.id === 'blogs' || item.id === 'home')) {
+      onNavClick(item.id);
+    } else if (item.href) {
       router.push(item.href);
     } else if (onNavClick) {
       onNavClick(item.id);

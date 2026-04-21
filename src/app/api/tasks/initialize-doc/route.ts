@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { revalidateTag } from 'next/cache';
 
 function slugify(text: string): string {
   return text
@@ -95,6 +96,14 @@ export async function POST(req: NextRequest) {
         document_id: doc.id, 
         warning: 'Document created but failed to link to assignment. Please refresh or update manually.' 
       });
+    }
+
+    // Invalidate caches
+    revalidateTag('all-tasks');
+    if (assignment.assigned_to_ids) {
+      assignment.assigned_to_ids.forEach((uid: string) => revalidateTag(`user-tasks-${uid}`));
+    } else if (assignment.assigned_to) {
+      revalidateTag(`user-tasks-${assignment.assigned_to}`);
     }
 
     return NextResponse.json({ success: true, document_id: doc.id });

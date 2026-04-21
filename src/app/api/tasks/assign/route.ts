@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { revalidateTag } from 'next/cache';
 
 function slugify(text: string): string {
   return text
@@ -178,6 +179,10 @@ export async function POST(req: NextRequest) {
     } catch (e) {
       console.error('[AssignAPI] Push notification import failed:', e);
     }
+
+    // Invalidate caches
+    revalidateTag('all-tasks');
+    assigned_to.forEach((uid: string) => revalidateTag(`user-tasks-${uid}`));
 
     return NextResponse.json({ success: true, assignment: data, document_id });
   } catch (err: any) {

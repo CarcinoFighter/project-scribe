@@ -16,7 +16,7 @@ import MetadataPanel from '@/components/MetadataPanel';
 import SettingsModal, { saveSettings, applySettings, DEFAULT_SETTINGS, THEMES } from '@/components/SettingsModal';
 import type { AppSettings } from '@/components/SettingsModal';
 import InitialTypeModal from '@/components/InitialTypeModal';
-import { X, Plus, FileText, BookOpen, Heart, Loader2, Menu, Sparkles } from 'lucide-react';
+import { X, Plus, FileText, BookOpen, Heart, Loader2, Menu, Sparkles, ChevronLeft } from 'lucide-react';
 import { useUser } from '@/lib/useUser';
 import { DARK_TO_LIGHT, LIGHT_TO_DARK, resolveSettings } from '@/lib/theme';
 import { supabase } from '@/lib/supabase';
@@ -1052,7 +1052,7 @@ function EditorContent() {
   return (
     <div className={`editor-layout ${zenMode ? 'zen-mode' : ''}`} style={{ height: viewportHeight }}>
       <Header
-      user={user}
+        user={user}
         fileName={activeTab.title}
         setFileName={(n) => updateActiveTab({ title: n, slug: n.toLowerCase().replace(/\s+/g, '-') })}
         isDark={isDark}
@@ -1080,6 +1080,22 @@ function EditorContent() {
         collaborators={collaborators}
         mobileMenuOpen={mobileMenuOpen}
         setMobileMenuOpen={setMobileMenuOpen}
+        breadcrumb={
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => router.push('/tasks')}
+              className="db-icon-btn mr-1 group/back"
+              title="Back to Tasks"
+              style={{ border: '1px solid var(--rule)' }}
+            >
+              <ChevronLeft size={14} className="group-hover/back:text-[var(--accent)] transition-colors" />
+            </button>
+            <Link href="/" className="flex items-center gap-1.5 no-underline">
+              <Image src="/logo.svg" alt="Vantage" width={14} height={16} />
+              <span className="hidden sm:inline font-bold text-sm tracking-tight text-[var(--ink)]">Vantage</span>
+            </Link>
+          </div>
+        }
       />
 
       <div className="w-full h-px bg-[var(--rule)] flex-shrink-0" />

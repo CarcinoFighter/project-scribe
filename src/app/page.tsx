@@ -16,7 +16,7 @@ import {
   Home, Edit3, Award,
   Check, ArrowUpDown, Target, Loader2,
   Briefcase, Users, Heart, Calendar, Zap,
-  Flame, BookMarked
+  Flame, BookMarked, Layers
 } from 'lucide-react';
 import { useUser } from '@/lib/useUser';
 import { useTheme } from '@/lib/useTheme';
@@ -33,6 +33,7 @@ import DesignLabDashboard from '@/components/DesignLabDashboard';
 import LeadershipDashboard from '@/components/LeadershipDashboard';
 import WritersDashboard from '@/components/WritersDashboard';
 import MobileNav from '@/components/MobileNav';
+import { Sidebar } from '@/components/Sidebar';
 import { DocCard, EmptyDocState } from '@/components/WritersDashboardComponents';
 import { getGreeting, getTodayLabel, fmtWords, getWeekWindow, getTodayStr, countWords, excerptFrom } from '@/lib/utils';
 import { Task } from '@/types/task';
@@ -387,13 +388,14 @@ function DashboardContent() {
   const isWritersBlock = activeDeptKey === "Writers' Block" || !activeDeptKey;
   const isFullSidebar  = isWritersBlock || activeDeptKey === 'Leadership';
 
-  // Nav list shared by sidebar + mobile
-  const NAV_ITEMS = ([
-    { id: 'home',     label: 'Overview',    icon: Home,      count: null,                       href: null     },
-    { id: 'articles', label: 'Articles',    icon: FileText,  count: articles.length,             href: null     },
-    { id: 'blogs',    label: 'Blog Posts',  icon: BookOpen,  count: blogs.length,                href: null     },
-    { id: 'tasks',    label: 'Assignments', icon: Briefcase, count: pendingTasks.length || null,  href: '/tasks' },
-    { id: 'team',     label: 'Team',        icon: Users,     count: null,                       href: '/team'  },
+  // Navigation items for the local dashboard (shared with mobile panel)
+  const LOCAL_NAV_ITEMS = ([
+    { id: 'home',     label: 'Overview',    icon: Home,      href: '/' },
+    { id: 'queues',   label: 'Queues',      icon: Layers,    href: '/queues' },
+    { id: 'articles', label: 'Articles',    icon: FileText,  href: '/?nav=articles' },
+    { id: 'blogs',    label: 'Blog Posts',  icon: BookOpen,  href: '/?nav=blogs' },
+    { id: 'tasks',    label: 'Assignments', icon: Briefcase, href: '/tasks' },
+    { id: 'team',     label: 'Team',        icon: Users,     href: '/team' },
   ] as const).filter(item => isFullSidebar || (item.id !== 'articles' && item.id !== 'blogs'));
 
   // Determine page title based on active navigation
@@ -450,7 +452,7 @@ function DashboardContent() {
             <div className="space-y-2">
               <span className="db-cap block">Workspace Navigation</span>
               <div className="grid grid-cols-1 gap-1">
-                {NAV_ITEMS.map((item, i) => {
+                {LOCAL_NAV_ITEMS.map((item, i) => {
                   const isActive = activeNav === (item.id as string);
                   return (
                     <button
@@ -458,7 +460,6 @@ function DashboardContent() {
                       className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-left hover:bg-[var(--accent-sub)] ${isActive ? "text-[var(--accent)] bg-[var(--accent-sub)]" : "text-[var(--mid)]"}`}
                       onClick={() => {
                         if (item.href) router.push(item.href);
-                        else setActiveNav(item.id as any);
                         setMobileMenuOpen(false);
                       }}
                     >
@@ -494,96 +495,24 @@ function DashboardContent() {
       <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
 
         {/* ── SIDEBAR — dept index ─────────────────────────────────────────── */}
-        <aside className="db-sidebar">
-
-          <div className="db-sidebar-label">Workspace</div>
-
-          {NAV_ITEMS.map((item, i) => {
-            const isActive = activeNav === (item.id as string);
-            const inner = (
-              <>
-                {/* Italic serif numeral — mirrors login page dept index */}
-                <span className="db-nav-num">{String(i + 1).padStart(2, '0')}</span>
-                <item.icon size={11} strokeWidth={isActive ? 2.2 : 1.8} style={{ flexShrink: 0 }} />
-                <span style={{ flex: 1 }}>{item.label}</span>
-                {item.count !== null && item.count > 0 && (
-                  <span style={{
-                    fontFamily: 'var(--ff-ui)', fontSize: 8, fontWeight: 700,
-                    letterSpacing: '0.08em', padding: '1px 5px',
-                    background: isActive ? 'var(--accent)' : 'var(--accent-dim)',
-                    color: isActive ? 'var(--paper)' : 'var(--mid)',
-                    flexShrink: 0,
-                  }}>
-                    {item.count}
-                  </span>
-                )}
-              </>
-            );
-            return item.href ? (
-              <Link key={item.id} href={item.href} className={`db-nav-item${isActive ? ' active' : ''}`}>{inner}</Link>
-            ) : (
-              <button key={item.id} className={`db-nav-item${isActive ? ' active' : ''}`}
-                onClick={() => setActiveNav(item.id as 'home' | 'articles' | 'blogs')}>
-                {inner}
-              </button>
-            );
-          })}
-
-          {isFullSidebar && (
-            <>
-              <div className="db-sidebar-rule" />
-              <div className="db-sidebar-label">Starred</div>
-
-              {starredDocs.length === 0 ? (
-                <p style={{ fontFamily: 'var(--ff-ui)', fontSize: 9, color: 'var(--mid)', padding: '3px 20px', lineHeight: 1.7, letterSpacing: '0.04em' }}>
-                  Star a document to pin it here.
-                </p>
-              ) : starredDocs.map(doc => (
-                <button key={doc.id} className="db-starred-row" onClick={() => router.push('/editor')}>
-                  <Star size={8} fill="var(--accent)" stroke="none" style={{ flexShrink: 0 }} />
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {doc.title.length > 24 ? doc.title.slice(0, 24) + '…' : doc.title}
-                  </span>
-                </button>
-              ))}
-
-              {/* Word goal */}
-              {wordGoal > 0 && docs.length > 0 && (
-                <>
-                  <div className="db-sidebar-rule" />
-                  <div className="db-goal">
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 7 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                        <Target size={10} style={{ color: 'var(--accent)' }} />
-                        <span className="db-cap" style={{ color: 'var(--accent)' }}>Word Goal</span>
-                      </div>
-                      <span className="db-cap" style={{ color: 'var(--accent)' }}>
-                        {Math.round((docs[0].words / wordGoal) * 100)}%
-                      </span>
-                    </div>
-                    <div style={{ fontFamily: 'var(--ff-ui)', fontSize: 10.5, color: 'var(--ink)', fontWeight: 500, marginBottom: 7, letterSpacing: '0.04em' }}>
-                      {docs[0].words.toLocaleString()} <span style={{ color: 'var(--mid)', fontWeight: 400 }}>/ {wordGoal.toLocaleString()}</span>
-                    </div>
-                    <div style={{ height: 2, background: 'var(--rule)' }}>
-                      <div style={{ height: '100%', background: docs[0].words >= wordGoal ? '#4ade80' : 'var(--accent)', width: `${Math.min((docs[0].words / wordGoal) * 100, 100)}%`, transition: 'width 0.4s cubic-bezier(0.34,1.2,0.64,1)' }} />
-                    </div>
-                  </div>
-                </>
-              )}
-
-              <div style={{ flex: 1 }} />
-
-              {/* Open Editor CTA — full-width db-btn at sidebar bottom */}
-              <div style={{ padding: '0 16px 4px', borderTop: '1px solid var(--rule)', paddingTop: 12 }}>
-                <Link href="/editor" className="db-btn" style={{ width: '100%', justifyContent: 'space-between' }}>
-                  <PenTool size={10} strokeWidth={2} />
-                  <span style={{ flex: 1, paddingLeft: 6 }}>Open Editor</span>
-                  <ArrowRight size={10} />
-                </Link>
-              </div>
-            </>
-          )}
-        </aside>
+        {/* ── SIDEBAR from shared component ─────────────────────────────────────────── */}
+        <Sidebar
+          activeNav={activeNav}
+          isFullSidebar={isFullSidebar}
+          counts={{
+            articles: articles.length,
+            blogs: blogs.length,
+            tasks: pendingTasks.length || 0
+          }}
+          starredDocs={starredDocs.map(d => ({ id: d.id, title: d.title }))}
+          wordGoal={wordGoal}
+          lsDoc={docs.length > 0 ? { words: docs[0].words } : null}
+          onNavClick={(id) => {
+            if (id === 'articles' || id === 'blogs' || id === 'home') {
+              setActiveNav(id as any);
+            }
+          }}
+        />
 
         {/* ── MAIN ────────────────────────────────────────────────────────── */}
         <main className="db-main">

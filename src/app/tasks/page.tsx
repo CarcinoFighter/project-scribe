@@ -158,6 +158,7 @@ import {
   applySettings,
   type AppSettings,
 } from "@/components/SettingsModal";
+import { getCachedTasks, setCachedTasks } from "@/lib/tasks-cache";
 
 // Custom SVG icons for departments (where we have them in public/icons)
 const DEPT_CUSTOM_ICON: Record<string, string> = {
@@ -956,7 +957,17 @@ export default function WorkPage() {
   }, []);
 
   const fetchWork = useCallback(async () => {
-    setLoading(true);
+    // Only show loader if we don't have cached data
+    const cachedMy = getCachedTasks('mine');
+    const cachedAll = getCachedTasks('all');
+    
+    if (cachedMy) setMyAssignments(cachedMy);
+    if (cachedAll) setAllAssignments(cachedAll);
+    
+    if (!cachedMy || (isLeadership && !cachedAll)) {
+      setLoading(true);
+    }
+
     try {
       const [myRes, allRes] = await Promise.all([
         fetch("/api/tasks"),
@@ -965,18 +976,22 @@ export default function WorkPage() {
 
       if (myRes.ok) {
         const data = await myRes.json();
-        setMyAssignments(data.assignments || []);
+        const assignments = data.assignments || [];
+        setMyAssignments(assignments);
+        setCachedTasks('mine', assignments);
       }
       if (allRes?.ok) {
         const data = await allRes.json();
-        setAllAssignments(data.assignments || []);
+        const assignments = data.assignments || [];
+        setAllAssignments(assignments);
+        setCachedTasks('all', assignments);
       }
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }, [user?.admin_access]);
+  }, [user?.admin_access, isLeadership]);
 
   useEffect(() => {
     if (user !== undefined) fetchWork();
