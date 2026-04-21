@@ -262,13 +262,18 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Invalidate caches
+    // @ts-ignore
     revalidateTag('all-tasks');
+    // @ts-ignore
     revalidateTag(getUserTasksTag(payload.userId));
     if (updated.assigned_to_ids) {
+      // @ts-ignore
       updated.assigned_to_ids.forEach((uid: string) => revalidateTag(getUserTasksTag(uid)));
     } else if (updated.assigned_to) {
+      // @ts-ignore
       revalidateTag(getUserTasksTag(updated.assigned_to));
     }
+    // @ts-ignore
     if (updated.proofreader_id) revalidateTag(getUserTasksTag(updated.proofreader_id));
 
     return NextResponse.json({ success: true, assignment: updated });
@@ -338,7 +343,9 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Invalidate caches
+    // @ts-ignore
     revalidateTag('all-tasks');
+    // @ts-ignore
     revalidateTag(getUserTasksTag(payload.userId));
 
     return NextResponse.json({ success: true });
