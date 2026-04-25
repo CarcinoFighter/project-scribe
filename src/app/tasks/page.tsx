@@ -239,6 +239,14 @@ const WRITERS_BLOCK_SECTIONS = [
     hasEditor: true,
     table: "survivor_stories",
   },
+  {
+    key: "awareness_post",
+    label: "Awareness Posts",
+    icon: Megaphone,
+    color: "#f59e0b",
+    hasEditor: false,
+    table: null,
+  },
 ];
 
 const KNOWN_CATEGORIES: Record<
@@ -1441,7 +1449,18 @@ export default function WorkPage() {
                         return acc;
                       }, {} as Record<string, any>);
 
-                      const allSections = renderedSections;
+                      const allSections = [
+                        ...renderedSections,
+                        ...dynamicNativeCategories.map(cat => ({
+                          key: cat,
+                          label: cat.charAt(0).toUpperCase() + cat.slice(1).replace(/_/g, " "),
+                          icon: Layers,
+                          color: "#6b7280",
+                          hasEditor: false,
+                          table: null,
+                        })),
+                        ...Object.values(foreignSections)
+                      ];
 
                       return allSections.map((section: any) => {
                         const isNative = !section.department || section.department === "Writers' Block";
