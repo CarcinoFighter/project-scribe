@@ -3,15 +3,7 @@ import './globals.css';
 import { ThemeInitializer } from '@/components/ThemeInitializer';
 import PushSubscriber from '@/components/PushSubscriber';
 import SWRegistration from '@/components/SWRegistration';
-import { DM_Mono } from 'next/font/google';
 import { getThemeBootstrapScript } from '@/lib/theme';
-
-const dmMono = DM_Mono({
-  subsets: ['latin'],
-  weight: ['300', '400', '500'],
-  style: ['normal', 'italic'],
-  display: 'swap',
-});
 
 export const metadata: Metadata = {
   title: 'Vantage',
@@ -37,7 +29,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning className={dmMono.className}>
+    <html lang="en" suppressHydrationWarning>
       <head>
         
         <link rel="preconnect" href="https://fonts.googleapis.com" />

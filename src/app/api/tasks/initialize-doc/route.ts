@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { revalidateTag } from 'next/cache';
+import { revalidateTagSafe } from '@/lib/revalidate';
 
 function slugify(text: string): string {
   return text
@@ -99,14 +99,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Invalidate caches
-    // @ts-ignore Next.js 15+ revalidateTag signature
-    revalidateTag('all-tasks');
+    revalidateTagSafe('all-tasks');
     if (assignment.assigned_to_ids) {
-      // @ts-ignore
-      assignment.assigned_to_ids.forEach((uid: string) => revalidateTag(`user-tasks-${uid}`));
+      assignment.assigned_to_ids.forEach((uid: string) => revalidateTagSafe(`user-tasks-${uid}`));
     } else if (assignment.assigned_to) {
-      // @ts-ignore
-      revalidateTag(`user-tasks-${assignment.assigned_to}`);
+      revalidateTagSafe(`user-tasks-${assignment.assigned_to}`);
     }
 
     return NextResponse.json({ success: true, document_id: doc.id });

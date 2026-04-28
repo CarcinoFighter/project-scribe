@@ -22,7 +22,7 @@ export default function MobileNav({ activeNav, pendingTasksCount = 0, isFullSide
   ] as const);
 
   return (
-    <nav className="db-mobile-nav">
+    <nav className={`db-mobile-nav${isFullSidebar ? ' is-full' : ''}`} aria-label="Primary navigation">
       {/* Tape strip at top of mobile nav */}
       <div className="db-mob-inner">
         {NAV_ITEMS.map((item) => {
@@ -32,6 +32,8 @@ export default function MobileNav({ activeNav, pendingTasksCount = 0, isFullSide
               key={item.id} 
               href={item.href} 
               className={`db-mob-item${isActive ? ' active' : ''}`}
+              aria-current={isActive ? 'page' : undefined}
+              title={item.label}
             >
               <div className="db-mob-icon-wrap">
                 <item.icon size={20} strokeWidth={isActive ? 2.2 : 1.8} />

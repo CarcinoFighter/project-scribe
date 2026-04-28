@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { revalidateTag } from 'next/cache';
+import { revalidateTagSafe } from '@/lib/revalidate';
 
 function slugify(text: string): string {
   return text
@@ -180,10 +180,8 @@ export async function POST(req: NextRequest) {
       console.error('[AssignAPI] Push notification import failed:', e);
     }
 
-    // @ts-ignore Next.js 15+ revalidateTag signature
-    revalidateTag('all-tasks');
-    // @ts-ignore
-    assigned_to.forEach((uid: string) => revalidateTag(`user-tasks-${uid}`));
+    revalidateTagSafe('all-tasks');
+    assigned_to.forEach((uid: string) => revalidateTagSafe(`user-tasks-${uid}`));
 
     return NextResponse.json({ success: true, assignment: data, document_id });
   } catch (err: any) {

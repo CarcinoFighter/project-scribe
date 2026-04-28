@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { unstable_cache, revalidateTag } from 'next/cache';
+import { unstable_cache } from 'next/cache';
+import { revalidateTagSafe } from '@/lib/revalidate';
 
 // Cache key helper
 const getUserTasksTag = (userId: string) => `user-tasks-${userId}`;
@@ -262,19 +263,14 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Invalidate caches
-    // @ts-ignore
-    revalidateTag('all-tasks');
-    // @ts-ignore
-    revalidateTag(getUserTasksTag(payload.userId));
+    revalidateTagSafe('all-tasks');
+    revalidateTagSafe(getUserTasksTag(payload.userId));
     if (updated.assigned_to_ids) {
-      // @ts-ignore
-      updated.assigned_to_ids.forEach((uid: string) => revalidateTag(getUserTasksTag(uid)));
+      updated.assigned_to_ids.forEach((uid: string) => revalidateTagSafe(getUserTasksTag(uid)));
     } else if (updated.assigned_to) {
-      // @ts-ignore
-      revalidateTag(getUserTasksTag(updated.assigned_to));
+      revalidateTagSafe(getUserTasksTag(updated.assigned_to));
     }
-    // @ts-ignore
-    if (updated.proofreader_id) revalidateTag(getUserTasksTag(updated.proofreader_id));
+    if (updated.proofreader_id) revalidateTagSafe(getUserTasksTag(updated.proofreader_id));
 
     return NextResponse.json({ success: true, assignment: updated });
   } catch (err: any) {
@@ -343,10 +339,8 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Invalidate caches
-    // @ts-ignore
-    revalidateTag('all-tasks');
-    // @ts-ignore
-    revalidateTag(getUserTasksTag(payload.userId));
+    revalidateTagSafe('all-tasks');
+    revalidateTagSafe(getUserTasksTag(payload.userId));
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
