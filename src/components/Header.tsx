@@ -16,6 +16,12 @@ import AccountMenu from './AccountMenu';
 import NotifPanel, { Notif } from './NotifPanel';
 import { usePWAInstall } from '@/lib/usePWAInstall';
 import { getCollaboratorColor } from '@/lib/utils';
+import SettingsModal, {
+  loadSettings,
+  saveSettings,
+  applySettings,
+  type AppSettings,
+} from '@/components/SettingsModal';
 
 interface HeaderProps {
   user: any;
@@ -131,6 +137,9 @@ export default function Header({
   const [mobileRenaming, setMobileRenaming] = useState(false);
   const [mobileFileName, setMobileFileName] = useState(fileName ?? '');
   const mobileRenameInputRef = useRef<HTMLInputElement>(null);
+  // settings
+  const [showSettings, setShowSettings] = useState(false);
+    const [settings, setSettings]         = useState<AppSettings>(() => loadSettings());
 
   // Keep mobile filename in sync when prop changes externally
   useEffect(() => {
@@ -482,14 +491,14 @@ export default function Header({
             title="Toggle Theme"
           >
             {isDark ? (
-              <Sun size={17} className="text-yellow-500" />
+              <Sun size={13} strokeWidth={1.8} style={{ color: 'var(--mid)' }} />
             ) : (
-              <Moon size={17} />
+              <Moon size={13} strokeWidth={1.8} style={{ color: 'var(--mid)' }} />
             )}
           </button>
 
           {/* Settings */}
-          <button className="db-icon-btn hidden sm:flex" onClick={onOpenSettings} title="Settings">
+          <button className="db-icon-btn hidden sm:flex" onClick={() => setShowSettings(true)} title="Settings">
             <Settings size={13} strokeWidth={1.8} />
           </button>
 
@@ -753,6 +762,7 @@ export default function Header({
               <Settings size={14} className="mr-2" /> App Settings
             </button>
           </div>
+          
 
           {/* ── Extra mobile content (injected from pages) ── */}
           {extraMobileContent && (
@@ -762,6 +772,18 @@ export default function Header({
           )}
         </div>
       )}
+      {/* ── Settings modal ─────────────────────────────────────────────────── */}
+            {showSettings && (
+              <SettingsModal
+                settings={settings}
+                onClose={() => setShowSettings(false)}
+                onChange={next => {
+                  setSettings(next);
+                  saveSettings(next);
+                  applySettings(next);
+                }}
+              />
+            )}
     </>
   );
 }
