@@ -204,8 +204,8 @@ export default function StatusBar({ stats, cursorLine, cursorCol, isSaved, viewM
 
         <span className="flex items-center gap-1" style={{ color: isSaved ? 'var(--accent)' : 'var(--mid)', transition: 'color 0.2s' }}>
           {isSaved
-            ? <><Check size={11} strokeWidth={2.5} /><span className="hidden sm:inline db-cap ml-1" style={{ fontSize: '10px' }}>Saved</span></>
-            : <><Loader2 size={11} strokeWidth={2.5} className="animate-spin" /><span className="hidden sm:inline db-cap ml-1" style={{ fontSize: '10px' }}>Saving...</span></>
+            ? <><Check size={11} strokeWidth={2.5} /><span className="hidden sm:inline db-cap ml-1" style={{ fontSize: '11px', fontWeight: 'bold' }}>Saved</span></>
+            : <><Loader2 size={11} strokeWidth={2.5} className="animate-spin" /><span className="hidden sm:inline db-cap ml-1" style={{ fontSize: '11px', fontWeight: 'bold' }}>Saving...</span></>
           }
         </span>
 
