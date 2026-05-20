@@ -51,54 +51,66 @@ export default function WritersDashboard({
   const displayFmtWords = fmtWords || utilFmtWords;
   return (
     <>
-      <div className="anim-fade-up" style={{ marginBottom: 24 }}>
-        <p style={{ fontSize: 13, color: 'var(--text-4)', margin: 0 }}>
-          {allDocs.length} documents · {displayFmtWords(totalWords)} total words
-        </p>
-      </div>
-
-      {/* Quick actions */}
+      {/* CREATE ACTIONS — Row of three buttons */}
       {canCreate && (
-        <div className="anim-fade-up dash-quick-actions" style={{ display: 'flex', gap: 10, marginBottom: 20, animationDelay: '0.04s', flexWrap: 'wrap' }}>
+        <div className="anim-fade-up dash-quick-actions" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 40, animationDelay: '0.02s' }}>
           <QuickAction icon={FileText} label="New Article" sublabel="Research or cancer doc" color="#3b82f6" bg="rgba(59,130,246,0.08)" onClick={() => router.push('/editor')} />
           <QuickAction icon={BookOpen} label="New Blog Post" sublabel="Share your perspective" color="var(--accent)" bg="var(--accent-subtle)" onClick={() => router.push('/editor')} />
           <QuickAction icon={Heart} label="Survivor Story" sublabel="Community & support" color="#10b981" bg="rgba(16,185,129,0.08)" onClick={() => router.push('/editor')} />
         </div>
       )}
 
-      {/* Stat cards */}
-      <div className="stats-grid anim-fade-up" style={{ marginBottom: 18, animationDelay: '0.08s' }}>
-        {[
-          { label: 'Total Words', value: displayFmtWords(totalWords), sub: `${allDocs.length} documents`, icon: BarChart2, accent: true, onClick: undefined, progress: undefined },
-          { label: 'This Week', value: displayFmtWords(weekWords), sub: 'words written', icon: TrendingUp, accent: false, onClick: () => {}, progress: undefined },
-          { label: 'Published', value: published, sub: `${drafts} draft${drafts !== 1 ? 's' : ''} remaining`, icon: Award, accent: false, onClick: () => setActiveNav('articles'), progress: undefined },
-          goalProgress
-            ? { label: 'Word Goal', value: `${Math.round((goalProgress.current / goalProgress.goal) * 100)}%`, sub: `${goalProgress.current.toLocaleString()} / ${goalProgress.goal.toLocaleString()}`, icon: Target, accent: false, onClick: undefined, progress: goalProgress }
-            : { label: 'Avg Read', value: allDocs.length ? `${Math.round(allDocs.reduce((s, d) => s + d.readTime, 0) / allDocs.length)}m` : '—', sub: 'per document', icon: Clock, accent: false, onClick: undefined, progress: undefined },
-        ].map((card, i) => (
-          <div key={card.label} className="anim-stagger" style={{ '--i': i } as React.CSSProperties}>
-            <StatCard {...card} icon={card.icon} />
+      <hr style={{ border: 'none', borderTop: '1px solid var(--rule)', margin: '40px 0', boxShadow: '0 1.5px 0 var(--ink), 0 3px 0 var(--rule)', height: 0 }} />
+
+      {/* TOP ROW: Activity Chart + Insight Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24, marginBottom: 40 }}>
+        <div className="anim-fade-up" style={{ animationDelay: '0.04s' }}>
+          <div style={{ marginBottom: 16 }}>
+            <p style={{ fontSize: '8px', fontFamily: 'var(--ff-mono)', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--mid)', margin: 0, marginBottom: 8 }}>This Week</p>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--ink)', margin: 0, letterSpacing: '-0.02em' }}>Writing Activity</h2>
           </div>
-        ))}
+          <ActivityChart docs={allDocs} weekWords={weekWords} />
+        </div>
+
+        <div className="anim-fade-up" style={{ animationDelay: '0.06s' }}>
+          <div style={{ marginBottom: 16 }}>
+            <p style={{ fontSize: '8px', fontFamily: 'var(--ff-mono)', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--mid)', margin: 0, marginBottom: 8 }}>Insights</p>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--ink)', margin: 0, letterSpacing: '-0.02em' }}>Performance</h2>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {[
+              { label: 'Avg Read Time', value: allDocs.length ? `${Math.round(allDocs.reduce((s, d) => s + d.readTime, 0) / allDocs.length)}m` : '—', sub: 'per document', icon: Clock, accent: false, onClick: undefined, progress: undefined },
+              { label: 'Peak Engagement', value: Math.max(...allDocs.map(d => d.readTime), 0) || '—', sub: 'max read time', icon: TrendingUp, accent: false, onClick: () => {}, progress: undefined },
+            ].map((card) => (
+              <div key={card.label}>
+                <StatCard {...card} icon={card.icon} />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* Activity chart */}
-      <div className="anim-fade-up" style={{ animationDelay: '0.12s' }}>
-        <ActivityChart docs={allDocs} weekWords={weekWords} />
-      </div>
+      <hr style={{ border: 'none', borderTop: '1px solid var(--rule)', margin: '40px 0', boxShadow: '0 1.5px 0 var(--ink), 0 3px 0 var(--rule)', height: 0 }} />
 
-      {/* Recent documents */}
-      <div className="doc-grid-2" style={{ gap: 24, marginBottom: 24 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <FileText size={13} strokeWidth={2} style={{ color: '#3b82f6' }} />
-              <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>Articles</span>
-              {articles.length > 0 && <span style={{ fontSize: 10.5, color: 'var(--text-4)', background: 'var(--bg-deep)', borderRadius: 99, padding: '1px 7px' }}>{articles.length}</span>}
+      {/* CONTENT GRID: Articles, Blogs, Assignments */}
+      <div style={{ marginBottom: 20 }}>
+        <p style={{ fontSize: '8px', fontFamily: 'var(--ff-mono)', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--mid)', margin: 0, marginBottom: 8 }}>Content</p>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--ink)', margin: 0, letterSpacing: '-0.02em' }}>Your Work</h2>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, marginBottom: 40 }}>
+        {/* ARTICLES SECTION */}
+        <div className="anim-fade-up" style={{ animationDelay: '0.08s' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <FileText size={14} strokeWidth={1.8} style={{ color: '#3b82f6' }} />
+              <div>
+                <p style={{ fontSize: '9px', fontFamily: 'var(--ff-mono)', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--mid)', margin: 0 }}>Articles</p>
+                <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', margin: 0, letterSpacing: '-0.01em' }}>{articles.length}</p>
+              </div>
             </div>
-            <button className="tb-btn" onClick={() => setActiveNav('articles')} style={{ fontSize: 11.5, gap: 2, color: 'var(--accent)' }}>
+            {articles.length > 0 && <button className="tb-btn" onClick={() => setActiveNav('articles')} style={{ fontSize: 11, gap: 3, color: 'var(--accent)' }}>
               View all <ChevronRight size={11} />
-            </button>
+            </button>}
           </div>
           {docsLoading ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -116,16 +128,20 @@ export default function WritersDashboard({
             </div>
           )}
         </div>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <BookOpen size={13} strokeWidth={2} style={{ color: 'var(--accent)' }} />
-              <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>Blog Posts</span>
-              {blogs.length > 0 && <span style={{ fontSize: 10.5, color: 'var(--text-4)', background: 'var(--bg-deep)', borderRadius: 99, padding: '1px 7px' }}>{blogs.length}</span>}
+
+        {/* BLOG POSTS SECTION */}
+        <div className="anim-fade-up" style={{ animationDelay: '0.10s' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <BookOpen size={14} strokeWidth={1.8} style={{ color: 'var(--accent)' }} />
+              <div>
+                <p style={{ fontSize: '9px', fontFamily: 'var(--ff-mono)', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--mid)', margin: 0 }}>Blog Posts</p>
+                <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', margin: 0, letterSpacing: '-0.01em' }}>{blogs.length}</p>
+              </div>
             </div>
-            <button className="tb-btn" onClick={() => setActiveNav('blogs')} style={{ fontSize: 11.5, gap: 2, color: 'var(--accent)' }}>
+            {blogs.length > 0 && <button className="tb-btn" onClick={() => setActiveNav('blogs')} style={{ fontSize: 11, gap: 3, color: 'var(--accent)' }}>
               View all <ChevronRight size={11} />
-            </button>
+            </button>}
           </div>
           {docsLoading ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -143,35 +159,42 @@ export default function WritersDashboard({
             </div>
           )}
         </div>
+
+        {/* ASSIGNMENTS SECTION */}
+        {!tasksLoading && pendingTasks.length > 0 && user?.department !== 'Leadership' && (
+          <div className="anim-fade-up" style={{ animationDelay: '0.12s' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Briefcase size={14} strokeWidth={1.8} style={{ color: 'var(--accent)' }} />
+                <div>
+                  <p style={{ fontSize: '9px', fontFamily: 'var(--ff-mono)', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--mid)', margin: 0 }}>Assignments</p>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', margin: 0, letterSpacing: '-0.01em' }}>{pendingTasks.length} pending</p>
+                </div>
+              </div>
+              <Link href="/tasks" style={{ textDecoration: 'none' }}>
+                <button className="tb-btn" style={{ fontSize: 11, gap: 3, color: 'var(--accent)' }}>View all <ChevronRight size={11} /></button>
+              </Link>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {pendingTasks.slice(0, 3).map((task, i) => (
+                <div key={task.id} className="anim-stagger" style={{ '--i': i + 1 } as React.CSSProperties}>
+                  <TaskCard task={task} onComplete={handleTaskCardComplete} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Pending assignments — Hidden for Leadership to avoid double lists */}
-      {!tasksLoading && pendingTasks.length > 0 && user?.department !== 'Leadership' && (
-        <div style={{ marginBottom: 24 }} className="anim-fade-up" >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-            <Briefcase size={14} strokeWidth={2} style={{ color: 'var(--accent)' }} />
-            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>Pending Assignments</span>
-            <span style={{ fontSize: 10.5, fontWeight: 700, borderRadius: 99, padding: '2px 9px', background: 'var(--accent)', color: '#fff' }}>{pendingTasks.length}</span>
-            <div style={{ flex: 1 }} />
-            <Link href="/tasks" style={{ textDecoration: 'none' }}>
-              <button className="tb-btn" style={{ fontSize: 11.5, gap: 3, color: 'var(--accent)' }}>View all <ChevronRight size={11} /></button>
-            </Link>
-          </div>
-          <div className="task-grid-2">
-            {pendingTasks.slice(0, 4).map(task => (
-              <TaskCard key={task.id} task={task} onComplete={handleTaskCardComplete} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Completed tasks — collapsed summary */}
+      {/* COMPLETED TASKS SUMMARY */}
       {!tasksLoading && doneTasks.length > 0 && (
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 14px', borderRadius: 'var(--r-md)', background: 'rgba(74,222,128,0.06)', border: '1px solid rgba(74,222,128,0.14)' }}>
-            <Check size={13} strokeWidth={2.5} style={{ color: '#4ade80' }} />
-            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-3)' }}>{doneTasks.length} assignment{doneTasks.length !== 1 ? 's' : ''} completed</span>
-            <span style={{ fontSize: 11.5, color: '#4ade80', marginLeft: 'auto' }}>Great work!</span>
+        <div style={{ marginBottom: 32 }} className="anim-fade-up">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px', background: 'var(--cream)', border: '1px solid var(--rule)', borderLeft: '2px solid #4ade80' }}>
+            <Check size={14} strokeWidth={2.5} style={{ color: '#4ade80', flexShrink: 0 }} />
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: '8px', fontFamily: 'var(--ff-mono)', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--mid)', margin: 0 }}>Completed</p>
+              <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', margin: 0 }}>{doneTasks.length} assignment{doneTasks.length !== 1 ? 's' : ''} finished</p>
+            </div>
           </div>
         </div>
       )}
@@ -192,8 +215,6 @@ export default function WritersDashboard({
               All Categories & Articles
             </span>
           </div>
-
-          {/* Rolling up assignments logic removed as it was placeholder */}
         </div>
       )}
     </>

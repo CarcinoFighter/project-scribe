@@ -520,12 +520,54 @@ function DashboardContent() {
           {/* Overview */}
           {activeNav === 'home' && (
             <>
-              <div className="db-rise-0" style={{ marginBottom: 6 }}>
-                <h1 className="db-page-title">{getGreeting(user?.name)}<em>.</em></h1>
-                <p className="db-page-sub" style={{ marginTop: 6 }}>{getTodayLabel()}</p>
+              {/* HEADER SECTION */}
+              <div className="db-rise-0" style={{ marginBottom: 28 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, marginBottom: 12 }}>
+                  <div>
+                    <h1 className="db-page-title">{getGreeting(user?.name)}<em>.</em></h1>
+                    <p className="db-page-sub" style={{ marginTop: 6 }}>{getTodayLabel()}</p>
+                  </div>
+                </div>
               </div>
+
+              {/* STATS GRID */}
+              {!userLoading && user && (
+                <div className="db-rise-0" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 40, animationDelay: '0.02s' }}>
+                  <div style={{ padding: '20px', border: '1px solid var(--rule)', background: 'var(--paper)' }}>
+                    <p style={{ fontSize: '7px', fontFamily: 'var(--ff-mono)', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--mid)', margin: 0, marginBottom: 10 }}>Total Words</p>
+                    <p style={{ fontSize: '28px', fontWeight: 800, color: 'var(--ink)', margin: 0, letterSpacing: '-0.035em' }}>{fmtWords(totalWords)}</p>
+                    <p style={{ fontSize: '8px', color: 'var(--mid)', margin: '8px 0 0', fontFamily: 'var(--ff-mono)' }}>{allDocs.length} document{allDocs.length !== 1 ? 's' : ''}</p>
+                  </div>
+                  <div style={{ padding: '20px', border: '1px solid var(--rule)', background: 'var(--paper)' }}>
+                    <p style={{ fontSize: '7px', fontFamily: 'var(--ff-mono)', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--mid)', margin: 0, marginBottom: 10 }}>This Week</p>
+                    <p style={{ fontSize: '28px', fontWeight: 800, color: 'var(--accent)', margin: 0, letterSpacing: '-0.035em' }}>{fmtWords(weekWords)}</p>
+                    <p style={{ fontSize: '8px', color: 'var(--mid)', margin: '8px 0 0', fontFamily: 'var(--ff-mono)' }}>words written</p>
+                  </div>
+                  <div style={{ padding: '20px', border: '1px solid var(--rule)', background: 'var(--paper)' }}>
+                    <p style={{ fontSize: '7px', fontFamily: 'var(--ff-mono)', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--mid)', margin: 0, marginBottom: 10 }}>Published</p>
+                    <p style={{ fontSize: '28px', fontWeight: 800, color: 'var(--ink)', margin: 0, letterSpacing: '-0.035em' }}>{published}</p>
+                    <p style={{ fontSize: '8px', color: 'var(--mid)', margin: '8px 0 0', fontFamily: 'var(--ff-mono)' }}>{drafts} in draft</p>
+                  </div>
+                  {goalProgress && (
+                    <div style={{ padding: '20px', border: '1px solid var(--rule)', background: 'var(--accent-dim)' }}>
+                      <p style={{ fontSize: '7px', fontFamily: 'var(--ff-mono)', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--mid)', margin: 0, marginBottom: 10 }}>Goal Progress</p>
+                      <p style={{ fontSize: '28px', fontWeight: 800, color: 'var(--accent)', margin: 0, letterSpacing: '-0.035em' }}>{Math.round((goalProgress.current / goalProgress.goal) * 100)}%</p>
+                      <p style={{ fontSize: '8px', color: 'var(--mid)', margin: '8px 0 0', fontFamily: 'var(--ff-mono)' }}>{goalProgress.current.toLocaleString()} / {goalProgress.goal.toLocaleString()}</p>
+                    </div>
+                  )}
+                  <div style={{ padding: '20px', border: '1px solid var(--rule)', background: 'var(--paper)' }}>
+                    <p style={{ fontSize: '7px', fontFamily: 'var(--ff-mono)', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--mid)', margin: 0, marginBottom: 10 }}>Status</p>
+                    <p style={{ fontSize: '13px', fontWeight: 700, color: 'var(--ink)', margin: 0 }}>On Track</p>
+                    <div style={{ fontSize: '8px', color: 'var(--mid)', margin: '8px 0 0', display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <span style={{ width: 6, height: 6, background: '#4ade80', borderRadius: '50%' }}></span> Active
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <hr className="db-triple-rule" />
 
+              {/* MAIN CONTENT */}
               {activeDeptKey === 'Leadership' && (
                 <div style={{ marginBottom: 32 }}>
                   <LeadershipDashboard tasks={tasks} selectedDept={selectedDept} setSelectedDept={setSelectedDept} />
