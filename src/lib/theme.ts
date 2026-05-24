@@ -17,6 +17,26 @@ export interface AppSettings {
   zenToolbar: boolean;
   reducedMotion: boolean;
   highContrast: boolean;
+  // Notifications
+  notifSound: boolean;
+  notifDesktop: boolean;
+  notifBadge: boolean;
+  // Dashboard
+  dashboardLayout: 'comfortable' | 'compact' | 'spacious';
+  showWordGoalWidget: boolean;
+  showRecentDocs: boolean;
+  startPage: 'home' | 'editor' | 'last-visited';
+  // Editor (additional)
+  editorPadding: number;
+  showWhitespace: boolean;
+  bracketPairHighlight: boolean;
+  smoothCaret: boolean;
+  // Behaviour (additional)
+  autoSaveDelay: number;
+  confirmDelete: boolean;
+  // Display (additional)
+  sidebarPosition: 'left' | 'right';
+  compactSidebar: boolean;
 }
 
 type ThemeDefinition = {
@@ -44,6 +64,26 @@ export const DEFAULT_SETTINGS: AppSettings = {
   zenToolbar: false,
   reducedMotion: false,
   highContrast: false,
+  // Notifications
+  notifSound: false,
+  notifDesktop: false,
+  notifBadge: true,
+  // Dashboard
+  dashboardLayout: 'comfortable',
+  showWordGoalWidget: true,
+  showRecentDocs: true,
+  startPage: 'home',
+  // Editor (additional)
+  editorPadding: 40,
+  showWhitespace: false,
+  bracketPairHighlight: true,
+  smoothCaret: true,
+  // Behaviour (additional)
+  autoSaveDelay: 2,
+  confirmDelete: true,
+  // Display (additional)
+  sidebarPosition: 'left',
+  compactSidebar: false,
 };
 
 export const THEMES: Record<string, ThemeDefinition> = {
@@ -556,12 +596,16 @@ export function applySettings(s: AppSettings): boolean {
   root.style.setProperty('--editor-font-size', `${s.editorFontSize}px`);
   root.style.setProperty('--editor-line-height', String(s.lineHeight));
   root.style.setProperty('--editor-max-width', `${s.maxWidth}px`);
+  root.style.setProperty('--editor-padding', `${s.editorPadding ?? 40}px`);
 
   const uiFont = UI_FONTS.find((font) => font.id === s.uiFont)?.stack ?? UI_FONTS[0].stack;
   root.style.setProperty('--ui-font', uiFont);
 
   root.classList.toggle('reduced-motion', s.reducedMotion);
   root.classList.toggle('high-contrast', s.highContrast);
+  root.classList.toggle('compact-sidebar', !!s.compactSidebar);
+  root.classList.toggle('sidebar-right', s.sidebarPosition === 'right');
+  root.classList.toggle('smooth-caret', s.smoothCaret !== false);
 
   return isDark;
 }

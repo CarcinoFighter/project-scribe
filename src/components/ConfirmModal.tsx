@@ -39,46 +39,44 @@ export default function ConfirmModal({
   const content = (
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center"
-      style={{ background: 'rgba(10,6,20,0.50)', backdropFilter: 'blur(6px)' }}
+      style={{ background: 'rgba(0,0,0,0.8)' }}
       onClick={onCancel}
     >
       <div
-        className="glass-overlay scale-in"
-        style={{ borderRadius: 20, padding: '28px 30px 24px', width: 340, maxWidth: 'calc(100vw - 32px)' }}
+        className="scale-in"
+        style={{
+          background: 'var(--paper)',
+          border: '1px solid var(--rule)',
+          borderTop: '2px solid var(--accent)',
+          padding: '28px 30px 24px',
+          width: 340,
+          maxWidth: 'calc(100vw - 32px)',
+          boxShadow: '20px 20px 0px rgba(0,0,0,0.3)',
+        }}
         onClick={e => e.stopPropagation()}
       >
-        <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', margin: '0 0 8px', letterSpacing: '-0.02em' }}>
+        <h3 className="db-display" style={{ fontSize: 18, margin: '0 0 12px' }}>
           {title}
         </h3>
-        <p style={{ fontSize: 13.5, color: 'var(--text-3)', lineHeight: 1.6, margin: '0 0 22px' }}>
+        <p style={{ fontFamily: 'var(--ff-ui)', fontSize: 13, color: 'var(--mid)', lineHeight: 1.6, margin: '0 0 28px' }}>
           {message}
         </p>
         <div className="flex gap-2 justify-end">
           <button
             ref={cancelRef}
             onClick={onCancel}
-            style={{
-              padding: '8px 18px', borderRadius: 10,
-              border: '1px solid var(--border-strong)',
-              background: 'none', cursor: 'pointer',
-              fontFamily: 'inherit', fontSize: 13.5,
-              color: 'var(--text-3)',
-            }}
+            className="db-ghost"
           >
             {cancelLabel}
           </button>
           <button
             onClick={onConfirm}
+            className="db-btn"
             style={{
-              padding: '8px 18px', borderRadius: 10, border: 'none',
-              cursor: 'pointer', fontFamily: 'inherit',
-              fontSize: 13.5, fontWeight: 600,
-              background: danger ? '#dc2626' : 'var(--accent)',
-              color: '#fff',
-              boxShadow: danger ? '0 2px 10px rgba(220,38,38,0.3)' : '0 2px 10px var(--accent-glow)',
+              background: danger ? '#b03030' : 'var(--ink)',
             }}
           >
-            {confirmLabel}
+            <span>{confirmLabel}</span>
           </button>
         </div>
       </div>

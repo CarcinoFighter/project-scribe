@@ -76,30 +76,30 @@ export default function TaskSubmissionModal({ taskId, taskTitle, onClose, onSucc
   if (!mounted) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[9800] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl anim-fade-in">
-      <div className="glass-raised w-full max-w-sm rounded-[var(--r-xl)] overflow-hidden shadow-2xl anim-slide-down border-[var(--border-strong)] relative flex flex-col">
-        <div className="p-5 border-b border-[var(--border-med)] flex items-center justify-between bg-[var(--bg-deep)]">
+    <div className="fixed inset-0 z-[9800] flex items-center justify-center p-4 bg-black/80 anim-fade-in">
+      <div className="w-full max-w-sm bg-[var(--paper)] border border-[var(--rule)] border-t-[3px] border-t-[var(--accent)] shadow-[20px_20px_0px_rgba(0,0,0,0.3)] anim-slide-down relative flex flex-col">
+        <div className="p-5 border-b border-[var(--rule)] flex items-center justify-between bg-[var(--tape-bg)]">
           <div>
-            <h2 className="text-base font-bold text-[var(--text)] tracking-tight">Submit Task</h2>
-            <p className="text-xs text-[var(--text-4)] truncate max-w-[250px]">{taskTitle}</p>
+            <h2 className="db-display" style={{ fontSize: 18, margin: 0 }}>Submit Task</h2>
+            <p className="db-cap" style={{ marginTop: 2, color: 'var(--mid)' }}>{taskTitle}</p>
           </div>
-          <button onClick={onClose} className="p-2 text-[var(--text-4)] hover:text-[var(--text)] hover:bg-[var(--bg-deep)] rounded-full transition-all">
-            <X size={18} />
+          <button onClick={onClose} className="p-2 text-[var(--mid)] hover:text-[var(--ink)] border border-transparent hover:border-[var(--rule)] transition-all">
+            <X size={16} strokeWidth={2} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
           {error && (
-            <div className="p-3 rounded-[var(--r-md)] bg-red-500/10 border border-red-500/20 text-red-500 text-xs">
+            <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-mono uppercase tracking-wide">
               {error}
             </div>
           )}
 
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-widest text-[var(--text-4)] flex items-center gap-1.5">
+          <div className="space-y-3">
+            <label className="db-cap flex items-center gap-1.5">
               Proof of Work
             </label>
-            <div className="border-2 border-dashed border-[var(--border-strong)] rounded-[var(--r-lg)] p-6 text-center hover:border-[var(--accent)] hover:bg-[var(--accent-subtle2)] transition-colors relative">
+            <div className="border border-dashed border-[var(--rule)] bg-[var(--bg-alt)] p-6 text-center hover:border-[var(--accent)] hover:bg-[var(--accent-sub)] transition-colors relative">
               <input 
                 type="file" 
                 accept="image/*,video/*" 
@@ -107,42 +107,46 @@ export default function TaskSubmissionModal({ taskId, taskTitle, onClose, onSucc
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               />
               {file ? (
-                <div className="flex flex-col items-center gap-2 text-[var(--text)]">
-                  {file.type.startsWith('image/') ? <ImageIcon size={24} className="text-[var(--accent)]" /> : <FileVideo size={24} className="text-[var(--accent)]" />}
-                  <span className="text-sm font-semibold truncate max-w-[200px]">{file.name}</span>
-                  <span className="text-xs text-[var(--text-4)]">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                <div className="flex flex-col items-center gap-2 text-[var(--ink)]">
+                  {file.type.startsWith('image/') ? <ImageIcon size={20} strokeWidth={1.5} className="text-[var(--accent)]" /> : <FileVideo size={20} strokeWidth={1.5} className="text-[var(--accent)]" />}
+                  <span className="text-xs font-bold truncate max-w-[200px]">{file.name}</span>
+                  <span className="db-cap">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
                 </div>
               ) : (
-                <div className="flex flex-col items-center gap-2 text-[var(--text-4)] mt-2">
-                  <Upload size={24} className="mb-2" />
-                  <span className="text-sm font-medium">Click or drag media here</span>
-                  <span className="text-[10px]">Images & videos allowed</span>
+                <div className="flex flex-col items-center gap-2 text-[var(--mid)] mt-2">
+                  <Upload size={20} strokeWidth={1.5} className="mb-2" />
+                  <span className="text-xs font-medium">CLICK OR DRAG MEDIA HERE</span>
+                  <span className="db-cap">IMAGES & VIDEOS ALLOWED</span>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="pt-4 flex items-center justify-end gap-3">
+          <hr className="db-hr" style={{ margin: '24px 0 16px' }} />
+
+          <div className="flex items-center justify-end gap-3">
             <button 
               type="button" 
               onClick={onClose}
-              className="px-4 py-2 text-sm font-semibold text-[var(--text-3)] hover:text-[var(--text)] transition-colors"
+              className="db-ghost"
             >
-              Cancel
+              CANCEL
             </button>
             <button 
               type="submit"
               disabled={submitting || !file}
-              className="bg-[var(--accent)] text-white px-6 py-2 rounded-[var(--r-md)] text-sm font-semibold shadow-lg shadow-[var(--accent-glow)] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100 flex items-center gap-2"
+              className="db-btn"
             >
-              {submitting ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  Uploading...
-                </>
-              ) : (
-                'Submit Task'
-              )}
+              <span>
+                {submitting ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 size={12} className="animate-spin" />
+                    UPLOADING
+                  </span>
+                ) : (
+                  'SUBMIT TASK'
+                )}
+              </span>
             </button>
           </div>
         </form>
