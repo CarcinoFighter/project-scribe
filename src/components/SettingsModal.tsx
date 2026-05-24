@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Check, Eye, Keyboard, Monitor, Palette, Sliders, Type, X } from 'lucide-react';
+import { Check, Eye, Keyboard, Monitor, Palette, Sliders, Type, X, Search } from 'lucide-react';
 import { requestPushSubscription } from '@/lib/usePushSubscription';
 import {
   ACCENT_COLORS,
@@ -206,6 +206,7 @@ export default function SettingsModal({
 }) {
   const [section, setSection] = useState('appearance');
   const [local, setLocal] = useState<AppSettings>(() => ({ ...settings }));
+  const [searchQuery, setSearchQuery] = useState('');
   const localRef = useRef<AppSettings>(local);
 
   useEffect(() => {
@@ -239,6 +240,16 @@ export default function SettingsModal({
     { label: 'Light', ids: ['default-light', 'catppuccin-latte', 'github-light', 'gruvbox-light', 'ayu-light', 'everforest-light', 'paper', 'solarized-light'] },
   ];
 
+  const isSearchActive = searchQuery.trim().length > 0;
+  const visibleSections = isSearchActive
+    ? NAV_SECTIONS.filter(sec => sec.label.toLowerCase().includes(searchQuery.toLowerCase()))
+    : NAV_SECTIONS;
+
+  const shouldShowSection = (sectionId: string) => {
+    if (!isSearchActive) return section === sectionId;
+    return visibleSections.some(s => s.id === sectionId);
+  };
+
   return (
     <div
       style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)' }}
@@ -263,19 +274,62 @@ export default function SettingsModal({
           animation: 'sm-fadein 0.16s ease',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--border-med)', flexShrink: 0 }}>
-          <div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--border-med)', flexShrink: 0, flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ flex: 1, minWidth: 200 }}>
             <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>Settings</div>
             <div style={{ fontSize: 11, color: 'var(--text-4)', marginTop: 3 }}>Customise your Vantage experience</div>
           </div>
-          <button type="button" onClick={onClose} style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--r-sm)', border: 'none', background: 'transparent', color: 'var(--text-4)', cursor: 'pointer', outline: 'none' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg-alt)', borderRadius: 6, padding: '4px 8px', minWidth: 200 }}>
+            <Search size={14} color="var(--text-4)" />
+            <input
+              type="text"
+              placeholder="Search settings..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                if (visibleSections.length > 0) {
+                  setSection(visibleSections[0].id);
+                }
+              }}
+              style={{
+                flex: 1,
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                color: 'var(--text)',
+                fontSize: 12,
+                fontFamily: 'inherit',
+              }}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                style={{
+                  padding: '2px 6px',
+                  background: 'var(--border)',
+                  border: 'none',
+                  borderRadius: 4,
+                  color: 'var(--text-3)',
+                  cursor: 'pointer',
+                  fontSize: 11,
+                  transition: 'background 0.12s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--border-med)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--border)')}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+          <button type="button" onClick={onClose} style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--r-sm)', border: 'none', background: 'transparent', color: 'var(--text-4)', cursor: 'pointer', outline: 'none', transition: 'all 0.12s' }} onMouseEnter={(e) => {e.currentTarget.style.background = 'var(--bg-alt)'; e.currentTarget.style.color = 'var(--text-2)';}} onMouseLeave={(e) => {e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-4)';}}>
             <X size={15} />
           </button>
         </div>
 
         <div className="settings-modal-inner" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           <nav className="settings-nav" style={{ width: 156, flexShrink: 0, borderRight: '1px solid var(--border)', padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: 2, background: 'var(--surface-sidebar)', overflowY: 'auto' }}>
-            {NAV_SECTIONS.map(({ id, label, Icon }) => (
+            {visibleSections.map(({ id, label, Icon }) => (
               <button
                 key={id}
                 type="button"
@@ -284,7 +338,7 @@ export default function SettingsModal({
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
-                  padding: '7px 10px',
+                  padding: '8px 10px',
                   width: '100%',
                   borderRadius: 'var(--r-md)',
                   border: 'none',
@@ -295,7 +349,19 @@ export default function SettingsModal({
                   color: section === id ? 'var(--accent)' : 'var(--text-4)',
                   fontSize: 12,
                   fontWeight: section === id ? 600 : 500,
-                  transition: 'all 0.1s',
+                  transition: 'all 0.12s',
+                }}
+                onMouseEnter={(e) => {
+                  if (section !== id) {
+                    e.currentTarget.style.background = 'var(--accent-subtle)';
+                    e.currentTarget.style.color = 'var(--accent)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (section !== id) {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = 'var(--text-4)';
+                  }
                 }}
               >
                 <Icon size={13} strokeWidth={2} />
@@ -309,7 +375,7 @@ export default function SettingsModal({
           </nav>
 
           <div style={{ flex: 1, overflowY: 'auto', padding: '18px 24px' }}>
-            {section === 'appearance' ? (
+            {shouldShowSection('appearance') && (
               <>
                 <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-4)', textTransform: 'uppercase', margin: '0 0 10px' }}>Theme</p>
                 {themeGroups.map((group) => (
@@ -383,9 +449,9 @@ export default function SettingsModal({
                   ))}
                 </div>
               </>
-            ) : null}
+            )}
 
-            {section === 'editor' ? (
+            {shouldShowSection('editor') && (
               <>
                 <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-4)', textTransform: 'uppercase', margin: '0 0 10px' }}>Editor Font</p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(175px,1fr))', gap: 6, marginBottom: 20 }}>
@@ -422,9 +488,9 @@ export default function SettingsModal({
                   <Slider value={local.lineHeight} min={1.2} max={2.4} step={0.05} onChange={(value) => update('lineHeight', Number(value.toFixed(2)))} />
                 </Row>
               </>
-            ) : null}
+            )}
 
-            {section === 'display' ? (
+            {shouldShowSection('display') && (
               <>
                 <Row label="Line numbers" hint="Show line numbers in the gutter">
                   <Toggle value={local.lineNumbers} onChange={(value) => update('lineNumbers', value)} />
@@ -448,9 +514,9 @@ export default function SettingsModal({
                   <Toggle value={local.zenToolbar} onChange={(value) => update('zenToolbar', value)} />
                 </Row>
               </>
-            ) : null}
+            )}
 
-            {section === 'behaviour' ? (
+            {shouldShowSection('behaviour') && (
               <>
                 <Row label="Auto-save" hint="Automatically save documents as you type">
                   <Toggle value={local.autoSave} onChange={(value) => update('autoSave', value)} />
@@ -493,9 +559,9 @@ export default function SettingsModal({
                   </button>
                 </Row>
               </>
-            ) : null}
+            )}
 
-            {section === 'advanced' ? (
+            {shouldShowSection('advanced') && (
               <>
                 <Row label="Reduced motion" hint="Disable animations and transitions">
                   <Toggle value={local.reducedMotion} onChange={(value) => update('reducedMotion', value)} />
@@ -517,9 +583,9 @@ export default function SettingsModal({
                   </button>
                 </div>
               </>
-            ) : null}
+            )}
 
-            {section === 'shortcuts' ? (
+            {shouldShowSection('shortcuts') && (
               <>
                 <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-4)', textTransform: 'uppercase', margin: '0 0 12px' }}>Keyboard Shortcuts</p>
                 <ShortcutRow label="Command palette" keys={['⌘', 'K']} />
@@ -536,7 +602,7 @@ export default function SettingsModal({
                 <ShortcutRow label="Navigate tabs" keys={['⌘', '1-9']} />
                 <ShortcutRow label="Export markdown" keys={['⌘', 'Shift', 'E']} />
               </>
-            ) : null}
+            )}
           </div>
         </div>
       </div>
