@@ -124,14 +124,14 @@ export default function CommandPalette({ onClose, onCommand, isDark, isMobile }:
   let flatIdx = 0;
 
   const portal = createPortal(
-    <>
-      <div className="db-overlay" onClick={onClose} />
+    <div className="db-overlay" onClick={onClose}>
       <div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-label="Command palette"
         className="db-cmd-wrap"
+        onClick={e => e.stopPropagation()}
       >
         <div className="db-cmd-search">
           <Search size={16} strokeWidth={1.8} className="db-cmd-search-icon" />
@@ -217,7 +217,7 @@ export default function CommandPalette({ onClose, onCommand, isDark, isMobile }:
           </span>
         </div>
       </div>
-    </>,
+    </div>,
     document.body,
   );
 

@@ -535,10 +535,7 @@ body {
    COMMAND PALETTE
    ═══════════════════════════════════════════════════════════════ */
 .db-cmd-wrap {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  position: absolute;
   width: 680px;
   max-width: calc(100vw - 48px);
   background: var(--paper);
@@ -553,11 +550,11 @@ body {
 @keyframes db-cmd-rise {
   from {
     opacity: 0;
-    transform: translate(-50%, -48%);
+    transform: scale(0.95) translateY(-8px);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, -50%);
+    transform: scale(1) translateY(0);
   }
 }
 
