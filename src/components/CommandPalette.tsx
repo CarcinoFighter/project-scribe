@@ -131,14 +131,10 @@ export default function CommandPalette({ onClose, onCommand, isDark, isMobile }:
         role="dialog"
         aria-modal="true"
         aria-label="Command palette"
-        className="db-cmd-wrap db-rise-0"
-        style={{ 
-          width: isMobile ? 'calc(100vw - 32px)' : '580px',
-          maxWidth: isMobile ? '100%' : 'calc(100vw - 32px)'
-        }}
+        className="db-cmd-wrap"
       >
-        <div className="db-cmd-search" style={{ padding: isMobile ? '12px 16px' : undefined }}>
-          <Search size={isMobile ? 16 : 13} strokeWidth={1.8} className="db-cmd-search-icon" />
+        <div className="db-cmd-search">
+          <Search size={16} strokeWidth={1.8} className="db-cmd-search-icon" />
           <input
             ref={inputRef}
             role="combobox"
@@ -148,22 +144,20 @@ export default function CommandPalette({ onClose, onCommand, isDark, isMobile }:
             aria-activedescendant={flat[selected] ? `cmd-item-${flat[selected].id}` : undefined}
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Search commands..."
+            placeholder="Search commands, actions, templates..."
             className="db-cmd-input"
-            style={{ fontSize: isMobile ? '16px' : undefined }}
           />
           {query && (
             <button onClick={() => setQuery('')} className="db-cmd-clear" aria-label="Clear search">
               ×
             </button>
           )}
-          <span className="db-kbd hidden sm:inline" onClick={onClose}>Esc</span>
         </div>
 
-        <div id="cmd-results" ref={listRef} role="listbox" className="db-cmd-list" style={{ maxHeight: isMobile ? '60vh' : '400px' }}>
+        <div id="cmd-results" ref={listRef} role="listbox" className="db-cmd-list" style={{ maxHeight: 'calc(100vh - 280px)' }}>
           {filtered.length === 0 ? (
             <div className="db-cmd-empty">
-              No results for <strong>&quot;{query}&quot;</strong>
+              No commands match <strong>&quot;{query}&quot;</strong>
             </div>
           ) : (
             <>
@@ -183,9 +177,8 @@ export default function CommandPalette({ onClose, onCommand, isDark, isMobile }:
                         onClick={() => run(cmd.id)}
                         onMouseEnter={() => setSelected(idx)}
                         className={`db-cmd-item ${isSelected ? 'sel' : ''}`}
-                        style={{ padding: isMobile ? '12px 16px' : undefined }}
                       >
-                        <cmd.icon size={isMobile ? 16 : 12} strokeWidth={1.8} />
+                        <cmd.icon size={14} strokeWidth={1.8} />
                         <span className="db-cmd-label">{cmd.label}</span>
                         {cmd.hint && !cmd.shortcut && (
                           <span className="db-cmd-hint hidden sm:block">{cmd.hint}</span>
@@ -195,7 +188,7 @@ export default function CommandPalette({ onClose, onCommand, isDark, isMobile }:
                             {cmd.shortcut}
                           </span>
                         )}
-                        {isSelected && <ArrowRight size={12} className="db-cmd-arrow" />}
+                        {isSelected && <ArrowRight size={14} className="db-cmd-arrow" />}
                       </button>
                     );
                   })}
