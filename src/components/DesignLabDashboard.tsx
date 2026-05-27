@@ -118,7 +118,7 @@ export default function DesignLabDashboard() {
 
   return (
     <div className="anim-fade-up">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 'var(--dash-gap-card)' }}>
         <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(242,78,30,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Figma size={20} style={{ color: '#f24e1e' }} />
         </div>
@@ -128,7 +128,7 @@ export default function DesignLabDashboard() {
         </div>
       </div>
 
-      <div className="stats-grid" style={{ marginBottom: 24 }}>
+      <div className="stats-grid" style={{ marginBottom: 'var(--dash-gap-card)' }}>
         <div className="anim-stagger" style={{ '--i': 0 } as React.CSSProperties}>
           <StatCard
             label="Tracked Designs"
@@ -190,7 +190,7 @@ export default function DesignLabDashboard() {
       ) : (
         <>
           {linkedDesignsArr.length > 0 && (
-            <div className="doc-grid-2" style={{ gap: 16, marginBottom: 32 }}>
+            <div className="doc-grid-2" style={{ gap: 'var(--dash-gap-card)', marginBottom: 'var(--dash-gap-section)' }}>
               {linkedDesignsArr.map(design => (
                 <div key={design.id} className="glass-raised" style={{ borderRadius: 'var(--r-lg)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                   <div style={{ padding: 0 }}>

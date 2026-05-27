@@ -60,7 +60,7 @@ export default function DevelopmentDashboard() {
 
   return (
     <div className="anim-fade-up">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 'var(--dash-gap-card)' }}>
         <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(59,130,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Code size={20} style={{ color: '#3b82f6' }} />
         </div>
@@ -70,7 +70,7 @@ export default function DevelopmentDashboard() {
         </div>
       </div>
 
-      <div className="stats-grid" style={{ marginBottom: 24 }}>
+      <div className="stats-grid" style={{ marginBottom: 'var(--dash-gap-card)' }}>
         <div className="anim-stagger" style={{ '--i': 0 } as React.CSSProperties}>
           <StatCard
             label="Total Commits"
@@ -116,16 +116,16 @@ export default function DevelopmentDashboard() {
         />
       </div>
 
-      <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 16, marginTop: 32 }}>Tracked Repositories</h3>
-      
+      <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 16, marginTop: 'var(--dash-gap-section)' }}>Tracked Repositories</h3>
+
       {loading ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--dash-gap-item)' }}>
           {[1,2].map(i => (
             <div key={i} className="glass-raised" style={{ height: 80, borderRadius: 'var(--r-lg)', animation: 'lp-shimmer 1.4s ease-in-out infinite' }} />
           ))}
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--dash-gap-item)' }}>
           {repos.map(repo => (
             <div key={repo.id} className="glass-raised" style={{ padding: '16px 20px', borderRadius: 'var(--r-lg)', display: 'flex', alignItems: 'center', gap: 16 }}>
               <div style={{ flex: 1 }}>

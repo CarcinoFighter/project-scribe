@@ -143,7 +143,7 @@ export function ApplicationsDashboard() {
   if (error) {
     return (
       <div style={{ border: '1px solid var(--rule)', padding: 24, background: 'var(--accent-sub)' }}>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', gap: 'var(--dash-gap-item)', alignItems: 'flex-start' }}>
           <AlertCircle size={14} style={{ color: 'var(--accent)', marginTop: 2 }} />
           <div>
             <h4 className="db-cap" style={{ color: 'var(--ink)', marginBottom: 4 }}>System Authentication Error</h4>
@@ -157,7 +157,7 @@ export function ApplicationsDashboard() {
   return (
     <div className="anim-fade-up">
       {/* Newspaper Headers */}
-      <div style={{ marginBottom: 24 }}>
+      <div style={{ marginBottom: 'var(--dash-gap-card)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
           <span className="db-cap" style={{ color: 'var(--accent)', fontWeight: 700 }}>RECRUITMENT BUREAU</span>
           <div style={{ flex: 1, height: 1, background: 'var(--rule)' }} />
