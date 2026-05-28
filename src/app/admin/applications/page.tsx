@@ -1,34 +1,35 @@
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 import { ApplicationsDashboard } from '@/components/ApplicationsDashboard';
-import { verifyToken } from '@/lib/auth';
-import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { useUser } from '@/lib/useUser';
 
-export const dynamic = 'force-dynamic';
+export default function ApplicationsPage() {
+  const router = useRouter();
+  const { user, loading } = useUser();
 
-export default async function ApplicationsPage() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('cw_token')?.value;
+  useEffect(() => {
+    if (loading) return;
+    if (!user) {
+      router.replace('/login');
+      return;
+    }
+    if (!user.admin_access) {
+      router.replace('/');
+    }
+  }, [loading, user, router]);
 
-  if (!token) {
-    redirect('/login');
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-[#0a0a0b] text-white flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-[var(--accent)]" />
+      </main>
+    );
   }
 
-  const payload = verifyToken(token);
-  if (!payload) {
-    redirect('/login');
-  }
-
-  // Check admin access
-  const { data: user, error: userError } = await supabaseAdmin
-    .from('users')
-    .select('admin_access')
-    .eq('id', payload.userId)
-    .single();
-
-  if (userError || !user?.admin_access) {
-    redirect('/');
-  }
+  if (!user || !user.admin_access) return null;
 
   return (
     <main className="min-h-screen bg-[#0a0a0b] text-white selection:bg-blue-500/30">

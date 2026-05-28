@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import MultiPersonSelect from './MultiPersonSelect';
+import { apiFetch } from '@/lib/api';
 
 interface Comment {
   id: string;
@@ -76,7 +77,7 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin, use
   useEffect(() => {
     const fetchComments = async () => {
       try {
-        const res = await fetch(`/api/tasks/comments?taskId=${task.id}`);
+        const res = await apiFetch(`/api/tasks/comments?taskId=${task.id}`);
         if (res.ok) {
           const data = await res.json();
           setComments(data.comments || []);
@@ -98,7 +99,7 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin, use
 
         if (table) {
           try {
-            const res = await fetch(`/api/documents/title?id=${task.document_id}&table=${table}`);
+            const res = await apiFetch(`/api/documents/title?id=${task.document_id}&table=${table}`);
             if (res.ok) {
               const data = await res.json();
               setDocTitle(data.title);
@@ -123,7 +124,7 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin, use
     setSubmitting(true);
     setCommentError(null);
     try {
-      const res = await fetch('/api/tasks/comments', {
+      const res = await apiFetch('/api/tasks/comments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -152,7 +153,7 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin, use
   const handleStatusUpdate = async (newStatus: string, comment?: string) => {
     setSubmitting(true);
     try {
-      const res = await fetch('/api/tasks', {
+      const res = await apiFetch('/api/tasks', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -163,7 +164,7 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin, use
 
       if (res.ok) {
         if (comment) {
-          await fetch('/api/tasks/comments', {
+          await apiFetch('/api/tasks/comments', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -185,7 +186,7 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin, use
   const handleAssignProofreader = async (proofreaderId: string) => {
     setSubmitting(true);
     try {
-      const res = await fetch('/api/tasks', {
+      const res = await apiFetch('/api/tasks', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -196,7 +197,7 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin, use
       });
 
       if (res.ok) {
-        await fetch('/api/tasks/comments', {
+        await apiFetch('/api/tasks/comments', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -220,7 +221,7 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin, use
     setSubmitting(true);
     try {
       // 1. Update task assignees
-      const taskRes = await fetch('/api/tasks', {
+      const taskRes = await apiFetch('/api/tasks', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -231,7 +232,7 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin, use
 
       if (taskRes.ok) {
         // 2. Add reassignment comment
-        const commentRes = await fetch('/api/tasks/comments', {
+        const commentRes = await apiFetch('/api/tasks/comments', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

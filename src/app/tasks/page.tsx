@@ -140,6 +140,7 @@ import {
 } from "lucide-react";
 import { useUser } from "@/lib/useUser";
 import { useNotifications } from "@/lib/useNotifications";
+import { apiFetch } from "@/lib/api";
 import AccountMenu from "@/components/AccountMenu";
 import AssignTaskModal from "@/components/AssignTaskModal";
 import Toast from "@/components/Toast";
@@ -978,8 +979,8 @@ export default function WorkPage() {
 
     try {
       const [myRes, allRes] = await Promise.all([
-        fetch("/api/tasks"),
-        isLeadership ? fetch("/api/tasks/all") : Promise.resolve(null),
+        apiFetch("/api/tasks"),
+        isLeadership ? apiFetch("/api/tasks/all") : Promise.resolve(null),
       ]);
 
       if (myRes.ok) {
@@ -1031,7 +1032,7 @@ export default function WorkPage() {
   const handleComplete = async (taskId: string) => {
     setCompleting(taskId);
     try {
-      const res = await fetch("/api/tasks", {
+      const res = await apiFetch("/api/tasks", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: taskId, status: "done" }),
@@ -1055,7 +1056,7 @@ export default function WorkPage() {
     if (!confirm("Are you sure you want to delete this task?")) return;
     setDeleting(task.id);
     try {
-      const res = await fetch(`/api/tasks?id=${task.id}`, { method: "DELETE" });
+      const res = await apiFetch(`/api/tasks?id=${task.id}`, { method: "DELETE" });
       if (res.ok) {
         setMyAssignments((prev) => prev.filter((a) => a.id !== task.id));
         setAllAssignments((prev) => prev.filter((a) => a.id !== task.id));
@@ -1073,7 +1074,7 @@ export default function WorkPage() {
 
   const handleInitDoc = async (assignmentId: string) => {
     try {
-      const res = await fetch("/api/tasks/initialize-doc", {
+      const res = await apiFetch("/api/tasks/initialize-doc", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ assignmentId }),
@@ -1158,7 +1159,7 @@ export default function WorkPage() {
     // Fetch counts for sidebar
     const fetchCounts = async () => {
       try {
-        const r = await fetch("/api/documents");
+        const r = await apiFetch("/api/documents");
         if (r.ok) {
           const d = await r.json();
           const docs = d.documents || [];

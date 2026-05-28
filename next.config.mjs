@@ -1,7 +1,10 @@
 import withSerwistInit from "@serwist/next";
 
+const isCapacitorExport = process.env.CAPACITOR_BUILD === '1' || process.env.CAPACITOR_BUILD === 'true';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: isCapacitorExport ? "export" : "standalone",
   reactStrictMode: true,
   turbopack: {},
   // In this repo we rely on `tsc --noEmit` / CI for type safety.
@@ -24,6 +27,7 @@ const nextConfig = {
         pathname: '/storage/v1/object/public/**',
       },
     ],
+    unoptimized: isCapacitorExport,
   },
 };
 

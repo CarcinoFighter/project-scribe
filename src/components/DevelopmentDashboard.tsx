@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Github, GitBranch, AlertCircle, TrendingUp, Code, Activity, Server, CheckCircle2, XCircle, Clock, Hash } from 'lucide-react';
 import { StatCard, GenericActivityChart } from './DashboardStats';
+import { apiFetch } from '@/lib/api';
 
 interface RepoStat {
   id: number;
@@ -27,7 +28,7 @@ export default function DevelopmentDashboard() {
   useEffect(() => {
     async function fetchGitHubData() {
       try {
-        const res = await fetch('/api/github/stats');
+        const res = await apiFetch('/api/github/stats');
         if (!res.ok) {
           const err = await res.json();
           throw new Error(err.error || 'Failed to fetch GitHub stats');

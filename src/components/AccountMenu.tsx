@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Settings, Edit3, LogOut, Sun, Moon, FileText, Download } from 'lucide-react';
 import Image from 'next/image';
+import { apiFetch } from '@/lib/api';
 
 interface AccountMenuProps {
   user: any;
@@ -53,7 +54,7 @@ export default function AccountMenu({ user, onClose, onToast, onOpenSettings, is
 
   const handleLogout = async () => {
     onClose();
-    await fetch('/api/auth/logout', { method: 'POST' });
+    await apiFetch('/api/auth/logout', { method: 'POST' });
     router.push('/login');
     router.refresh();
     onToast('Signed out');

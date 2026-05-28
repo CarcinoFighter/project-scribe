@@ -125,6 +125,7 @@ import {
 import MultiPersonSelect from './MultiPersonSelect';
 import MiniCalendar from './MiniCalendar';
 import { DEPARTMENTS } from '@/config/departments';
+import { apiFetch } from '@/lib/api';
 
 // Full icon options for custom categories
 export const ICON_OPTIONS = [
@@ -326,7 +327,7 @@ export default function AssignTaskModal({ member, onClose, onSuccess, defaultCat
   useEffect(() => {
     if (!member) {
       setLoading(true);
-      fetch('/api/team')
+      apiFetch('/api/team')
         .then(r => r.json())
         .then(() => {})
         .catch(console.error)
@@ -353,7 +354,7 @@ export default function AssignTaskModal({ member, onClose, onSuccess, defaultCat
         ? customCategory.trim().toLowerCase().replace(/\s+/g, '_')
         : category;
 
-      const res = await fetch('/api/tasks/assign', {
+      const res = await apiFetch('/api/tasks/assign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

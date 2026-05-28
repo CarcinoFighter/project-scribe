@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { useUser } from '@/lib/useUser';
+import { apiFetch } from '@/lib/api';
 import {
   Globe,
   Lock,
@@ -58,7 +59,7 @@ export default function MetadataPanel(props: MetadataPanelProps) {
 
   React.useEffect(() => {
     if (id && id !== 'ls-active' && !id.startsWith('new-')) {
-      fetch(`/api/tasks/comments?taskId=${id}`)
+      apiFetch(`/api/tasks/comments?taskId=${id}`)
         .then(res => res.json())
         .then(data => setComments(data.comments || []))
         .catch(err => console.error('Error fetching comments:', err));
@@ -73,7 +74,7 @@ export default function MetadataPanel(props: MetadataPanelProps) {
 
     setIsSubmitting(true);
     try {
-      const res = await fetch('/api/tasks/comments', {
+      const res = await apiFetch('/api/tasks/comments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -105,7 +106,7 @@ export default function MetadataPanel(props: MetadataPanelProps) {
     setIsSubmitting(true);
     try {
       if (commentText.trim()) {
-        const res = await fetch('/api/tasks/comments', {
+        const res = await apiFetch('/api/tasks/comments', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
