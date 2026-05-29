@@ -4,14 +4,23 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 const VAPID_PUBLIC = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY;
 
-if (VAPID_PUBLIC && VAPID_PRIVATE) {
-  webpush.setVapidDetails(
-    'mailto:admin@carcino.work',
-    VAPID_PUBLIC,
-    VAPID_PRIVATE
-  );
-} else {
-  console.warn('[pushNotify] VAPID keys are missing from environment variables. Push notifications will not be sent.');
+let vapidConfigured = false;
+
+function ensureVapidConfigured() {
+  if (vapidConfigured) return true;
+  if (!VAPID_PUBLIC || !VAPID_PRIVATE) {
+    console.warn('[pushNotify] VAPID keys are missing from environment variables. Push notifications will not be sent.');
+    return false;
+  }
+
+  try {
+    webpush.setVapidDetails('mailto:admin@carcino.work', VAPID_PUBLIC, VAPID_PRIVATE);
+    vapidConfigured = true;
+    return true;
+  } catch (error) {
+    console.warn('[pushNotify] Failed to configure VAPID details:', error);
+    return false;
+  }
 }
 
 export interface PushPayload {
@@ -27,6 +36,8 @@ export interface PushPayload {
  * Internal function to send the actual push notification.
  */
 async function sendPushToUser(userId: string, payload: PushPayload) {
+  if (!ensureVapidConfigured()) return;
+
   const { data: subs, error } = await supabaseAdmin
     .from('push_subscriptions')
     .select('*')
@@ -67,6 +78,8 @@ async function sendPushToUser(userId: string, payload: PushPayload) {
  * Unified notification sender: Sends a push and saves to DB for the bell icon.
  */
 export async function notifyUser(userId: string, payload: PushPayload) {
+  ensureVapidConfigured();
+
   // 1. Save to database for the Bell Icon UI
   const { error: dbError } = await supabaseAdmin
     .from('notifications')

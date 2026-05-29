@@ -5,8 +5,10 @@
   "scripts": {
     "dev": "next dev --turbo",
     "build": "next build --webpack",
+    "build:mobile": "node scripts/build.mjs",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "build:vercel": "next build --webpack"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.4",
