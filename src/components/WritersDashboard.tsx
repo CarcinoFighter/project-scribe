@@ -53,17 +53,17 @@ export default function WritersDashboard({
     <>
       {/* CREATE ACTIONS — Row of three buttons */}
       {canCreate && (
-        <div className="anim-fade-up dash-quick-actions" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 'var(--dash-gap-item)', marginBottom: 'var(--dash-gap-section)', animationDelay: '0.02s' }}>
+        <div className="anim-fade-up dash-quick-actions" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 40, animationDelay: '0.02s' }}>
           <QuickAction icon={FileText} label="New Article" sublabel="Research or cancer doc" color="#3b82f6" bg="rgba(59,130,246,0.08)" onClick={() => router.push('/editor')} />
           <QuickAction icon={BookOpen} label="New Blog Post" sublabel="Share your perspective" color="var(--accent)" bg="var(--accent-subtle)" onClick={() => router.push('/editor')} />
           <QuickAction icon={Heart} label="Survivor Story" sublabel="Community & support" color="#10b981" bg="rgba(16,185,129,0.08)" onClick={() => router.push('/editor')} />
         </div>
       )}
 
-      <hr style={{ border: 'none', borderTop: '1px solid var(--rule)', margin: 'var(--dash-gap-section) 0', boxShadow: '0 1.5px 0 var(--ink), 0 3px 0 var(--rule)', height: 0 }} />
+      <hr style={{ border: 'none', borderTop: '1px solid var(--rule)', margin: '40px 0', boxShadow: '0 1.5px 0 var(--ink), 0 3px 0 var(--rule)', height: 0 }} />
 
       {/* TOP ROW: Activity Chart + Insight Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--dash-gap-card)', marginBottom: 'var(--dash-gap-section)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24, marginBottom: 40 }}>
         <div className="anim-fade-up" style={{ animationDelay: '0.04s' }}>
           <div style={{ marginBottom: 16 }}>
             <p style={{ fontSize: '8px', fontFamily: 'var(--ff-mono)', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--mid)', margin: 0, marginBottom: 8 }}>This Week</p>
@@ -77,7 +77,7 @@ export default function WritersDashboard({
             <p style={{ fontSize: '8px', fontFamily: 'var(--ff-mono)', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--mid)', margin: 0, marginBottom: 8 }}>Insights</p>
             <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--ink)', margin: 0, letterSpacing: '-0.02em' }}>Performance</h2>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--dash-gap-item)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {[
               { label: 'Avg Read Time', value: allDocs.length ? `${Math.round(allDocs.reduce((s, d) => s + d.readTime, 0) / allDocs.length)}m` : '—', sub: 'per document', icon: Clock, accent: false, onClick: undefined, progress: undefined },
               { label: 'Peak Engagement', value: Math.max(...allDocs.map(d => d.readTime), 0) || '—', sub: 'max read time', icon: TrendingUp, accent: false, onClick: () => {}, progress: undefined },
@@ -90,14 +90,14 @@ export default function WritersDashboard({
         </div>
       </div>
 
-      <hr style={{ border: 'none', borderTop: '1px solid var(--rule)', margin: 'var(--dash-gap-section) 0', boxShadow: '0 1.5px 0 var(--ink), 0 3px 0 var(--rule)', height: 0 }} />
+      <hr style={{ border: 'none', borderTop: '1px solid var(--rule)', margin: '40px 0', boxShadow: '0 1.5px 0 var(--ink), 0 3px 0 var(--rule)', height: 0 }} />
 
       {/* CONTENT GRID: Articles, Blogs, Assignments */}
       <div style={{ marginBottom: 20 }}>
         <p style={{ fontSize: '8px', fontFamily: 'var(--ff-mono)', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--mid)', margin: 0, marginBottom: 8 }}>Content</p>
         <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--ink)', margin: 0, letterSpacing: '-0.02em' }}>Your Work</h2>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(var(--dash-grid-min), 1fr))`, gap: 'var(--dash-gap-card)', marginBottom: 'var(--dash-gap-section)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, marginBottom: 40 }}>
         {/* ARTICLES SECTION */}
         <div className="anim-fade-up" style={{ animationDelay: '0.08s' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -114,7 +114,7 @@ export default function WritersDashboard({
           </div>
           {docsLoading ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {[0, 1].map(i => <div key={i} style={{ border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: 'var(--dash-card-padding)', display: 'flex', flexDirection: 'column', gap: 8 }}><Skeleton h={12} w="60%" /><Skeleton h={14} w="90%" /><Skeleton h={11} w="80%" /></div>)}
+              {[0, 1].map(i => <div key={i} style={{ border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: '13px 15px', display: 'flex', flexDirection: 'column', gap: 8 }}><Skeleton h={12} w="60%" /><Skeleton h={14} w="90%" /><Skeleton h={11} w="80%" /></div>)}
             </div>
           ) : articles.length === 0 ? (
             <EmptyDocState type="articles" onNew={() => router.push('/editor')} canCreate={canCreate} />
@@ -145,7 +145,7 @@ export default function WritersDashboard({
           </div>
           {docsLoading ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {[0, 1].map(i => <div key={i} style={{ border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: 'var(--dash-card-padding)', display: 'flex', flexDirection: 'column', gap: 8 }}><Skeleton h={12} w="60%" /><Skeleton h={14} w="90%" /><Skeleton h={11} w="80%" /></div>)}
+              {[0, 1].map(i => <div key={i} style={{ border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: '13px 15px', display: 'flex', flexDirection: 'column', gap: 8 }}><Skeleton h={12} w="60%" /><Skeleton h={14} w="90%" /><Skeleton h={11} w="80%" /></div>)}
             </div>
           ) : blogs.length === 0 ? (
             <EmptyDocState type="blogs" onNew={() => router.push('/editor')} canCreate={canCreate} />
@@ -201,7 +201,7 @@ export default function WritersDashboard({
 
       {/* Leadership assignments rollup */}
       {user?.department === 'Leadership' && (
-        <div style={{ marginTop: 'var(--dash-gap-section)', marginBottom: 80 }} className="anim-fade-up">
+        <div style={{ marginTop: 40, marginBottom: 80 }} className="anim-fade-up">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, borderBottom: '1px solid var(--border)', paddingBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--accent-subtle2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

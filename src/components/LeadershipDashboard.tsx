@@ -63,7 +63,7 @@ export default function LeadershipDashboard({
   return (
     <div>
       {/* Interactive Dept Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 'var(--dash-gap-item)', marginBottom: 'var(--dash-gap-section)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 32 }}>
         {DEPT_CONFIG.map((dept, i) => {
           const isActive = selectedDept === dept.id;
           const isSvg = dept.icon.endsWith('.svg');
@@ -109,7 +109,7 @@ export default function LeadershipDashboard({
 
       <div className="anim-fade-up">
         {/* Dynamic Stats */}
-        <div className="stats-grid" style={{ marginBottom: 'var(--dash-gap-section)' }}>
+        <div className="stats-grid" style={{ marginBottom: 32 }}>
           <StatCard
             label={selectedDept ? "Active Assignments" : "Global Assignments"}
             value={totalTasks}

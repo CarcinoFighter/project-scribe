@@ -66,7 +66,7 @@ export function ActivityChart({ docs, weekWords }: { docs: Doc[]; weekWords: num
   const fmtWords = (n: number) => n >= 1000 ? `${(n/1000).toFixed(1)}k` : String(n);
 
   return (
-    <div className="glass-raised" style={{ borderRadius:'var(--r-lg)', padding:'var(--dash-card-padding)', marginBottom:'var(--dash-gap-item)' }}>
+    <div className="glass-raised" style={{ borderRadius:'var(--r-lg)', padding:'18px 20px', marginBottom:20 }}>
       <div className="dash-chart-header" style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:18 }}>
         <div>
           <div style={{ fontSize:14, fontWeight:700, color:'var(--text)', letterSpacing:'-0.01em' }}>Writing Activity</div>
@@ -149,7 +149,7 @@ export function DocCard({
       style={{
         background: hov ? 'var(--surface-1)' : 'transparent',
         border: `1px solid ${doc.isActive?'rgba(143,107,187,0.35)':hov?'var(--border-med)':'var(--border)'}`,
-        borderRadius:'var(--r-lg)', padding:'var(--dash-card-padding)',
+        borderRadius:'var(--r-lg)', padding:'13px 15px',
         cursor:'pointer', transition:'all 0.13s',
         display:'flex', flexDirection:'column', gap:8,
         transform: hov?'translateY(-1px)':'none',
