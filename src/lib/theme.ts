@@ -607,6 +607,40 @@ export function applySettings(s: AppSettings): boolean {
   root.classList.toggle('sidebar-right', s.sidebarPosition === 'right');
   root.classList.toggle('smooth-caret', s.smoothCaret !== false);
 
+  // Apply dashboard layout spacing variables
+  const layoutVars: Record<string, Record<string, string>> = {
+    compact: {
+      '--dash-gap-section': '28px',
+      '--dash-gap-card': '16px',
+      '--dash-gap-item': '10px',
+      '--dash-card-padding': '12px 14px',
+      '--dash-grid-min': '240px',
+      '--dash-section-margin': '28px',
+    },
+    comfortable: {
+      '--dash-gap-section': '40px',
+      '--dash-gap-card': '24px',
+      '--dash-gap-item': '12px',
+      '--dash-card-padding': '16px 18px',
+      '--dash-grid-min': '280px',
+      '--dash-section-margin': '40px',
+    },
+    spacious: {
+      '--dash-gap-section': '48px',
+      '--dash-gap-card': '32px',
+      '--dash-gap-item': '16px',
+      '--dash-card-padding': '20px 24px',
+      '--dash-grid-min': '320px',
+      '--dash-section-margin': '48px',
+    },
+  };
+
+  const layout = s.dashboardLayout || 'comfortable';
+  const layoutVarSet = layoutVars[layout] || layoutVars.comfortable;
+  Object.entries(layoutVarSet).forEach(([key, value]) => root.style.setProperty(key, value));
+  root.classList.toggle('dashboard-compact', layout === 'compact');
+  root.classList.toggle('dashboard-spacious', layout === 'spacious');
+
   return isDark;
 }
 
