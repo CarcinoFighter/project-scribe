@@ -7,7 +7,7 @@ const nextConfig = {
   // In this repo we rely on `tsc --noEmit` / CI for type safety.
   // Next's in-build typecheck can fail on newer Node runtimes in some environments.
   typescript: {
-    ignoreBuildErrors: isCapacitorExport || Number(process.versions.node.split(".")[0]) >= 23,
+    ignoreBuildErrors: Number(process.versions.node.split(".")[0]) >= 23,
   },
   // Some restricted environments error when Next tries to spawn multiple build workers.
   // Keep builds functional by forcing a single worker on newer Node runtimes.
