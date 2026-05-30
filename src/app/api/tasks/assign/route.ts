@@ -36,10 +36,6 @@ export async function POST(req: NextRequest) {
     if (userError) throw userError;
 
     const isLeadership = payload.adminAccess || userData.department === 'Leadership';
-    
-    if (!isLeadership) {
-      return NextResponse.json({ error: 'Assignment permissions required (Leadership or Admin)' }, { status: 403 });
-    }
 
     const {
       assigned_to, // Now expected to be an array of UUIDs
@@ -52,6 +48,10 @@ export async function POST(req: NextRequest) {
       category_icon,
       department,
     } = await req.json();
+
+    if (!isLeadership && userData.department !== department) {
+      return NextResponse.json({ error: 'Assignment permissions required (Leadership, Admin, or own department)' }, { status: 403 });
+    }
 
     if (!assigned_to || !Array.isArray(assigned_to) || assigned_to.length === 0 || !title || !category) {
       return NextResponse.json({ error: 'Missing required fields or invalid assigned_to' }, { status: 400 });

@@ -528,7 +528,7 @@ function TaskRow({
 
       <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 pl-10 sm:pl-0">
         <div className="flex items-center gap-3 sm:gap-4">
-          {isAdmin && (task.assignees?.length || task.proofreader) && (
+          {(task.assignees?.length || task.proofreader) && (
             <div className="flex items-center gap-2.5 group/avatars mr-1">
               <div className="flex items-center -space-x-2">
                 {/* Regular Assignees */}
@@ -1093,6 +1093,8 @@ export default function WorkPage() {
   };
 
   const isAdmin = !!user?.admin_access;
+  const canManageBoard = isAdmin || user?.department === "Leadership" || user?.department === activeDeptKey;
+
   const assignments =
     isLeadership && view === "admin" ? allAssignments : myAssignments;
 
@@ -1368,7 +1370,7 @@ export default function WorkPage() {
                     </span>
                     <span className="db-cap">Total Tasks</span>
                   </div>
-                  {isAdmin && (
+                  {canManageBoard && (
                     <button
                       onClick={() =>
                         setShowAssignModal({ department: activeDeptKey })
@@ -1495,7 +1497,7 @@ export default function WorkPage() {
                             onDeleteClick={handleDelete}
                             completing={completing}
                             deleting={deleting}
-                            isAdmin={isAdmin}
+                            isAdmin={canManageBoard}
                             onAssign={(category: string) =>
                               setShowAssignModal({
                                 category,
@@ -1642,7 +1644,7 @@ export default function WorkPage() {
                             onDeleteClick={handleDelete}
                             completing={completing}
                             deleting={deleting}
-                            isAdmin={isAdmin}
+                            isAdmin={canManageBoard}
                             onAssign={(category: string) =>
                               setShowAssignModal({
                                 category,
