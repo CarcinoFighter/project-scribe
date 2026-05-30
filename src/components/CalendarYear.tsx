@@ -91,7 +91,6 @@ export function CalendarYear({ year, events, onMonthClick }: CalendarYearProps) 
                     fontSize: 7,
                     padding: '4px 2px',
                     textAlign: 'center',
-                    color: day.isCurrentMonth ? 'var(--ink)' : 'var(--mid)',
                     opacity: day.isCurrentMonth ? 1 : 0.4,
                     background: day.isToday ? 'var(--accent)' : 'transparent',
                     color: day.isToday ? 'var(--paper)' : day.isCurrentMonth ? 'var(--ink)' : 'var(--mid)',
