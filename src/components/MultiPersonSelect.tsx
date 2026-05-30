@@ -12,14 +12,14 @@ interface TeamMember {
 }
 
 interface MultiPersonSelectProps {
-  selectedIds: string[];
+  selectedIds?: string[]; // 1. Made optional just in case
   onChange: (ids: string[]) => void;
   maxSelections?: number;
   placeholder?: string;
 }
 
 export default function MultiPersonSelect({ 
-  selectedIds, 
+  selectedIds = [], // 2. FIX: Fallback to an empty array right here
   onChange, 
   maxSelections,
   placeholder = "Search team members..." 
@@ -58,6 +58,7 @@ export default function MultiPersonSelect({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Safe checks now that selectedIds is guaranteed to be an array
   const selectedMembers = members.filter(m => selectedIds.includes(m.id));
   const filteredMembers = members.filter(m => 
     !selectedIds.includes(m.id) && 
@@ -67,7 +68,6 @@ export default function MultiPersonSelect({
 
   const handleSelect = (id: string) => {
     if (maxSelections && selectedIds.length >= maxSelections) {
-      // If max is 1, replace. Otherwise do nothing or show error.
       if (maxSelections === 1) {
         onChange([id]);
       }
@@ -104,6 +104,7 @@ export default function MultiPersonSelect({
             )}
             <span>{member.name}</span>
             <button 
+              type="button" // Good practice so it doesn't accidentally submit forms
               onClick={(e) => { e.stopPropagation(); handleRemove(member.id); }}
               className="hover:bg-[var(--accent-subtle)] rounded-full p-0.5 transition-colors"
             >
@@ -133,6 +134,7 @@ export default function MultiPersonSelect({
             <div className="p-1">
               {filteredMembers.map(member => (
                 <button
+                  type="button"
                   key={member.id}
                   onClick={() => handleSelect(member.id)}
                   className="w-full flex items-center gap-3 px-3 py-2 hover:bg-[var(--bg-deep)] rounded-[var(--r-sm)] text-left transition-colors group"

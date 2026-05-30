@@ -35,8 +35,10 @@ import WritersDashboard from '@/components/WritersDashboard';
 import MobileNav from '@/components/MobileNav';
 import { Sidebar } from '@/components/Sidebar';
 import { DocCard, EmptyDocState } from '@/components/WritersDashboardComponents';
+import { UpcomingEventsPanel } from '@/components/UpcomingEventsPanel';
 import { getGreeting, getTodayLabel, fmtWords, getWeekWindow, getTodayStr, countWords, excerptFrom } from '@/lib/utils';
 import { Task } from '@/types/task';
+import { CalendarEvent } from '@/types/calendar';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Doc {
@@ -282,6 +284,7 @@ function DashboardContent() {
   const [mobileMenuOpen,   setMobileMenuOpen]   = useState(false);
   const [wordGoal,         setWordGoal]         = useState(0);
   const [tasks,            setTasks]            = useState<Task[]>([]);
+  const [events,           setEvents]           = useState<CalendarEvent[]>([]);
   const [selectedDept,     setSelectedDept]     = useState<string | null>(null);
   const [submittingTask,   setSubmittingTask]   = useState<{ id: string; title: string } | null>(null);
   const [docsLoading,      setDocsLoading]      = useState(true);
@@ -312,6 +315,7 @@ function DashboardContent() {
 
   useEffect(() => { (async () => { try { const r = await fetch('/api/documents'); if (r.ok) { const d = await r.json(); setDocs(d.documents); } } catch {} finally { setDocsLoading(false); } })(); }, []);
   useEffect(() => { (async () => { try { const r = await fetch('/api/tasks'); if (r.ok) { const d = await r.json(); setTasks(d.assignments || []); } } catch {} finally { setTasksLoading(false); } })(); }, []);
+  useEffect(() => { (async () => { try { const r = await fetch('/api/calendar/events?upcoming=true'); if (r.ok) { const d = await r.json(); setEvents(Array.isArray(d) ? d : []); } } catch {} })(); }, []);
 
   useEffect(() => {
     const nav = searchParams.get('nav');
@@ -566,6 +570,13 @@ function DashboardContent() {
               )}
 
               <hr className="db-triple-rule" />
+
+              {/* UPCOMING EVENTS */}
+              {events.length > 0 && (
+                <div style={{ marginBottom: 32 }}>
+                  <UpcomingEventsPanel events={events} />
+                </div>
+              )}
 
               {/* MAIN CONTENT */}
               {activeDeptKey === 'Leadership' && (

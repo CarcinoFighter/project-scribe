@@ -3,8 +3,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { 
-  Home, FileText, BookOpen, Briefcase, Users, Star, Target, PenTool, ArrowRight, Layers 
+import {
+  Home, FileText, BookOpen, Briefcase, Users, Star, Target, PenTool, ArrowRight, Layers, Calendar
 } from 'lucide-react';
 
 export interface SidebarProps {
@@ -49,6 +49,7 @@ export function Sidebar({
     { id: 'blogs',    label: 'Blog Posts',  icon: BookOpen,  count: counts.blogs,         href: '/?nav=blogs'    },
     { id: 'tasks',    label: 'Assignments', icon: Briefcase, count: counts.tasks || null, href: '/tasks' },
     { id: 'team',     label: 'Team',        icon: Users,     count: null,                 href: '/team'  },
+    { id: 'calendar', label: 'Calendar',    icon: Calendar,  count: null,                 href: '/calendar' },
   ].filter(item => isFullSidebar || (item.id !== 'articles' && item.id !== 'blogs'));
 
   const handleNav = (item: NavItem) => {
