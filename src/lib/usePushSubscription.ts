@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect } from 'react';
-import { apiFetch } from '@/lib/api';
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!;
 
@@ -34,7 +33,7 @@ export async function requestPushSubscription(): Promise<boolean> {
     // Check if already subscribed
     const existing = await registration.pushManager.getSubscription();
     if (existing) {
-      await apiFetch('/api/push/subscribe', {
+      await fetch('/api/push/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(existing.toJSON()),
@@ -54,7 +53,7 @@ export async function requestPushSubscription(): Promise<boolean> {
     });
 
     // Send to server
-    await apiFetch('/api/push/subscribe', {
+    await fetch('/api/push/subscribe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(subscription.toJSON()),

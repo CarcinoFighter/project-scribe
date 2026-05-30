@@ -20,7 +20,6 @@ import {
 } from 'lucide-react';
 import { useUser } from '@/lib/useUser';
 import { useTheme } from '@/lib/useTheme';
-import { apiFetch } from '@/lib/api';
 import PageHeader from '@/components/PageHeader';
 import AccountMenu from '@/components/AccountMenu';
 import Toast from '@/components/Toast';
@@ -311,8 +310,8 @@ function DashboardContent() {
     if (user && !activeDeptKey) setActiveDeptKey(user.department || "Writers' Block");
   }, [user, activeDeptKey]);
 
-  useEffect(() => { (async () => { try { const r = await apiFetch('/api/documents'); if (r.ok) { const d = await r.json(); setDocs(d.documents); } } catch {} finally { setDocsLoading(false); } })(); }, []);
-  useEffect(() => { (async () => { try { const r = await apiFetch('/api/tasks'); if (r.ok) { const d = await r.json(); setTasks(d.assignments || []); } } catch {} finally { setTasksLoading(false); } })(); }, []);
+  useEffect(() => { (async () => { try { const r = await fetch('/api/documents'); if (r.ok) { const d = await r.json(); setDocs(d.documents); } } catch {} finally { setDocsLoading(false); } })(); }, []);
+  useEffect(() => { (async () => { try { const r = await fetch('/api/tasks'); if (r.ok) { const d = await r.json(); setTasks(d.assignments || []); } } catch {} finally { setTasksLoading(false); } })(); }, []);
 
   useEffect(() => {
     const nav = searchParams.get('nav');
@@ -339,13 +338,13 @@ function DashboardContent() {
 
   const deleteDoc = useCallback(async (id: string) => {
     const doc = docs.find(d => d.id === id); if (!doc) return;
-    setDocs(ds => ds.filter(d => d.id !== id)); try { await apiFetch(`/api/documents?id=${id}&type=${doc.type}`, { method: 'DELETE' }); } catch {}
+    setDocs(ds => ds.filter(d => d.id !== id)); try { await fetch(`/api/documents?id=${id}&type=${doc.type}`, { method: 'DELETE' }); } catch {}
     setToast(`Deleted "${doc.title.slice(0, 28)}…"`);
   }, [docs]);
 
   const handleCompleteTask = useCallback(async (taskId: string) => {
     try {
-      const r = await apiFetch('/api/tasks', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: taskId, status: 'done' }) });
+      const r = await fetch('/api/tasks', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: taskId, status: 'done' }) });
       if (r.ok) { setTasks(ts => ts.map(t => t.id === taskId ? { ...t, status: 'done' } : t)); setToast('Task completed ✓'); }
       else setToast('Failed to update task');
     } catch { setToast('Error updating task'); }

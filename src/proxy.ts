@@ -4,39 +4,8 @@ import * as jose from 'jose';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-change-me';
 
-const ALLOWED_ORIGINS = new Set([
-  'https://www.carcino.work',
-  'https://carcino.work',
-  'http://localhost',
-  'http://localhost:3000',
-  'capacitor://localhost',
-  'ionic://localhost',
-]);
-
-const buildCorsHeaders = (origin: string | null) => {
-  const headers = new Headers();
-
-  if (origin && ALLOWED_ORIGINS.has(origin)) {
-    headers.set('Access-Control-Allow-Origin', origin);
-    headers.set('Vary', 'Origin');
-  }
-
-  headers.set('Access-Control-Allow-Credentials', 'true');
-  headers.set('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-  headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-
-  return headers;
-};
-
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const isApiPath = pathname.startsWith('/api/');
-  const origin = request.headers.get('origin');
-  const corsHeaders = isApiPath ? buildCorsHeaders(origin) : null;
-
-  if (isApiPath && request.method === 'OPTIONS') {
-    return new NextResponse(null, { status: 204, headers: corsHeaders ?? undefined });
-  }
 
   // Public paths that don't require authentication
   const isPublicPath = 
@@ -53,9 +22,7 @@ export async function proxy(request: NextRequest) {
   const token = request.cookies.get('cw_token')?.value;
 
   if (!isPublicPath && !token) {
-    const response = NextResponse.redirect(new URL('/login', request.url));
-    if (corsHeaders) corsHeaders.forEach((value, key) => response.headers.set(key, value));
-    return response;
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   if (token) {
@@ -73,15 +40,12 @@ export async function proxy(request: NextRequest) {
       if (!isPublicPath) {
         const response = NextResponse.redirect(new URL('/login', request.url));
         response.cookies.set('cw_token', '', { maxAge: 0 });
-        if (corsHeaders) corsHeaders.forEach((value, key) => response.headers.set(key, value));
         return response;
       }
     }
   }
 
-  const response = NextResponse.next();
-  if (corsHeaders) corsHeaders.forEach((value, key) => response.headers.set(key, value));
-  return response;
+  return NextResponse.next();
 }
 
 // Rename this for the proxy entry point if needed

@@ -29,7 +29,6 @@ import {
   X,
 } from "lucide-react";
 import { useUser } from "@/lib/useUser";
-import { apiFetch } from "@/lib/api";
 import { createPortal } from "react-dom";
 import PageHeader from "@/components/PageHeader";
 import AccountMenu from "@/components/AccountMenu";
@@ -148,9 +147,9 @@ export default function TeamPage() {
     (async () => {
       try {
         const [teamRes, docsRes, tasksRes] = await Promise.all([
-          apiFetch("/api/team"),
-          apiFetch("/api/documents"),
-          apiFetch("/api/tasks"),
+          fetch("/api/team"),
+          fetch("/api/documents"),
+          fetch("/api/tasks"),
         ]);
 
         if (teamRes.ok) {

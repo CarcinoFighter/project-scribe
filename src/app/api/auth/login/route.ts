@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { comparePassword, signToken } from '@/lib/auth';
-import { getAuthCookieOptions } from '@/lib/authCookies';
 
 export async function POST(req: NextRequest) {
   try {
@@ -77,8 +76,11 @@ export async function POST(req: NextRequest) {
     });
 
     response.cookies.set('cw_token', token, {
-      ...getAuthCookieOptions(req),
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
     });
 
     return response;

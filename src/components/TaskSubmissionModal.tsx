@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Upload, Loader2, FileVideo, Image as ImageIcon } from 'lucide-react';
-import { apiFetch } from '@/lib/api';
 
 interface TaskSubmissionModalProps {
   taskId: string;
@@ -39,7 +38,7 @@ export default function TaskSubmissionModal({ taskId, taskTitle, onClose, onSucc
       const formData = new FormData();
       formData.append('file', file);
       
-      const uploadRes = await apiFetch('/api/upload', {
+      const uploadRes = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       });
@@ -52,7 +51,7 @@ export default function TaskSubmissionModal({ taskId, taskTitle, onClose, onSucc
       const { url } = await uploadRes.json();
 
       // 2. Patch the task to in_review status
-      const patchRes = await apiFetch('/api/tasks', {
+      const patchRes = await fetch('/api/tasks', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

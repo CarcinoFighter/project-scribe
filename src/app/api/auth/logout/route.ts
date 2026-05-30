@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { getAuthCookieOptions } from '@/lib/authCookies';
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,8 +16,11 @@ export async function POST(req: NextRequest) {
     // Clear cookie
     const response = NextResponse.json({ success: true });
     response.cookies.set('cw_token', '', {
-      ...getAuthCookieOptions(req),
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
       maxAge: 0,
+      path: '/',
     });
 
     return response;

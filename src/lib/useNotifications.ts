@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { apiFetch } from '@/lib/api';
 import { Notif } from '@/components/NotifPanel';
 
 export function useNotifications() {
@@ -11,7 +10,7 @@ export function useNotifications() {
 
   const fetchNotifications = useCallback(async () => {
     try {
-      const res = await apiFetch('/api/notifications');
+      const res = await fetch('/api/notifications');
       if (res.ok) {
         const data = await res.json();
         const apiNotifs = data.notifications || [];
@@ -47,7 +46,7 @@ export function useNotifications() {
     setUnreadCount(0);
 
     try {
-      await apiFetch('/api/notifications', {
+      await fetch('/api/notifications', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ all: true }),
@@ -63,7 +62,7 @@ export function useNotifications() {
     setUnreadCount(prev => Math.max(0, prev - 1));
 
     try {
-      await apiFetch('/api/notifications', {
+      await fetch('/api/notifications', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),

@@ -7,7 +7,6 @@ import {
   PenTool, Palette, Code2, Megaphone, Users,
 } from 'lucide-react';
 import { DARK_TO_LIGHT, LIGHT_TO_DARK, loadSettings, applySettings, saveSettings, THEMES } from '@/lib/theme';
-import { apiFetch } from '@/lib/api';
 
 /* ─── Department data ──────────────────────────────────────────── */
 const DEPTS = [
@@ -78,7 +77,7 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true); setError(null);
     try {
-      const res  = await apiFetch('/api/auth/login', {
+      const res  = await fetch('/api/auth/login', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { apiFetch } from '@/lib/api';
 
 interface User {
   id: string;
@@ -24,7 +23,7 @@ export function useUser() {
     // If not forced and we have a cached user, we can resolve immediately 
     // but we'll still fetch in the background to stay fresh (SWR)
     try {
-      const res = await apiFetch('/api/auth/me');
+      const res = await fetch('/api/auth/me');
       if (res.ok) {
         const data = await res.json();
         setUser(data.user);
@@ -53,7 +52,7 @@ export function useUser() {
 
   const updateMetadata = async (newMetadata: any) => {
     try {
-      const res = await apiFetch('/api/users/update', {
+      const res = await fetch('/api/users/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ metadata: newMetadata }),

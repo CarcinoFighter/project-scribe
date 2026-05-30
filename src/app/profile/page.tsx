@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import { useUser } from '@/lib/useUser';
 import { useTheme } from '@/lib/useTheme';
-import { apiFetch } from '@/lib/api';
 import ImageCropModal from '@/components/ImageCropModal';
 import SettingsModal, {
   saveSettings,
@@ -90,7 +89,7 @@ export default function ProfilePage() {
     e.preventDefault();
     setSaving(true); setMessage(null);
     try {
-      const res = await apiFetch('/api/users/update', {
+      const res = await fetch('/api/users/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, avatar_url: avatarUrl }),
@@ -131,7 +130,7 @@ export default function ProfilePage() {
     try {
       const formData = new FormData();
       formData.append('file', blob, 'avatar.jpg');
-      const res = await apiFetch('/api/users/upload-avatar', { method: 'POST', body: formData });
+      const res = await fetch('/api/users/upload-avatar', { method: 'POST', body: formData });
       if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Upload failed'); }
       const data = await res.json();
       setAvatarUrl(data.url);

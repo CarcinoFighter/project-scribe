@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { X, User, Mail, Shield, Briefcase, Lock, Loader2 } from 'lucide-react';
-import { apiFetch } from '@/lib/api';
 
 interface InviteUserModalProps {
   onClose: () => void;
@@ -37,7 +36,7 @@ export default function InviteUserModal({ onClose, onSuccess }: InviteUserModalP
     setError(null);
 
     try {
-      const res = await apiFetch('/api/team', {
+      const res = await fetch('/api/team', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),

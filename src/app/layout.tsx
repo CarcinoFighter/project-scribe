@@ -56,9 +56,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="splash-loader-container">
             <div className="splash-loader-bar"></div>
           </div>
-          <div className="splash-offline">
-            You are offline. Connect to the internet to use Vantage.
-          </div>
         </div>
         <ThemeInitializer />
         <SWRegistration />

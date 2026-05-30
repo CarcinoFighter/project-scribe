@@ -22,7 +22,6 @@ import { X, Plus, FileText, BookOpen, Heart, Loader2, Menu, Sparkles, ChevronLef
 import { useUser } from '@/lib/useUser';
 import { DARK_TO_LIGHT, LIGHT_TO_DARK, resolveSettings } from '@/lib/theme';
 import { supabase } from '@/lib/supabase';
-import { apiFetch } from '@/lib/api';
 import type { Collaborator } from '@/types';
 import Toast from '@/components/Toast';
 import { convertDocxToMarkdown } from '@/lib/document-utils';
@@ -242,7 +241,7 @@ function EditorContent() {
           const currentTabId = activeTabId;
           const tab = tabsRef.current.find(t => t.id === currentTabId);
           if (tab && !tab.isLoading) {
-            apiFetch(`/api/editor/load?id=${currentTabId}&type=${tab.type}`)
+            fetch(`/api/editor/load?id=${currentTabId}&type=${tab.type}`)
               .then(r => r.json())
               .then(data => {
                 if (data.success) {
@@ -369,7 +368,7 @@ function EditorContent() {
 
       // Re-fetch fresh content from DB to catch up on missed patches
       try {
-        const res = await apiFetch(`/api/editor/load?id=${tabId}&type=${tab.type}`);
+        const res = await fetch(`/api/editor/load?id=${tabId}&type=${tab.type}`);
         const data = await res.json();
         if (!data.success) return;
 
@@ -445,7 +444,7 @@ function EditorContent() {
       if (!tab || tab.isLoading || tab.title === 'Loading...') return;
 
       try {
-        const res = await apiFetch(`/api/editor/load?id=${tabId}&type=${tab.type}`);
+        const res = await fetch(`/api/editor/load?id=${tabId}&type=${tab.type}`);
         const data = await res.json();
         if (!data.success) return;
 
@@ -586,7 +585,7 @@ function EditorContent() {
         setActiveTabId(id);
 
         const typeParam = typeFromUrl ? `&type=${typeFromUrl}` : '';
-        apiFetch(`/api/editor/load?id=${id}${typeParam}`)
+        fetch(`/api/editor/load?id=${id}${typeParam}`)
           .then(res => res.json())
           .then(data => {
             if (data.success) {
@@ -657,7 +656,7 @@ function EditorContent() {
           isLoading: true
         };
 
-        apiFetch(`/api/editor/load?id=${id}&type=${type}`)
+        fetch(`/api/editor/load?id=${id}&type=${type}`)
           .then(res => res.json())
           .then(data => {
             if (data.success) {
@@ -720,7 +719,7 @@ function EditorContent() {
             body.content = currentContent;
           }
 
-          const res = await apiFetch('/api/editor/save', {
+          const res = await fetch('/api/editor/save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body),

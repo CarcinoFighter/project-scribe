@@ -5,7 +5,6 @@ import { Figma, Link as LinkIcon, AlertCircle, RefreshCw, BarChart2, Eye, Layout
 import Image from 'next/image';
 
 import { StatCard, GenericActivityChart, getWeekLabels } from './DashboardStats';
-import { apiFetch } from '@/lib/api';
 
 interface DesignData {
   id: string;
@@ -42,7 +41,7 @@ export default function DesignLabDashboard() {
   useEffect(() => {
     async function fetchDesigns() {
       try {
-        const res = await apiFetch('/api/designs');
+        const res = await fetch('/api/designs');
         if (!res.ok) {
           const err = await res.json();
           const mainError = err.error || 'Failed to fetch Figma designs';
@@ -64,7 +63,7 @@ export default function DesignLabDashboard() {
 
     async function fetchImpact() {
       try {
-        const res = await apiFetch('/api/designs/impact');
+        const res = await fetch('/api/designs/impact');
         if (res.ok) {
           const data = await res.json();
           setImpactData(data);
@@ -85,7 +84,7 @@ export default function DesignLabDashboard() {
     }
 
     try {
-      const res = await apiFetch('/api/designs/map', {
+      const res = await fetch('/api/designs/map', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ figma_id, route: mappingRoute })
@@ -93,12 +92,12 @@ export default function DesignLabDashboard() {
 
       if (res.ok) {
         // Refresh designs to show new mapping
-        const dRes = await apiFetch('/api/designs');
+        const dRes = await fetch('/api/designs');
         const dData = await dRes.json();
         setDesigns(dData.designs || []);
         
         // Refresh impact
-        const iRes = await apiFetch('/api/designs/impact');
+        const iRes = await fetch('/api/designs/impact');
         const iData = await iRes.json();
         setImpactData(iData);
 

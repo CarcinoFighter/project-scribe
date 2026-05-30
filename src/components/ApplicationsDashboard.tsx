@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Loader2, AlertCircle, FileText, Code, Palette, Megaphone } from 'lucide-react';
-import { apiFetch } from '@/lib/api';
 
 const DEPT_CONFIG = [
   { id: 'Development', name: 'Development', icon: Code, color: '#22c55e' },
@@ -82,7 +81,7 @@ export function ApplicationsDashboard() {
   };
 
   useEffect(() => {
-    apiFetch('/api/applications')
+    fetch('/api/applications')
       .then(res => res.json())
       .then(d => {
         if (d.error) setError(d.error);

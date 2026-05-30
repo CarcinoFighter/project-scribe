@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Users, MousePointerClick, TrendingUp, Globe, AlertCircle } from 'lucide-react';
 import { StatCard, GenericActivityChart, getWeekLabels } from './DashboardStats';
-import { apiFetch } from '@/lib/api';
 
 export default function MarketingDashboard() {
   const [totalUsers, setTotalUsers] = useState(0);
@@ -19,7 +18,7 @@ export default function MarketingDashboard() {
   useEffect(() => {
     async function fetchAnalytics() {
       try {
-        const res = await apiFetch('/api/analytics');
+        const res = await fetch('/api/analytics');
         if (!res.ok) {
           const err = await res.json();
           setError(err.error || 'Failed to fetch GA4 stats');

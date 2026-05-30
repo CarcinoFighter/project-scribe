@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, X, Check, User, Loader2 } from 'lucide-react';
 import Image from 'next/image';
-import { apiFetch } from '@/lib/api';
 
 interface TeamMember {
   id: string;
@@ -35,7 +34,7 @@ export default function MultiPersonSelect({
     const fetchMembers = async () => {
       setLoading(true);
       try {
-        const res = await apiFetch('/api/team');
+        const res = await fetch('/api/team');
         if (res.ok) {
           const data = await res.json();
           setMembers(data.users || []);

@@ -54,47 +54,17 @@ export function ThemeInitializer() {
     const splash = document.getElementById('pwa-splash');
     if (!splash) return;
 
-    let fadeTimer: number | undefined;
-    let hideTimer: number | undefined;
+    const fadeTimer = setTimeout(() => {
+      splash.style.opacity = '0';
+    }, 1500);
 
-    const clearTimers = () => {
-      if (fadeTimer) window.clearTimeout(fadeTimer);
-      if (hideTimer) window.clearTimeout(hideTimer);
-    };
-
-    const showOffline = () => {
-      clearTimers();
-      splash.classList.add('is-offline');
-      splash.style.opacity = '1';
-      splash.style.display = 'flex';
-    };
-
-    const hideSplash = () => {
-      splash.classList.remove('is-offline');
-      fadeTimer = window.setTimeout(() => {
-        splash.style.opacity = '0';
-      }, 1500);
-      hideTimer = window.setTimeout(() => {
-        splash.style.display = 'none';
-      }, 2200); // 1500ms delay + 700ms fade
-    };
-
-    const updateSplash = () => {
-      if (typeof navigator !== 'undefined' && !navigator.onLine) {
-        showOffline();
-        return;
-      }
-      hideSplash();
-    };
-
-    updateSplash();
-    window.addEventListener('online', updateSplash);
-    window.addEventListener('offline', updateSplash);
+    const hideTimer = setTimeout(() => {
+      splash.style.display = 'none';
+    }, 2200); // 1500ms delay + 700ms fade
 
     return () => {
-      clearTimers();
-      window.removeEventListener('online', updateSplash);
-      window.removeEventListener('offline', updateSplash);
+      clearTimeout(fadeTimer);
+      clearTimeout(hideTimer);
     };
   }, []);
 

@@ -25,7 +25,6 @@ import {
 } from "lucide-react";
 import { useUser } from "@/lib/useUser";
 import { useNotifications } from "@/lib/useNotifications";
-import { apiFetch } from "@/lib/api";
 import PageHeader from "@/components/PageHeader";
 import Toast from "@/components/Toast";
 import MediaViewerModal from "@/components/MediaViewerModal";
@@ -515,7 +514,7 @@ export default function QueuesPage() {
     setLoading(true);
     try {
       if (user?.admin_access) {
-        const reviewRes = await apiFetch("/api/tasks/review-queue");
+        const reviewRes = await fetch("/api/tasks/review-queue");
         if (reviewRes.ok) {
           const data = await reviewRes.json();
           setReviewDocs(data.documents || []);
@@ -523,7 +522,7 @@ export default function QueuesPage() {
       }
 
       // Always check for proofreader assignments for anyone
-      const proofreaderRes = await apiFetch("/api/tasks/proofreader-queue");
+      const proofreaderRes = await fetch("/api/tasks/proofreader-queue");
       if (proofreaderRes.ok) {
         const data = await proofreaderRes.json();
         setProofreaderDocs(data.documents || []);
@@ -549,7 +548,7 @@ export default function QueuesPage() {
     // Fetch counts for sidebar
     const fetchCounts = async () => {
       try {
-        const r = await apiFetch("/api/documents");
+        const r = await fetch("/api/documents");
         if (r.ok) {
           const d = await r.json();
           const docs = d.documents || [];
@@ -572,13 +571,13 @@ export default function QueuesPage() {
     try {
       let res;
       if (doc.type === "tasks") {
-        res = await apiFetch("/api/tasks/tasks/approve", {
+        res = await fetch("/api/tasks/tasks/approve", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id: doc.id, status: "done" }),
         });
       } else {
-        res = await apiFetch("/api/editor/save", {
+        res = await fetch("/api/editor/save", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -619,7 +618,7 @@ export default function QueuesPage() {
   ) => {
     setAssigningProofreader(docId);
     try {
-      const res = await apiFetch("/api/tasks", {
+      const res = await fetch("/api/tasks", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -631,7 +630,7 @@ export default function QueuesPage() {
       });
 
       if (res.ok) {
-        await apiFetch("/api/tasks/comments", {
+        await fetch("/api/tasks/comments", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
