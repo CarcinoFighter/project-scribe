@@ -11,8 +11,6 @@
     "build:vercel": "next build --webpack"
   },
   "dependencies": {
-    "@capacitor/android": "^8.3.4",
-    "@capacitor/core": "^8.3.4",
     "@codemirror/commands": "^6.3.3",
     "@codemirror/lang-markdown": "^6.2.4",
     "@codemirror/language-data": "^6.4.0",
@@ -54,7 +52,6 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
-    "@capacitor/cli": "^8.3.4",
     "@next/eslint-plugin-next": "^15.1.0",
     "@tailwindcss/typography": "^0.5.13",
     "@types/diff-match-patch": "^1.0.36",
