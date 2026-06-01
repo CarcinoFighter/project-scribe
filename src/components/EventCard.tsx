@@ -21,7 +21,7 @@ export function EventCard({ event, onClick, attendees = [] }: EventCardProps) {
         background: 'var(--paper)',
         cursor: onClick ? 'pointer' : 'default',
         transition: 'all 0.15s',
-        borderLeft: `3px solid ${getEventColor(event.department)}`,
+        borderLeft: `3px solid ${getEventColor(event.department, event.id)}`,
       }}
       onMouseEnter={(e) => {
         if (onClick) {

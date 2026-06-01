@@ -12,6 +12,10 @@ export interface CalendarEvent {
   department?: string;
   created_at: string;
   updated_at: string;
+  // Task-specific metadata
+  document_id?: string;
+  document_type?: 'cancer_docs' | 'blogs' | 'survivor_stories';
+  task_category?: string;
 }
 
 export interface CalendarDay {

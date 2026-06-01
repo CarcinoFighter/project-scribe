@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Clock, MapPin, Link as LinkIcon, Users, Edit2, Trash2, Calendar, Check, AlertCircle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { X, Clock, MapPin, Link as LinkIcon, Users, Edit2, Trash2, Calendar, Check, AlertCircle, ArrowRight } from 'lucide-react';
 import { CalendarEvent } from '@/types/calendar';
 import { formatEventTime, getEventColor } from '@/lib/calendar-utils';
 import MultiPersonSelect from './MultiPersonSelect';
@@ -17,6 +18,7 @@ interface EventDetailModalProps {
 }
 
 export function EventDetailModal({ event, onClose, onUpdated, onDeleted }: EventDetailModalProps) {
+  const router = useRouter();
   const [mode, setMode] = useState<'view' | 'edit'>('view');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -34,7 +36,9 @@ export function EventDetailModal({ event, onClose, onUpdated, onDeleted }: Event
   const [department, setDepartment] = useState(event.department || '');
   const [selectedUsers, setSelectedUsers] = useState<string[]>(event.assigned_to || []);
 
-  const accentColor = getEventColor(event.department);
+  const accentColor = getEventColor(event.department, event.id);
+  const isTask = event.id.startsWith('task-');
+  const canOpenInEditor = isTask && event.document_id && event.document_type;
 
   useEffect(() => {
     requestAnimationFrame(() => setVisible(true));
@@ -174,6 +178,36 @@ export function EventDetailModal({ event, onClose, onUpdated, onDeleted }: Event
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
             {mode === 'view' ? (
               <>
+                {canOpenInEditor && (
+                  <button
+                    onClick={() => {
+                      handleClose();
+                      router.push(
+                        `/editor?id=${event.document_id}&type=${event.document_type}`
+                      );
+                    }}
+                    style={{
+                      background: 'none',
+                      border: `1px solid var(--accent)`,
+                      cursor: 'pointer',
+                      padding: '4px 9px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      fontSize: 9,
+                      fontWeight: 700,
+                      color: 'var(--accent)',
+                      letterSpacing: '0.06em',
+                      textTransform: 'uppercase',
+                      flexShrink: 0,
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-sub)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                  >
+                    <ArrowRight size={9} strokeWidth={2.2} /> Open
+                  </button>
+                )}
+
                 <button
                   onClick={() => setMode('edit')}
                   style={{
