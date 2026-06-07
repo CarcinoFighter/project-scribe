@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { getDaysInMonth } from '@/lib/calendar-utils';
+import { getDaysInMonth, getEventColor } from '@/lib/calendar-utils';
 import { CalendarEvent } from '@/types/calendar';
 import { EventCard } from './EventCard';
 
@@ -98,7 +98,7 @@ export function CalendarMonth({ year, month, events, onDayClick, onEventClick }:
                     style={{
                       fontSize: 7,
                       padding: '2px 4px',
-                      background: 'var(--accent)',
+                      background: getEventColor(event.department, event.id),
                       color: 'var(--paper)',
                       fontWeight: 700,
                       borderRadius: '2px',

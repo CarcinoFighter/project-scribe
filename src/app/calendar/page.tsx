@@ -40,9 +40,11 @@ function CalendarPageContent() {
           fetch('/api/tasks'),
         ]);
 
+        let allEvents: CalendarEvent[] = [];
+
         if (eventsRes.ok) {
           const data = await eventsRes.json();
-          setEvents(Array.isArray(data) ? data : []);
+          allEvents = Array.isArray(data) ? data : [];
         }
 
         if (docsRes.ok) {
@@ -57,11 +59,38 @@ function CalendarPageContent() {
 
         if (tasksRes.ok) {
           const data = await tasksRes.json();
+          const assignments = data.assignments || [];
+          const taskCount = assignments.filter((t: any) => t.status !== 'done').length;
           setCounts(c => ({
             ...c,
-            tasks: (data.assignments || []).filter((t: any) => t.status !== 'done').length,
+            tasks: taskCount,
           }));
+
+          // Convert tasks to calendar events
+          const taskEvents: CalendarEvent[] = assignments
+            .filter((task: any) => task.due_date && task.status !== 'done')
+            .map((task: any) => ({
+              id: `task-${task.id}`,
+              title: task.title || task.document_title || 'Untitled Task',
+              description: task.description,
+              date: task.due_date.split('T')[0], // Ensure YYYY-MM-DD format
+              time: '09:00', // Default task time
+              duration_minutes: 60,
+              assigned_to: task.assignees?.map((a: any) => a.id) || [task.assignee?.id].filter(Boolean) || [],
+              created_by: task.assigned_by || '',
+              department: task.department,
+              created_at: task.created_at || new Date().toISOString(),
+              updated_at: task.created_at || new Date().toISOString(),
+              // Task-specific metadata
+              document_id: task.document_id,
+              document_type: task.category === 'article' ? 'cancer_docs' : task.category === 'blog' ? 'blogs' : task.category === 'survivor_story' ? 'survivor_stories' : undefined,
+              task_category: task.category,
+            }));
+
+          allEvents = [...allEvents, ...taskEvents];
         }
+
+        setEvents(allEvents);
       } catch (err) {
         console.error('Error loading data:', err);
         setToast('Failed to load calendar data');

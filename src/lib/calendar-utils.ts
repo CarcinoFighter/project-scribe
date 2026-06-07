@@ -130,14 +130,19 @@ export function getTimeUntil(date: string, time: string): string {
   return 'Now';
 }
 
-export function getEventColor(department?: string): string {
+export function getEventColor(department?: string, eventId?: string): string {
+  // Tasks get a distinct color scheme
+  if (eventId?.startsWith('task-')) {
+    return "var(--accent)";
+  }
+
   const colorMap: Record<string, string> = {
-    "Leadership": "var(--accent)",
-    "Writers' Block": "#ff6b6b",
-    "Design Lab": "#4ecdc4",
-    "Development": "#45b7d1",
-    "Marketing": "#f9ca24",
-    "Public Relations": "#6c5ce7",
+    "Leadership": "#6366f1",
+    "Writers' Block": "#f59e0b",
+    "Design Lab": "#3b82f6",
+    "Development": "#10b981",
+    "Marketing": "#ec4899",
+    "Public Relations": "#ec4899",
     "Other": "var(--mid)"
   };
 

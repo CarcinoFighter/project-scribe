@@ -167,7 +167,7 @@ export function CalendarWeek({ date, events, onEventClick }: CalendarWeekProps) 
                   const durationMin = event.duration_minutes || 60;
                   const top = (startMin / 60) * CELL_HEIGHT;
                   const height = Math.max((durationMin / 60) * CELL_HEIGHT - 2, 20);
-                  const color = getEventColor(event.department);
+                  const color = getEventColor(event.department, event.id);
 
                   return (
                     <div
