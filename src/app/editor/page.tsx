@@ -547,6 +547,7 @@ function EditorContent() {
 
   // ---- Load initial state ----
   const initialized = useRef(false);
+  const touredRef = useRef(false);
 
   useEffect(() => {
     if (!user || userLoading || initialized.current) return;
@@ -556,9 +557,9 @@ function EditorContent() {
       const meta = user.metadata || {};
       const goal = meta.wordGoal;
       const toured = meta.toured;
+      touredRef.current = Boolean(toured);
 
       if (goal) setWordGoal(parseInt(goal, 10) || 0);
-      if (!toured) setShowTour(true);
 
       const s = resolveSettings(meta.settings);
       setAppSettings(s);
@@ -1315,6 +1316,11 @@ function EditorContent() {
                 : t
             ));
             setPendingTypeTabId(null);
+
+            if (!touredRef.current) {
+              touredRef.current = true;
+              setShowTour(true);
+            }
           }}
           onClose={() => setPendingTypeTabId(null)}
         />

@@ -118,10 +118,12 @@ export default function Toolbar({ onAction, focusMode, isMobile }: Props) {
 
   return (
     <div
-      id="tour-toolbar"
       className="border-t md:border-t-0 md:border-b border-[var(--rule)] bg-[var(--paper)] relative z-30"
     >
-      <div className="flex items-center px-2 sm:px-4 py-2 overflow-x-auto no-scrollbar min-h-[48px]">
+      <div
+        id="tour-toolbar"
+        className="flex items-center px-2 sm:px-4 py-2 overflow-x-auto no-scrollbar min-h-[48px]"
+      >
         {GROUPS.map((group, gi) => (
           <div 
             key={group.label} 
