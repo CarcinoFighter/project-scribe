@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Loader2, AlertCircle, FileText, Code, Palette, Megaphone } from 'lucide-react';
+import { Search, Loader2, AlertCircle, FileText, Code, Palette, Megaphone, Trash2 } from 'lucide-react';
 
 const DEPT_CONFIG = [
   { id: 'Development', name: 'Development', icon: Code, color: '#22c55e' },
@@ -16,6 +16,7 @@ export function ApplicationsDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const [discardedApps, setDiscardedApps] = useState<string[]>([]);
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -89,7 +90,39 @@ export function ApplicationsDashboard() {
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
+
+    const savedDiscarded = localStorage.getItem('discarded_applications');
+    if (savedDiscarded) {
+      try {
+        setDiscardedApps(JSON.parse(savedDiscarded));
+      } catch (e) {
+        console.error('Failed to parse discarded apps', e);
+      }
+    }
   }, []);
+
+  const handleDiscard = async (timestamp: string) => {
+    if (confirm('Are you sure you want to discard this application? This will hide it from view for all admins.')) {
+      // Optimistic update
+      const updated = [...discardedApps, timestamp];
+      setDiscardedApps(updated);
+      localStorage.setItem('discarded_applications', JSON.stringify(updated));
+
+      // Global update
+      try {
+        const res = await fetch('/api/applications/discard', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ timestamp })
+        });
+        if (!res.ok) {
+          console.error('Failed to discard globally');
+        }
+      } catch (err) {
+        console.error('Error discarding:', err);
+      }
+    }
+  };
 
   let currentSheetData: any[][] = [];
   let headers: string[] = [];
@@ -127,9 +160,10 @@ export function ApplicationsDashboard() {
     rows = currentSheetData.slice(1);
   }
 
-  const filteredRows = rows.filter(row => 
-    row.some(cell => String(cell).toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredRows = rows.filter(row => {
+    if (discardedApps.includes(String(row[0]))) return false;
+    return row.some(cell => String(cell).toLowerCase().includes(searchQuery.toLowerCase()));
+  });
 
   if (loading) {
     return (
@@ -238,6 +272,9 @@ export function ApplicationsDashboard() {
                   {h}
                 </th>
               ))}
+              <th className="db-cap" style={{ padding: '16px 20px', fontSize: '11px', color: 'var(--ink)', whiteSpace: 'nowrap', textAlign: 'right' }}>
+                ACTIONS
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -269,11 +306,40 @@ export function ApplicationsDashboard() {
                     <td key={`empty-${k}`} style={{ padding: '20px' }} />
                   ))
                 }
+                <td style={{ padding: '20px', verticalAlign: 'top', textAlign: 'right' }}>
+                  <button 
+                    onClick={() => handleDiscard(String(row[0]))}
+                    style={{
+                      background: 'transparent',
+                      border: '1px solid var(--rule)',
+                      borderRadius: '4px',
+                      padding: '6px 12px',
+                      cursor: 'pointer',
+                      color: 'var(--mid)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      fontSize: '11px',
+                      fontFamily: 'var(--ff-mono)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = '#ef4444';
+                      e.currentTarget.style.borderColor = '#ef4444';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = 'var(--mid)';
+                      e.currentTarget.style.borderColor = 'var(--rule)';
+                    }}
+                  >
+                    <Trash2 size={12} />
+                    DISCARD
+                  </button>
+                </td>
               </tr>
             ))}
             {filteredRows.length === 0 && (
               <tr>
-                <td colSpan={headers.length || 1} style={{ padding: '64px 0', textAlign: 'center' }}>
+                <td colSpan={(headers.length || 1) + 1} style={{ padding: '64px 0', textAlign: 'center' }}>
                     <div className="db-cap" style={{ opacity: 0.4 }}>NO CANDIDATES MATCHING CRITERIA</div>
                 </td>
               </tr>
