@@ -91,43 +91,49 @@ function TabBar({
   tabs: Tab[], activeTabId: string, onSwitch: (id: string) => void, onClose: (id: string) => void, onNew: () => void 
 }) {
   return (
-    <div className="tab-bar flex items-center gap-0 px-2 h-10 border-b border-[var(--rule)] bg-[var(--cream)] overflow-x-auto no-scrollbar">
+    <div className="flex items-center gap-0 border-b border-[var(--rule)] bg-[var(--cream)] overflow-x-auto no-scrollbar" style={{ height: '34px' }}>
       {tabs.map((tab) => {
         const isActive = tab.id === activeTabId;
         const Icon = tab.type === 'blogs' ? BookOpen : tab.type === 'survivor_stories' ? Heart : FileText;
+        const unsaved = !tab.isSaved;
         return (
           <div 
             key={tab.id}
             onClick={() => onSwitch(tab.id)}
-            className={`group flex items-center h-9 gap-2 px-3 min-w-[100px] sm:min-w-[120px] max-w-[160px] sm:max-w-[200px] border-r border-[var(--rule)] transition-all cursor-pointer select-none flex-shrink-0
+            className={`group flex items-center gap-1.5 px-3 min-w-[90px] sm:min-w-[110px] max-w-[160px] sm:max-w-[180px] border-r border-[var(--rule)] transition-colors cursor-pointer select-none flex-shrink-0 h-full relative
               ${isActive 
-                ? 'bg-[var(--paper)] border-t-2 border-t-[var(--accent)]' 
-                : 'bg-transparent text-[var(--mid)] hover:bg-[var(--accent-sub)]'
+                ? 'bg-[var(--paper)]' 
+                : 'bg-transparent text-[var(--mid)] hover:bg-[var(--accent-dim)]'
               }`}
           >
+            {/* Active accent bar at top */}
+            {isActive && <span className="absolute top-0 left-0 right-0 h-px bg-[var(--accent)]" />}
+            
             {tab.isLoading ? (
-              <Loader2 size={12} className="animate-spin text-[var(--accent)] flex-shrink-0" />
+              <Loader2 size={10} className="animate-spin text-[var(--accent)] flex-shrink-0" />
             ) : (
-              <Icon size={12} className={`flex-shrink-0 ${isActive ? 'text-[var(--accent)]' : 'text-[var(--mid)]'}`} />
+              <Icon size={10} className={`flex-shrink-0 ${isActive ? 'text-[var(--accent)]' : ''}`} />
             )}
-            <span className={`text-[11px] sm:text-[12px] font-medium truncate flex-1 ${isActive ? 'text-[var(--ink)]' : ''}`}>
+            <span className={`truncate flex-1 ${isActive ? 'text-[var(--ink)]' : ''}`} style={{ fontSize: '11px', fontWeight: isActive ? '500' : '400', fontFamily: 'var(--ff-ui)' }}>
+              {unsaved && <span className="inline-block w-1 h-1 bg-[var(--accent)] mr-1" style={{ verticalAlign: 'middle' }} />}
               {tab.title}
             </span>
             <button 
               onClick={(e) => { e.stopPropagation(); onClose(tab.id); }}
-              className={`p-1 opacity-0 group-hover:opacity-100 hover:bg-[var(--accent-dim)] transition-all flex-shrink-0 ${isActive ? 'opacity-100' : ''}`}
+              className={`flex items-center justify-center w-4 h-4 opacity-0 group-hover:opacity-60 hover:opacity-100 hover:bg-[var(--accent-dim)] hover:text-[var(--accent)] transition-all flex-shrink-0 ${isActive ? '!opacity-60' : ''}`}
             >
-              <X size={10} />
+              <X size={9} />
             </button>
           </div>
         );
       })}
       <button 
         onClick={onNew}
-        className="h-9 w-9 flex items-center justify-center border-r border-[var(--rule)] text-[var(--mid)] hover:bg-[var(--accent-sub)] hover:text-[var(--accent)] transition-all flex-shrink-0"
-        title="New Tab"
+        className="h-full px-3 flex items-center justify-center text-[var(--mid)] hover:bg-[var(--accent-dim)] hover:text-[var(--accent)] transition-all flex-shrink-0 border-r border-[var(--rule)]"
+        title="New document (Ctrl+T)"
+        style={{ fontSize: '10px', fontFamily: 'var(--ff-mono)', letterSpacing: '0.05em' }}
       >
-        <Plus size={16} />
+        <Plus size={13} />
       </button>
     </div>
   );
@@ -547,6 +553,7 @@ function EditorContent() {
 
   // ---- Load initial state ----
   const initialized = useRef(false);
+  const touredRef = useRef(false);
 
   useEffect(() => {
     if (!user || userLoading || initialized.current) return;
@@ -556,9 +563,9 @@ function EditorContent() {
       const meta = user.metadata || {};
       const goal = meta.wordGoal;
       const toured = meta.toured;
+      touredRef.current = Boolean(toured);
 
       if (goal) setWordGoal(parseInt(goal, 10) || 0);
-      if (!toured) setShowTour(true);
 
       const s = resolveSettings(meta.settings);
       setAppSettings(s);
@@ -964,6 +971,18 @@ function EditorContent() {
       case 'image': api?.insertAtCursor('![alt text](image-url)'); break;
       case 'hr': api?.insertAtCursor('\n---\n'); break;
       case 'table': api?.insertAtCursor('| Column 1 | Column 2 | Column 3 |\n| --- | --- | --- |\n| Cell | Cell | Cell |\n'); break;
+      case 'task': api?.prefixLines('- [ ]'); break;
+      case 'highlight': api?.wrapSelection('==', '==', 'highlighted text'); break;
+      case 'footnote': {
+        const footnoteNum = Math.floor(Math.random() * 900) + 1;
+        api?.insertAtCursor(`[^${footnoteNum}]`);
+        api?.insertAtCursor(`\n\n[^${footnoteNum}]: Footnote text here.`);
+        break;
+      }
+      case 'superscript': api?.wrapSelection('^', '^', 'sup'); break;
+      case 'subscript': api?.wrapSelection('~', '~', 'sub'); break;
+      case 'kbd': api?.wrapSelection('<kbd>', '</kbd>', 'Enter'); break;
+      case 'details': api?.insertAtCursor('<details>\n<summary>Click to expand</summary>\n\nContent here.\n\n</details>'); break;
       case 'new': handleAddNew(); break;
       case 'zen': setZenMode(z => !z); break;
       case 'focus': setFocusMode(f => !f); break;
@@ -1315,6 +1334,11 @@ function EditorContent() {
                 : t
             ));
             setPendingTypeTabId(null);
+
+            if (!touredRef.current) {
+              touredRef.current = true;
+              setShowTour(true);
+            }
           }}
           onClose={() => setPendingTypeTabId(null)}
         />

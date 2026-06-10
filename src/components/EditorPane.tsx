@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useEffect, useMemo } from 'react';
+import { useCallback, useRef, useEffect, useMemo, useState } from 'react';
 import ReactCodeMirror from '@uiw/react-codemirror';
 import type { ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
@@ -18,30 +18,47 @@ import { diff_match_patch } from 'diff-match-patch';
 
 const dmp = new diff_match_patch();
 
-/** Read the current theme's CSS custom properties from the document root. */
+/**
+ * Read CSS custom properties from the document root.
+ * Reads inline styles first (set by applySettings), then falls back to
+ * computed styles (set by :root in globals.css), so we always get the
+ * current theme value even immediately after applySettings runs.
+ */
 function readThemeVars() {
   if (typeof window === 'undefined') return null;
-  const s = getComputedStyle(document.documentElement);
-  const g = (v: string) => s.getPropertyValue(v).trim();
+  const el = document.documentElement;
+  // Inline style (set by applySettings) is the authoritative source.
+  const inline = (v: string) => el.style.getPropertyValue(v).trim();
+  // Computed style is the fallback (covers :root defaults).
+  const computed = (v: string) => getComputedStyle(el).getPropertyValue(v).trim();
+  const g = (v: string) => inline(v) || computed(v);
   return {
     accent: g('--accent')  || '#9875c1',
-    text:   g('--text')    || '#f0f0f0',
+    // --ink aliases --text (set by applySettings). Read --ink first so
+    // we pick up the correctly resolved value even if --text is a var().
+    text:   g('--ink')   || g('--text')   || '#f0f0f0',
+    text2:  g('--text-2')  || '#d0d0d0',
     text3:  g('--text-3')  || '#b8b8b8',
-    text4:  g('--text-4')  || '#787878',
+    // --mid aliases --text-4.
+    text4:  g('--mid')   || g('--text-4') || '#787878',
+    paper:  g('--paper') || g('--bg')     || '#0a0a0a',
+    cream:  g('--cream') || g('--bg-alt') || '#111111',
+    tapeBg: g('--tape-bg') || g('--bg-deep') || '#181818',
   };
 }
 
 /**
  * Build a CodeMirror theme from the active CSS variables so the editor
  * always matches the selected app theme (Catppuccin, Nord, Gruvbox, etc.)
- * instead of being locked to the default purple palette.
  */
 const makeTheme = (isDark: boolean, fontFamily?: string) => {
   const v = readThemeVars();
-  const accent = v?.accent ?? '#9875c1';
-  const text   = v?.text   ?? (isDark ? '#f0f0f0' : '#1a1028');
-  const text3  = v?.text3  ?? (isDark ? '#b8b8b8' : '#4a4458');
-  const text4  = v?.text4  ?? (isDark ? '#787878' : '#9a8ab8');
+  const accent = v?.accent  ?? '#9875c1';
+  const text   = v?.text    ?? (isDark ? '#f0f0f0' : '#1a1028');
+  const text3  = v?.text3   ?? (isDark ? '#b8b8b8' : '#4a4458');
+  const text4  = v?.text4   ?? (isDark ? '#787878' : '#9a8ab8');
+  const cream  = v?.cream   ?? (isDark ? '#111111' : '#f7f7f7');
+  const tapeBg = v?.tapeBg  ?? (isDark ? '#181818' : '#f0f0f0');
 
   return createTheme({
     theme: isDark ? 'dark' : 'light',
@@ -49,9 +66,9 @@ const makeTheme = (isDark: boolean, fontFamily?: string) => {
       background:             'transparent',
       foreground:             text,
       caret:                  accent,
-      selection:              `${accent}${isDark ? '38' : '30'}`,
-      selectionMatch:         `${accent}20`,
-      lineHighlight:          `${accent}0e`,
+      selection:              `${accent}${isDark ? '36' : '28'}`,
+      selectionMatch:         `${accent}1a`,
+      lineHighlight:          `${accent}0c`,
       gutterBackground:       'transparent',
       gutterForeground:       text4,
       gutterActiveForeground: accent,
@@ -59,23 +76,35 @@ const makeTheme = (isDark: boolean, fontFamily?: string) => {
       fontFamily: fontFamily ?? "'Google Sans Flex','Google Sans','DM Mono',sans-serif",
     },
     styles: [
-      { tag: [t.heading1, t.heading2, t.heading3, t.heading4, t.heading5, t.heading6], color: accent, fontWeight: '700' },
-      { tag: t.emphasis,                            fontStyle: 'italic', color: text3 },
-      { tag: t.strong,                              fontWeight: '700',   color: text  },
-      { tag: t.strikethrough,                       textDecoration: 'line-through', color: text4 },
-      { tag: t.link,                                color: accent },
-      { tag: t.url,                                 color: accent, textDecoration: 'underline' },
-      { tag: t.quote,                               color: text3, fontStyle: 'italic' },
-      { tag: t.monospace,                           color: accent, background: `${accent}18`, padding: '0 3px' },
-      { tag: t.keyword,                             color: accent, fontWeight: '600' },
-      { tag: t.string,                              color: isDark ? '#e8a870' : '#b84820' },
-      { tag: t.comment,                             color: text4, fontStyle: 'italic' },
-      { tag: t.number,                              color: accent },
+      // Headings — accent coloured at proper weights
+      { tag: t.heading1, color: accent, fontWeight: '700', fontSize: '1.5em' },
+      { tag: t.heading2, color: accent, fontWeight: '700', fontSize: '1.25em' },
+      { tag: t.heading3, color: accent, fontWeight: '600', fontSize: '1.1em' },
+      { tag: [t.heading4, t.heading5, t.heading6], color: accent, fontWeight: '600' },
+      // Inline styles
+      { tag: t.emphasis,     fontStyle: 'italic', color: text3 },
+      { tag: t.strong,       fontWeight: '700',   color: text },
+      { tag: t.strikethrough, textDecoration: 'line-through', color: text4 },
+      // Links
+      { tag: t.link,         color: accent },
+      { tag: t.url,          color: accent, textDecoration: 'underline' },
+      // Blockquote / quote
+      { tag: t.quote,        color: text3, fontStyle: 'italic' },
+      // Code
+      { tag: t.monospace,    color: accent, background: `${accent}16`, padding: '0 3px' },
+      // Syntax (in fenced code blocks)
+      { tag: t.keyword,      color: accent, fontWeight: '600' },
+      { tag: t.string,       color: isDark ? '#e8a870' : '#b84820' },
+      { tag: t.comment,      color: text4, fontStyle: 'italic' },
+      { tag: t.number,       color: accent },
       { tag: [t.function(t.variableName), t.definition(t.variableName)], color: isDark ? '#80beff' : '#3a6ab0' },
-      { tag: t.typeName,                            color: accent },
-      { tag: t.bool,                                color: accent },
-      { tag: t.operator,                            color: text4 },
-      { tag: t.punctuation,                         color: text4 },
+      { tag: t.typeName,     color: accent },
+      { tag: t.bool,         color: accent },
+      { tag: t.operator,     color: text4 },
+      { tag: t.punctuation,  color: text4 },
+      // Markdown-specific
+      { tag: t.processingInstruction, color: text4 },  // HTML tags in markdown
+      { tag: t.atom,         color: accent },           // Checkbox [ ] [x]
     ],
   });
 };
@@ -83,26 +112,32 @@ const makeTheme = (isDark: boolean, fontFamily?: string) => {
 const baseTheme = EditorView.theme({
   '&': { height: '100%' },
   '.cm-scroller': { overflow: 'auto' },
-  '.cm-content': { 
-    padding: '24px 16px 80px', 
+  '.cm-content': {
+    padding: '24px 16px 80px',
     maxWidth: '100%',
     caretColor: 'var(--accent)',
-    fontSize: '15px',
+    fontSize: 'var(--editor-font-size, 15px)',
+    lineHeight: 'var(--editor-line-height, 1.75)',
   },
-  '.cm-line': { 
-    padding: '0 8px', 
+  '.cm-line': {
+    padding: '0 8px',
     letterSpacing: '0.006em',
-    lineHeight: '1.6',
   },
   '.cm-cursor': { borderLeftWidth: '2px', borderLeftColor: 'var(--accent)' },
   '.cm-gutters': { borderRight: 'none', paddingRight: '4px', minWidth: '40px' },
   '.cm-activeLineGutter': { background: 'transparent' },
+  // Search panel styling
+  '.cm-panels': { background: 'var(--cream)', borderTop: '1px solid var(--rule)', borderBottom: '1px solid var(--rule)' },
+  '.cm-panel': { background: 'var(--cream)', color: 'var(--ink)', fontFamily: 'var(--ff-mono)', fontSize: '11px' },
+  '.cm-panel input': { background: 'var(--paper)', color: 'var(--ink)', border: '1px solid var(--rule)', outline: 'none', fontFamily: 'var(--ff-mono)', fontSize: '12px', padding: '3px 8px' },
+  '.cm-panel button': { background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--rule)', cursor: 'pointer', padding: '2px 8px', fontFamily: 'var(--ff-mono)', fontSize: '10px', letterSpacing: '0.08em' },
+  // Tooltips
+  '.cm-tooltip': { background: 'var(--ink)', color: 'var(--paper)', border: 'none', fontFamily: 'var(--ff-mono)', fontSize: '11px' },
   '@media (min-width: 768px)': {
-    '.cm-content': { 
-      padding: '32px 24px 80px', 
-      maxWidth: '740px', 
+    '.cm-content': {
+      padding: 'var(--editor-padding, 32px) 24px 80px',
+      maxWidth: 'var(--editor-max-width, 740px)',
       margin: '0 auto',
-      fontSize: '16px',
     },
     '.cm-line': { padding: '0 12px' },
     '.cm-gutters': { paddingRight: '8px', minWidth: '46px' },
@@ -279,12 +314,26 @@ export default function EditorPane({ content, onChange, isDark, themeId, focusMo
 
   useEffect(() => { readyCalled.current = false; }, []);
 
-  const theme = useMemo(() => {
-    const font = typeof window !== 'undefined' ? getComputedStyle(document.documentElement).getPropertyValue('--editor-font').trim() || undefined : undefined;
-    return makeTheme(isDark, font);
-  // themeId ensures we recompute even when isDark doesn't change (e.g. Nord → Dracula)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // When themeId/isDark changes, applySettings() has already set inline CSS vars
+  // on <html> synchronously. We use a state tick so React re-renders after the
+  // DOM update is visible to readThemeVars().
+  const [themeTick, setThemeTick] = useState(0);
+  useEffect(() => {
+    // Give the browser a frame to apply the inline style before we read it
+    const raf = requestAnimationFrame(() => setThemeTick(n => n + 1));
+    return () => cancelAnimationFrame(raf);
   }, [isDark, themeId]);
+
+  const theme = useMemo(() => {
+    const font = typeof window !== 'undefined'
+      ? (document.documentElement.style.getPropertyValue('--editor-font').trim()
+        || getComputedStyle(document.documentElement).getPropertyValue('--editor-font').trim()
+        || undefined)
+      : undefined;
+    return makeTheme(isDark, font);
+  // themeTick ensures we re-read CSS vars after applySettings has committed them
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDark, themeId, themeTick]);
 
   const extensions = useMemo(() => [
     markdown({ base: markdownLanguage, codeLanguages: languages }),

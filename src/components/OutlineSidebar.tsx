@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo } from 'react';
-import { BookOpen, X } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { BookOpen, X, Hash } from 'lucide-react';
 import clsx from 'clsx';
 import type { Heading } from '@/types';
 
@@ -31,7 +31,16 @@ function activeIdx(headings: Heading[], line: number) {
   return a;
 }
 
+// Indent per heading level
 const IND: Record<number, number> = { 1: 0, 2: 0, 3: 12, 4: 20, 5: 26, 6: 32 };
+
+// Visual weight per heading level  
+const WEIGHT: Record<number, string> = { 
+  1: '600', 2: '500', 3: '400', 4: '400', 5: '400', 6: '400' 
+};
+const SIZE: Record<number, string> = { 
+  1: '12px', 2: '11.5px', 3: '11px', 4: '10.5px', 5: '10px', 6: '10px' 
+};
 
 export default function OutlineSidebar({
   content,
@@ -39,7 +48,7 @@ export default function OutlineSidebar({
   activeLineNumber,
   onHeadingClick,
   onClose,
-  width = 210,
+  width = 220,
 }: {
   content: string;
   isOpen: boolean;
@@ -51,17 +60,37 @@ export default function OutlineSidebar({
   const headings = useMemo(() => parse(content), [content]);
   const active = useMemo(() => activeIdx(headings, activeLineNumber), [headings, activeLineNumber]);
 
+  // Word count per "section" (H1/H2)
+  const sectionWordCounts = useMemo(() => {
+    const lines = content.split('\n');
+    const counts: Record<number, number> = {};
+    let currentSection = -1;
+    lines.forEach((line, i) => {
+      const m = line.match(/^(#{1,2})\s+(.+)/);
+      if (m) {
+        currentSection = i + 1; // lineNumber
+        counts[currentSection] = 0;
+      } else if (currentSection >= 0 && line.trim()) {
+        const words = line.trim().split(/\s+/).length;
+        counts[currentSection] = (counts[currentSection] || 0) + words;
+      }
+    });
+    return counts;
+  }, [content]);
+
   const handleHeadingClick = (lineNumber: number) => {
     onHeadingClick(lineNumber);
-    // Auto-close on mobile after picking a heading
     if (typeof window !== 'undefined' && window.innerWidth < 768) {
       onClose?.();
     }
   };
 
+  const h1Count = headings.filter(h => h.level === 1).length;
+  const h2Count = headings.filter(h => h.level === 2).length;
+  const h3Count = headings.filter(h => h.level === 3).length;
+
   return (
     <>
-      {/* ── Mobile backdrop ─────────────────────────────────────────────── */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
@@ -70,137 +99,133 @@ export default function OutlineSidebar({
         />
       )}
 
-      {/*
-        Collapse strategy
-        ─────────────────
-        Mobile  (< md):  fixed overlay drawer — always `width` px wide,
-                         translateX controls show/hide so content underneath
-                         is never pushed around.
-
-        Desktop (≥ md):  relative, participates in the editor flex row.
-                         max-width transitions from `width`px → 0 (with
-                         overflow:hidden) so the sidebar smoothly collapses
-                         and gives its flex space back to the editor.
-                         We inject the concrete pixel value via a scoped
-                         <style> tag because Tailwind can't JIT-compile
-                         arbitrary runtime values.
-      */}
       <aside
         id="tour-sidebar"
         className={clsx(
           'db-sidebar flex-shrink-0 overflow-hidden',
-          // Mobile: fixed drawer, z above backdrop
           'fixed inset-y-0 left-0 z-50',
           'transition-transform duration-300 ease-out',
           isOpen ? 'translate-x-0' : '-translate-x-full',
-          // Desktop: in-flow, no transform, animate max-width instead
           'md:relative md:inset-auto md:z-20 md:translate-x-0',
           'md:transition-[max-width,opacity] md:duration-300 md:ease-out',
           isOpen ? 'md:opacity-100 md:pointer-events-auto' : 'md:opacity-0 md:pointer-events-none',
         )}
-        // Mobile: width is always set (sidebar is fixed, not in flow).
-        // Desktop: max-width is driven solely by the <style> tag below so
-        // the collapse to 0 isn't blocked by an inline maxWidth declaration.
         style={{ width }}
       >
-        {/* Inner panel — always `width` px; <aside> clips it on desktop collapse */}
-        <div
-          className="flex flex-col h-full bg-[var(--paper)]"
-          style={{ width, maxWidth: '85vw' }}
-        >
-          {/* ── Header ── */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--rule)] flex-shrink-0">
+        <div className="flex flex-col h-full bg-[var(--paper)]" style={{ width, maxWidth: '85vw' }}>
+          
+          {/* Header */}
+          <div className="flex items-center justify-between px-3 py-2.5 border-b border-[var(--rule)] flex-shrink-0">
             <div className="flex items-center gap-2">
-              <BookOpen size={13} strokeWidth={2} style={{ color: 'var(--accent)' }} />
-              <span className="db-cap" style={{ fontSize: '10px' }}>Outline</span>
+              <BookOpen size={12} strokeWidth={2} style={{ color: 'var(--accent)' }} />
+              <span className="db-cap" style={{ fontSize: '9px' }}>Document Outline</span>
             </div>
-            <div className="flex items-center gap-3">
-              <span
-                style={{
-                  fontSize: '10px',
-                  background: 'var(--accent-dim)',
-                  color: 'var(--accent)',
-                  padding: '1px 6px',
-                }}
-              >
+            <div className="flex items-center gap-2">
+              <span style={{ fontSize: '9px', background: 'var(--accent-dim)', color: 'var(--accent)', padding: '1px 5px', fontFamily: 'var(--ff-mono)', fontWeight: '600' }}>
                 {headings.length}
               </span>
-              {/* X button — visible on both mobile and desktop */}
               {onClose && (
-                <button
-                  onClick={onClose}
-                  className="db-icon-btn"
-                  style={{ width: 24, height: 24 }}
-                  title="Close outline"
-                >
-                  <X size={14} />
+                <button onClick={onClose} className="db-icon-btn" style={{ width: 22, height: 22 }} title="Close outline">
+                  <X size={12} />
                 </button>
               )}
             </div>
           </div>
 
-          {/* ── Heading list ── */}
-          <div className="flex-1 overflow-y-auto py-2">
+          {/* Heading list */}
+          <div className="flex-1 overflow-y-auto py-1.5">
             {headings.length === 0 ? (
               <div className="px-4 py-8 text-center">
-                <span className="db-cap block mb-2 opacity-50">No headings yet.</span>
-                <code
-                  className="text-xs"
-                  style={{ fontFamily: 'var(--ff-mono)', color: 'var(--mid)' }}
-                >
-                  # Title
+                <Hash size={20} style={{ color: 'var(--rule)', margin: '0 auto 8px' }} />
+                <span className="db-cap block mb-1 opacity-40" style={{ fontSize: '9px' }}>No headings yet</span>
+                <code className="text-xs" style={{ fontFamily: 'var(--ff-mono)', color: 'var(--mid)', fontSize: '11px' }}>
+                  # Your Title
                 </code>
               </div>
             ) : (
-              headings.map((h, i) => (
-                <button
-                  key={`${h.lineNumber}-${h.id}`}
-                  onClick={() => handleHeadingClick(h.lineNumber)}
-                  className={clsx('db-nav-item relative', i === active && 'active')}
-                  style={{
-                    paddingLeft: `${16 + IND[h.level]}px`,
-                    fontSize: i === active ? '12px' : '11px',
-                    borderTop: i === 0 ? 'none' : undefined,
-                  }}
-                >
-                  {i === active && (
-                    <span className="absolute left-0 top-[20%] bottom-[20%] w-0.5 bg-[var(--accent)]" />
-                  )}
-                  {h.level >= 3 && (
-                    <span
-                      className="inline-block mr-2 flex-shrink-0"
-                      style={{
-                        width: h.level === 3 ? 4 : 3,
-                        height: h.level === 3 ? 4 : 3,
-                        background: i === active ? 'var(--accent)' : 'var(--mid)',
-                      }}
-                    />
-                  )}
-                  <span className="truncate">{h.text}</span>
-                </button>
-              ))
+              headings.map((h, i) => {
+                const isActive = i === active;
+                const sectionWords = (h.level <= 2) ? sectionWordCounts[h.lineNumber] : undefined;
+                
+                return (
+                  <button
+                    key={`${h.lineNumber}-${h.id}`}
+                    onClick={() => handleHeadingClick(h.lineNumber)}
+                    className={clsx(
+                      'w-full text-left flex items-center gap-1.5 relative transition-colors group/item',
+                      'hover:bg-[var(--cream)]',
+                      isActive ? 'bg-[var(--cream)]' : ''
+                    )}
+                    style={{
+                      paddingLeft: `${12 + IND[h.level]}px`,
+                      paddingRight: '10px',
+                      paddingTop: '5px',
+                      paddingBottom: '5px',
+                      fontSize: SIZE[h.level],
+                      fontWeight: WEIGHT[h.level],
+                      fontFamily: 'var(--ff-ui)',
+                      color: isActive ? 'var(--ink)' : 'var(--mid)',
+                    }}
+                  >
+                    {/* Active indicator */}
+                    {isActive && (
+                      <span className="absolute left-0 top-[15%] bottom-[15%] w-0.5 bg-[var(--accent)]" />
+                    )}
+
+                    {/* Heading level dot for H3+ */}
+                    {h.level >= 3 && (
+                      <span
+                        className="inline-block flex-shrink-0"
+                        style={{
+                          width: 3, height: 3,
+                          background: isActive ? 'var(--accent)' : 'var(--rule)',
+                          flexShrink: 0,
+                        }}
+                      />
+                    )}
+
+                    <span className="truncate flex-1">{h.text}</span>
+
+                    {/* Section word count hint for H1/H2 */}
+                    {sectionWords !== undefined && sectionWords > 0 && (
+                      <span
+                        className="opacity-0 group-hover/item:opacity-100 transition-opacity flex-shrink-0"
+                        style={{ fontSize: '9px', fontFamily: 'var(--ff-mono)', color: 'var(--mid)', letterSpacing: '0.04em' }}
+                      >
+                        {sectionWords}w
+                      </span>
+                    )}
+                  </button>
+                );
+              })
             )}
           </div>
 
-          {/* ── Footer ── */}
-          <div
-            className="border-t border-[var(--rule)] px-4 py-2 flex-shrink-0"
-            style={{ fontSize: 11, color: 'var(--mid)', fontFamily: 'var(--ff-mono)' }}
-          >
-            <span className="db-cap">{headings.filter(h => h.level === 1).length}H1</span>
-            <span className="db-cap ml-3">{headings.filter(h => h.level === 2).length}H2</span>
-            <span className="db-cap ml-3">{headings.filter(h => h.level === 3).length}H3</span>
+          {/* Footer stats */}
+          <div className="border-t border-[var(--rule)] px-3 py-2 flex-shrink-0 flex items-center gap-0">
+            {[
+              { label: 'H1', count: h1Count },
+              { label: 'H2', count: h2Count },
+              { label: 'H3', count: h3Count },
+            ].map(({ label, count }, i) => (
+              <span
+                key={label}
+                className="db-cap"
+                style={{
+                  fontSize: '8.5px',
+                  color: count > 0 ? 'var(--mid)' : 'var(--rule)',
+                  marginRight: i < 2 ? '10px' : 0,
+                }}
+              >
+                {count} {label}
+              </span>
+            ))}
+            <div className="flex-1" />
+            <span className="db-cap" style={{ fontSize: '8.5px' }}>{headings.length} total</span>
           </div>
         </div>
       </aside>
 
-      {/*
-        Desktop max-width driver.
-        Tailwind cannot JIT-compile the runtime `width` prop value, so we inject
-        a tiny scoped rule. This is the only place we need a <style> tag.
-        On mobile this rule is inert — the sidebar is `fixed` and therefore
-        outside normal flow; its visible area is controlled by translateX.
-      */}
       <style>{`
         @media (min-width: 768px) {
           #tour-sidebar { max-width: ${isOpen ? width : 0}px; }
