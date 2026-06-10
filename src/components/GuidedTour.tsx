@@ -16,7 +16,6 @@ const DESKTOP_STEPS: Step[] = [
   { id: 'welcome', title: 'Welcome to Carcino Vantage', body: 'A beautiful, distraction-free markdown editor made for writers, bloggers, and researchers.', emoji: '✦' },
   { id: 'view-modes', title: 'View Modes', body: 'Switch between Editor-only, Split view, and Preview-only using the icons in the header.', targetId: 'tour-view-modes', emoji: '⊞' },
   { id: 'toolbar', title: 'Formatting Toolbar', body: 'Click any button to format text. Standard Markdown shortcuts like Ctrl+B also work.', targetId: 'tour-toolbar', emoji: '✎' },
-  { id: 'outline', title: 'Document Outline', body: 'The left sidebar tracks every heading. Click to jump to it in the editor.', targetId: 'tour-sidebar', emoji: '≡' },
   { id: 'statusbar', title: 'Status Bar', body: 'Live word count, reading time, and cursor position. Auto-save runs every 800ms.', targetId: 'tour-statusbar', emoji: '◈' },
   { id: 'cmdpalette', title: 'Command Palette', body: 'Press Ctrl+K to search and run any action from your keyboard.', emoji: '>' },
   { id: 'export', title: 'Export', body: 'Export as Markdown or styled HTML ready to publish.', targetId: 'tour-export', emoji: '↓' },
@@ -26,7 +25,6 @@ const MOBILE_STEPS: Step[] = [
   { id: 'welcome', title: 'Welcome', body: 'A beautiful markdown editor for mobile writers.', emoji: '✦' },
   { id: 'toolbar', title: 'Toolbar', body: 'Formatting tools are docked at the bottom. Swipe horizontally to see more.', emoji: '✎' },
   { id: 'view', title: 'Editor / Preview', body: 'Use the floating button to switch between editing and preview.', emoji: '⊞' },
-  { id: 'outline', title: 'Outline', body: 'Tap the menu and select "Outline" to see document headings.', emoji: '≡' },
   { id: 'cmdpalette', title: 'Commands', body: 'Tap the search icon for quick access to all commands.', emoji: '>' },
 ];
 
@@ -40,6 +38,18 @@ export default function GuidedTour({ onClose, isMobile }: TourProps) {
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [modalPos, setModalPos] = useState({ top: 0, left: 0, placement: 'center' as 'top' | 'bottom' | 'center' });
   const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, []);
 
   const currentSteps = isMobile ? MOBILE_STEPS : DESKTOP_STEPS;
   const current = currentSteps[step];
@@ -65,7 +75,8 @@ export default function GuidedTour({ onClose, isMobile }: TourProps) {
       const pad = 20;
 
       let top = r.bottom + pad;
-      const left = Math.max(pad, Math.min(r.left, window.innerWidth - mWidth - pad));
+      const centerX = r.left + r.width / 2;
+      const left = Math.max(pad, Math.min(centerX - mWidth / 2, window.innerWidth - mWidth - pad));
       let placement: 'top' | 'bottom' | 'center' = 'bottom';
 
       // If no space below, try above
@@ -73,6 +84,8 @@ export default function GuidedTour({ onClose, isMobile }: TourProps) {
         top = r.top - mHeight - pad;
         placement = 'top';
       }
+
+      top = Math.max(pad, Math.min(top, window.innerHeight - mHeight - pad));
 
       // If status bar, specifically try placing above
       if (current.targetId === 'tour-statusbar') {
@@ -99,9 +112,9 @@ export default function GuidedTour({ onClose, isMobile }: TourProps) {
   const PAD = 6;
 
   const content = (
-    <>
+    <div className="fixed inset-0 z-[9990]">
       {!isMobile && (
-        <svg className="fixed inset-0 z-[9990]" style={{ pointerEvents: 'none', width: '100%', height: '100%' }}>
+        <svg className="absolute inset-0" style={{ pointerEvents: 'none', width: '100%', height: '100%' }}>
           <defs>
             <mask id="tour-mask">
               <rect width="100%" height="100%" fill="white" />
@@ -124,7 +137,7 @@ export default function GuidedTour({ onClose, isMobile }: TourProps) {
 
       {rect && !isMobile && (
         <div
-          className="fixed z-[9998] border-2 border-[var(--accent)] pointer-events-none transition-all duration-500"
+          className="absolute z-[9998] border-2 border-[var(--accent)] pointer-events-none transition-all duration-500"
           style={{
             top: rect.top - PAD,
             left: rect.left - PAD,
@@ -138,7 +151,7 @@ export default function GuidedTour({ onClose, isMobile }: TourProps) {
 
       <div 
         ref={modalRef}
-        className="fixed z-[9999] db-modal db-rise-0 transition-position duration-500" 
+        className="absolute z-[9999] db-modal db-rise-0 transition-position duration-500 pointer-events-auto"
         style={{ 
           width: isMobile ? 'calc(100vw - 32px)' : '380px',
           maxWidth: '90vw',
@@ -221,7 +234,7 @@ export default function GuidedTour({ onClose, isMobile }: TourProps) {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 
   return createPortal(content, document.body);

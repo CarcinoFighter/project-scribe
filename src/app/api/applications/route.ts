@@ -95,7 +95,34 @@ export async function GET(req: NextRequest) {
 
   try {
     const results = await getCachedApplicationsData(clientEmail, privateKey, sheetConfigs);
-    return NextResponse.json(results);
+    
+    // Fetch discarded applications
+    const { data: discardedData, error: discardedError } = await supabaseAdmin
+      .from('discarded_applications')
+      .select('timestamp');
+
+    if (discardedError) {
+      console.error('Error fetching discarded applications:', discardedError);
+    }
+
+    const discardedSet = new Set(discardedData?.map(d => d.timestamp) || []);
+
+    // Filter results
+    const filteredResults: Record<string, any[][] | null | undefined> = {};
+    for (const key of Object.keys(results)) {
+      const sheetData = results[key];
+      if (sheetData && sheetData.length > 0) {
+        // Keep header (index 0) and filter the rest
+        filteredResults[key] = [
+          sheetData[0],
+          ...sheetData.slice(1).filter(row => !discardedSet.has(String(row[0])))
+        ];
+      } else {
+        filteredResults[key] = sheetData;
+      }
+    }
+
+    return NextResponse.json(filteredResults);
   } catch (error: any) {
     return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
   }
