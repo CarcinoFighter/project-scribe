@@ -159,20 +159,12 @@ export default function Toolbar({ onAction, focusMode, isMobile }: Props) {
   }
 
   return (
-<<<<<<< HEAD
-    <div className="border-t md:border-t-0 md:border-b border-[var(--rule)] bg-[var(--paper)] relative z-30">
-      <div
-        id="tour-toolbar"
-        className="flex items-center px-3 sm:px-4 overflow-x-auto no-scrollbar"
-        style={{ minHeight: '42px' }}
-=======
     <div
       className="border-t md:border-t-0 md:border-b border-[var(--rule)] bg-[var(--paper)] relative z-30"
     >
       <div
         id="tour-toolbar"
         className="flex items-center px-2 sm:px-4 py-2 overflow-x-auto no-scrollbar min-h-[48px]"
->>>>>>> c322be5297dd3863bec27106655f91003b9cb468
       >
         {GROUPS.map((group, gi) => (
           <div
