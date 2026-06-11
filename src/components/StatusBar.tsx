@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Check, Loader2, Target, Eye, Edit3, Clock, Type, Hash, AlignLeft } from 'lucide-react';
+import { Check, Loader2, Target, Eye, Edit3, Clock, Type, AlignLeft } from 'lucide-react';
 import type { DocumentStats, ViewMode } from '@/types';
 
 interface Props {
@@ -21,29 +21,32 @@ interface Props {
 }
 
 function GoalRing({ words, goal }: { words: number; goal: number }) {
-  const R = 8;
+  const R = 7;
   const C = 2 * Math.PI * R;
   const pct = Math.min(words / goal, 1);
   const offset = C * (1 - pct);
   const done = pct >= 1;
   return (
-    <svg width="20" height="20" viewBox="0 0 22 22" style={{ flexShrink: 0 }}>
-      <circle cx="11" cy="11" r={R} fill="none" stroke="var(--rule)" strokeWidth="2" />
+    <svg width="18" height="18" viewBox="0 0 18 18" style={{ flexShrink: 0 }}>
+      <circle cx="9" cy="9" r={R} fill="none" stroke="var(--rule)" strokeWidth="1.5" />
       <circle
-        cx="11" cy="11" r={R}
+        cx="9" cy="9" r={R}
         fill="none"
         stroke={done ? '#4ade80' : 'var(--accent)'}
-        strokeWidth="2"
-        strokeLinecap="square"
+        strokeWidth="1.5"
+        strokeLinecap="round"
         strokeDasharray={C}
         strokeDashoffset={offset}
-        style={{ transform: 'rotate(-90deg)', transformOrigin: '11px 11px', transition: 'stroke-dashoffset 0.3s' }}
+        style={{ transform: 'rotate(-90deg)', transformOrigin: '9px 9px', transition: 'stroke-dashoffset 0.3s' }}
       />
     </svg>
   );
 }
 
-export default function StatusBar({ stats, cursorLine, cursorCol, isSaved, viewMode, wordGoal, goalCelebrated = false, onSetWordGoal, isMobile, onToggleView, collabStatus, collaboratorCount = 0 }: Props) {
+export default function StatusBar({
+  stats, cursorLine, cursorCol, isSaved, viewMode, wordGoal, goalCelebrated = false,
+  onSetWordGoal, isMobile, onToggleView, collabStatus, collaboratorCount = 0
+}: Props) {
   const [editingGoal, setEditingGoal] = useState(false);
   const [goalInput, setGoalInput] = useState('');
 
@@ -88,36 +91,42 @@ export default function StatusBar({ stats, cursorLine, cursorCol, isSaved, viewM
     return (
       <>
         {goalModal}
-        <footer className="status-bar" style={{ height: '40px', borderTop: '1px solid var(--rule)', padding: '0 12px' }}>
-          <button onClick={openGoal} className="flex items-center gap-2" style={{ background: 'none', border: 'none', padding: 0 }}>
+        <footer className="status-bar" style={{ height: '40px' }}>
+          <button onClick={openGoal} className="status-bar-pill clickable" style={{ paddingLeft: 0 }}>
             {wordGoal > 0 ? (
               <span style={{ filter: goalCelebrated ? 'drop-shadow(0 0 6px #4ade80)' : 'none', transition: 'filter 0.4s' }}>
                 <GoalRing words={stats.words} goal={wordGoal} />
               </span>
             ) : (
-              <Target size={13} style={{ color: 'var(--mid)' }} />
+              <Target size={12} />
             )}
-            <span className="db-cap" style={{ fontSize: '10px' }}>
+            <span>
               {stats.words.toLocaleString()}
-              {wordGoal > 0 && <span className="opacity-50">/{wordGoal.toLocaleString()}</span>}
+              {wordGoal > 0 && <span className="opacity-40">/{wordGoal.toLocaleString()}</span>}
+              <span className="opacity-40 ml-0.5">w</span>
             </span>
           </button>
 
           <div className="flex-1" />
 
-          <div className="flex items-center gap-3">
-            <span className="db-cap" style={{ fontSize: '10px' }}>
-              <Clock size={9} className="inline mr-1" />{stats.readingTime}m
+          <div className="flex items-center gap-1">
+            <span className="status-bar-pill">
+              <Clock size={9} />
+              {stats.readingTime}m
             </span>
             <button
               onClick={onToggleView}
-              className="flex items-center gap-1 px-2 py-1 bg-[var(--cream)] border border-[var(--rule)]"
+              className="status-bar-pill clickable border border-[var(--rule)] rounded"
+              style={{ borderRadius: 'var(--r-sm)' }}
             >
-              {viewMode === 'editor' ? <Eye size={11} /> : <Edit3 size={11} />}
-              <span className="db-cap text-[9px]">{viewMode === 'editor' ? 'PREV' : 'EDIT'}</span>
+              {viewMode === 'editor' ? <Eye size={10} /> : <Edit3 size={10} />}
+              <span>{viewMode === 'editor' ? 'Preview' : 'Edit'}</span>
             </button>
-            <span style={{ color: isSaved ? 'var(--accent)' : 'var(--mid)', transition: 'color 0.2s' }}>
-              {isSaved ? <Check size={13} /> : <Loader2 size={13} className="animate-spin" />}
+            <span
+              className="status-bar-pill"
+              style={{ color: isSaved ? 'var(--accent)' : 'var(--mid)', transition: 'color 0.2s' }}
+            >
+              {isSaved ? <Check size={11} /> : <Loader2 size={11} className="animate-spin" />}
             </span>
           </div>
         </footer>
@@ -128,110 +137,109 @@ export default function StatusBar({ stats, cursorLine, cursorCol, isSaved, viewM
   return (
     <>
       {goalModal}
-      <footer id="tour-statusbar" className="status-bar" style={{ height: '26px', borderTop: '1px solid var(--rule)', gap: '0' }}>
+      <footer id="tour-statusbar" className="status-bar">
         {/* Left cluster */}
-        <div className="flex items-center gap-0">
-          {/* Word goal */}
-          <button
-            onClick={openGoal}
-            className="flex items-center gap-1.5 px-3 h-full transition-colors hover:bg-[var(--cream)]"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', borderRight: '1px solid var(--rule)' }}
-            title="Set word goal"
-          >
-            {wordGoal > 0 ? (
-              <span style={{ filter: goalCelebrated ? 'drop-shadow(0 0 5px #4ade80)' : 'none', transition: 'filter 0.4s' }}>
-                <GoalRing words={stats.words} goal={wordGoal} />
-              </span>
-            ) : (
-              <Target size={10} strokeWidth={2} style={{ color: 'var(--mid)' }} />
-            )}
-            <span className="db-cap" style={{ fontSize: '10px' }}>
-              {stats.words.toLocaleString()}
-              {wordGoal > 0 ? (
-                <span className="opacity-50">/{wordGoal.toLocaleString()} · {goalProgress}%</span>
-              ) : (
-                <span className="hidden sm:inline opacity-50 ml-0.5">w</span>
-              )}
+        <button
+          onClick={openGoal}
+          className="status-bar-pill clickable"
+          title="Set word goal"
+          style={{ paddingLeft: 0 }}
+        >
+          {wordGoal > 0 ? (
+            <span style={{ filter: goalCelebrated ? 'drop-shadow(0 0 5px #4ade80)' : 'none', transition: 'filter 0.4s' }}>
+              <GoalRing words={stats.words} goal={wordGoal} />
             </span>
-          </button>
+          ) : (
+            <Target size={10} strokeWidth={2} />
+          )}
+          {stats.words.toLocaleString()}
+          {wordGoal > 0 ? (
+            <span className="opacity-40">/{wordGoal.toLocaleString()} · {goalProgress}%</span>
+          ) : (
+            <span className="hidden sm:inline opacity-40">w</span>
+          )}
+        </button>
 
-          {/* Chars */}
-          <div className="hidden sm:flex items-center gap-1 px-3 h-full" style={{ borderRight: '1px solid var(--rule)' }}>
-            <Type size={9} style={{ color: 'var(--mid)' }} />
-            <span className="db-cap" style={{ fontSize: '10px' }}>
-              {stats.chars.toLocaleString()}<span className="opacity-50 ml-0.5">ch</span>
-            </span>
-          </div>
+        <div className="status-bar-sep hidden sm:block" />
 
-          {/* Reading time */}
-          <div className="hidden sm:flex items-center gap-1 px-3 h-full" style={{ borderRight: '1px solid var(--rule)' }}>
-            <Clock size={9} style={{ color: 'var(--mid)' }} />
-            <span className="db-cap" style={{ fontSize: '10px' }}>{stats.readingTime}min</span>
-          </div>
+        <span className="status-bar-pill hidden sm:inline-flex">
+          <Type size={9} />
+          {stats.chars.toLocaleString()}<span className="opacity-40 ml-0.5">ch</span>
+        </span>
 
-          {/* Lines */}
-          <div className="hidden md:flex items-center gap-1 px-3 h-full" style={{ borderRight: '1px solid var(--rule)' }}>
-            <AlignLeft size={9} style={{ color: 'var(--mid)' }} />
-            <span className="db-cap" style={{ fontSize: '10px' }}>
-              {stats.lines.toLocaleString()}<span className="opacity-50 ml-0.5">ln</span>
-            </span>
-          </div>
-        </div>
+        <div className="status-bar-sep hidden sm:block" />
+
+        <span className="status-bar-pill hidden sm:inline-flex">
+          <Clock size={9} />
+          {stats.readingTime}min
+        </span>
+
+        <div className="status-bar-sep hidden md:block" />
+
+        <span className="status-bar-pill hidden md:inline-flex">
+          <AlignLeft size={9} />
+          {stats.lines.toLocaleString()}<span className="opacity-40 ml-0.5">ln</span>
+        </span>
 
         <div className="flex-1" />
 
         {/* Right cluster */}
-        <div className="flex items-center h-full">
-          {/* Cursor position */}
-          <div className="hidden sm:flex items-center px-3 h-full" style={{ borderLeft: '1px solid var(--rule)' }}>
-            <span className="db-cap" style={{ fontSize: '10px' }}>
-              <span className="opacity-50">Ln</span> {cursorLine} <span className="opacity-50 ml-1">Col</span> {cursorCol}
-            </span>
-          </div>
+        <span className="status-bar-pill hidden sm:inline-flex">
+          <span className="opacity-40">Ln</span> {cursorLine} <span className="opacity-40 mx-1">Col</span> {cursorCol}
+        </span>
 
-          {/* View mode */}
-          <div className="hidden md:flex items-center px-3 h-full" style={{ borderLeft: '1px solid var(--rule)' }}>
-            <span className="db-cap" style={{ fontSize: '10px', color: 'var(--mid)' }}>
-              {viewMode === 'split' ? 'SPLIT' : viewMode === 'editor' ? 'EDITOR' : 'PREVIEW'}
-            </span>
-          </div>
+        <div className="status-bar-sep hidden sm:block" />
 
-          {/* Collab status */}
-          {collabStatus && collabStatus !== 'offline' && (
-            <div className="flex items-center gap-1.5 px-3 h-full" style={{ borderLeft: '1px solid var(--rule)' }}>
+        <span className="status-bar-pill hidden md:inline-flex" style={{ color: 'var(--text-5)' }}>
+          {viewMode === 'split' ? 'Split' : viewMode === 'editor' ? 'Editor' : 'Preview'}
+        </span>
+
+        {collabStatus && collabStatus !== 'offline' && (
+          <>
+            <div className="status-bar-sep" />
+            <span className="status-bar-pill" style={{ color: collabStatus === 'online' ? '#4ade80' : 'var(--accent)' }}>
               <span
                 style={{
                   display: 'inline-block',
                   width: 5, height: 5,
                   borderRadius: '50%',
-                  background: collabStatus === 'online' ? '#4ade80' : 'var(--accent)',
+                  background: 'currentColor',
                   animation: collabStatus === 'connecting' ? 'db-blink 1s step-start infinite'
                     : (collabStatus === 'online' && collaboratorCount > 0 ? 'db-blink 2.5s ease-in-out infinite' : 'none'),
                   flexShrink: 0,
                 }}
               />
-              <span className="hidden sm:inline db-cap" style={{ fontSize: '10px', color: collabStatus === 'online' ? '#4ade80' : 'var(--accent)' }}>
+              <span className="hidden sm:inline">
                 {collabStatus === 'connecting' ? 'Connecting' : collaboratorCount > 0 ? `${collaboratorCount} online` : 'Synced'}
               </span>
-            </div>
-          )}
+            </span>
+          </>
+        )}
 
-          {/* Save status */}
-          <div
-            className="flex items-center gap-1 px-3 h-full"
-            style={{ borderLeft: '1px solid var(--rule)', color: isSaved ? 'var(--accent)' : 'var(--mid)', transition: 'color 0.2s' }}
-          >
-            {isSaved
-              ? <><Check size={10} strokeWidth={2.5} /><span className="hidden sm:inline db-cap ml-1" style={{ fontSize: '10px', fontWeight: 'bold' }}>Saved</span></>
-              : <><Loader2 size={10} strokeWidth={2.5} className="animate-spin" /><span className="hidden sm:inline db-cap ml-1" style={{ fontSize: '10px', fontWeight: 'bold' }}>Saving…</span></>
-            }
-          </div>
+        <div className="status-bar-sep" />
 
-          {/* Format badge */}
-          <div className="hidden sm:flex items-center px-2 h-full" style={{ borderLeft: '1px solid var(--rule)' }}>
-            <span className="db-cap" style={{ fontSize: '8px', padding: '1px 5px', background: 'var(--accent-dim)', color: 'var(--accent)' }}>MD</span>
-          </div>
-        </div>
+        <span
+          className="status-bar-pill"
+          style={{ color: isSaved ? 'var(--accent)' : 'var(--mid)', transition: 'color 0.2s' }}
+        >
+          {isSaved
+            ? <><Check size={9} strokeWidth={2.5} /><span className="hidden sm:inline ml-0.5">Saved</span></>
+            : <><Loader2 size={9} strokeWidth={2.5} className="animate-spin" /><span className="hidden sm:inline ml-0.5">Saving…</span></>
+          }
+        </span>
+
+        <div className="status-bar-sep hidden sm:block" />
+
+        <span className="status-bar-pill hidden sm:inline-flex" style={{
+          fontSize: '9px',
+          background: 'var(--accent-dim)',
+          color: 'var(--accent)',
+          borderRadius: 'var(--r-xs)',
+          letterSpacing: '0.08em',
+          fontWeight: '600',
+        }}>
+          MD
+        </span>
       </footer>
     </>
   );

@@ -222,32 +222,28 @@ body {
    ═══════════════════════════════════════════════════════════════ */
 .db-header,
 .app-header {
-  height: 48px;
+  height: 42px;
   display: flex;
   align-items: center;
-  padding: 0 20px;
+  padding: 0 14px;
   position: sticky;
   top: 0;
   z-index: 50;
-  background: color-mix(in srgb, var(--paper) 82%, transparent);
-  backdrop-filter: blur(16px) saturate(160%);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  background: var(--paper);
   border-bottom: 1px solid var(--rule);
-  box-shadow: 0 1px 0 rgba(124,92,252,0.04);
+  gap: 6px;
 }
 .glass, .glass-rim {
-  background: color-mix(in srgb, var(--paper) 82%, transparent);
-  backdrop-filter: blur(16px) saturate(160%);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  background: var(--paper);
   border-bottom: 1px solid var(--rule);
 }
 
 /* Vertical divider */
 .db-vr {
   width: 1px;
-  height: 16px;
+  height: 14px;
   background: var(--rule);
-  margin: 0 10px;
+  margin: 0 8px;
   flex-shrink: 0;
 }
 
@@ -259,35 +255,27 @@ body {
 .db-btn {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 8px 16px;
-  background: var(--ink);
-  color: var(--paper);
+  gap: 6px;
+  padding: 6px 14px;
+  background: var(--accent);
+  color: #fff;
   border: none;
   border-radius: var(--r-sm);
   cursor: pointer;
   font-family: var(--ff-mono);
   font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.12em;
+  font-weight: 600;
+  letter-spacing: 0.10em;
   text-transform: uppercase;
   position: relative;
   overflow: hidden;
   text-decoration: none;
   white-space: nowrap;
-  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: background 0.15s, box-shadow 0.15s;
 }
-.db-btn::before {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(135deg, var(--accent), var(--accent-light));
-  border-radius: inherit;
-  transform: translateX(-105%);
-  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.db-btn:hover:not(:disabled)::before { transform: translateX(0); }
 .db-btn:hover:not(:disabled) {
-  box-shadow: 0 4px 16px var(--accent-glow);
+  background: var(--accent-hover);
+  box-shadow: 0 2px 12px var(--accent-glow);
 }
 .db-btn > * { position: relative; z-index: 1; }
 .db-btn:disabled { opacity: 0.35; cursor: not-allowed; }
@@ -301,20 +289,20 @@ body {
   border: 1px solid var(--rule);
   border-radius: var(--r-sm);
   cursor: pointer;
-  padding: 4px 10px;
+  padding: 4px 9px;
   font-family: var(--ff-mono);
   font-size: 10px;
   font-weight: 500;
-  letter-spacing: 0.10em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--mid);
-  transition: all 0.2s ease;
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
   text-decoration: none;
 }
 .db-ghost:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: var(--accent-dim);
+  border-color: var(--border-med);
+  color: var(--ink);
+  background: var(--cream);
 }
 
 /* Icon button */
@@ -322,23 +310,24 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px; height: 32px;
+  width: 28px; height: 28px;
   background: none;
   border: 1px solid transparent;
   border-radius: var(--r-sm);
   cursor: pointer;
   color: var(--mid);
-  transition: all 0.2s ease;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
   position: relative;
   font-family: var(--ff-ui);
+  flex-shrink: 0;
 }
 .db-icon-btn:hover {
   border-color: var(--rule);
   color: var(--ink);
-  background: var(--accent-dim);
+  background: var(--cream);
 }
 .db-icon-btn.active {
-  border-color: var(--accent);
+  border-color: var(--accent-sub);
   color: var(--accent);
   background: var(--accent-dim);
 }
@@ -347,22 +336,23 @@ body {
    SEARCH BAR
    ═══════════════════════════════════════════════════════════════ */
 .db-search {
-  display: flex; align-items: center; gap: 8px;
-  padding: 5px 12px;
+  display: flex; align-items: center; gap: 7px;
+  padding: 4px 10px;
   border: 1px solid var(--rule);
   border-radius: var(--r-md);
-  background: transparent;
+  background: var(--cream);
   cursor: pointer;
   font-family: var(--ff-mono);
   font-size: 11px;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   color: var(--mid);
-  transition: all 0.2s ease;
+  transition: border-color 0.15s, background 0.15s;
+  min-width: 180px;
 }
 .db-search:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: var(--accent-dim);
+  border-color: var(--border-med);
+  color: var(--ink);
+  background: var(--cream);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -376,8 +366,8 @@ body {
   display: flex;
   flex-direction: column;
   position: sticky;
-  top: 48px;
-  height: calc(100dvh - 48px);
+  top: 42px;
+  height: calc(100dvh - 42px);
   overflow-y: auto;
   background: color-mix(in srgb, var(--paper) 95%, var(--accent) 5%);
 }
@@ -892,12 +882,13 @@ body {
 .db-avatar {
   width: 24px; height: 24px;
   background: linear-gradient(135deg, var(--accent), var(--accent-light));
-  border-radius: var(--r-sm);
+  border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   color: #fff;
   font-family: var(--ff-mono);
   font-size: 9px; font-weight: 600; letter-spacing: 0.04em;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1088,7 +1079,7 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   EDITOR — legacy classes used by editor components
+   EDITOR — layout & chrome
    ═══════════════════════════════════════════════════════════════ */
 .editor-layout {
   display: flex;
@@ -1105,61 +1096,143 @@ body {
   overflow: hidden;
 }
 
-/* Tab bar */
+/* ── Tab bar ─────────────────────────────────────────────────── */
 .tab-bar {
   display: flex;
-  align-items: stretch;
-  background: var(--cream);
+  align-items: center;
+  background: var(--paper);
   border-bottom: 1px solid var(--rule);
   overflow-x: auto;
   scrollbar-width: none;
-  height: 38px;
+  height: 36px;
+  padding: 0 6px;
+  gap: 2px;
 }
 .tab-bar::-webkit-scrollbar { display: none; }
 .tab-item {
-  display: flex; align-items: center; gap: 6px;
-  padding: 0 14px;
-  border-right: 1px solid var(--rule);
+  display: flex; align-items: center; gap: 5px;
+  padding: 0 8px;
+  height: 26px;
+  border-radius: var(--r-sm);
   cursor: pointer;
-  font-family: var(--ff-mono);
-  font-size: 11px;
-  letter-spacing: 0.04em;
+  font-family: var(--ff-ui);
+  font-size: 12px;
+  font-weight: 500;
   color: var(--mid);
   white-space: nowrap;
-  transition: all 0.15s ease;
+  transition: background 0.12s, color 0.12s;
   background: transparent;
-  border-bottom: 2px solid transparent;
   flex-shrink: 0;
+  border: 1px solid transparent;
 }
-.tab-item:hover { background: var(--accent-dim); color: var(--ink); }
+.tab-item:hover { background: var(--cream); color: var(--ink); }
 .tab-item.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-  background: var(--paper);
+  background: var(--cream);
+  color: var(--ink);
+  border-color: var(--rule);
 }
 .tab-close {
-  width: 16px; height: 16px;
+  width: 14px; height: 14px;
   display: flex; align-items: center; justify-content: center;
-  opacity: 0.5; transition: opacity 0.1s;
+  opacity: 0; transition: opacity 0.1s, background 0.1s;
   background: none; border: none; cursor: pointer; color: inherit;
   padding: 0;
   border-radius: var(--r-xs);
 }
-.tab-close:hover { opacity: 1; background: var(--accent-dim); }
+.tab-item:hover .tab-close,
+.tab-item.active .tab-close { opacity: 1; }
+.tab-close:hover { background: var(--accent-dim); color: var(--accent); }
 
-/* Status bar */
-.status-bar {
-  height: 26px;
-  display: flex; align-items: center;
-  padding: 0 16px;
+/* ── Toolbar ─────────────────────────────────────────────────── */
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+  padding: 0 10px;
+  height: 40px;
+  gap: 1px;
+  flex-shrink: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.editor-toolbar::-webkit-scrollbar { display: none; }
+
+.editor-toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px; height: 30px;
+  border-radius: var(--r-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  color: var(--text-3);
+  background: transparent;
+  transition: background 0.10s, color 0.10s, border-color 0.10s;
+  flex-shrink: 0;
+}
+.editor-toolbar-btn:hover {
   background: var(--cream);
+  color: var(--ink);
+  border-color: var(--rule);
+}
+.editor-toolbar-btn.active {
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-color: var(--accent-sub);
+}
+
+.editor-toolbar-sep {
+  width: 1px;
+  height: 18px;
+  background: var(--rule);
+  flex-shrink: 0;
+  margin: 0 3px;
+}
+
+/* ── Status bar ──────────────────────────────────────────────── */
+.status-bar {
+  height: 28px;
+  display: flex; align-items: center;
+  padding: 0 12px;
+  background: var(--paper);
   border-top: 1px solid var(--rule);
   font-family: var(--ff-mono);
   font-size: 10px;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.07em;
   color: var(--mid);
-  gap: 16px;
+  gap: 0;
   flex-shrink: 0;
+}
+
+.status-bar-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  height: 20px;
+  border-radius: var(--r-pill);
+  font-size: 10px;
+  font-family: var(--ff-mono);
+  letter-spacing: 0.07em;
+  color: var(--mid);
+  background: transparent;
+  border: none;
+  cursor: default;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+.status-bar-pill.clickable { cursor: pointer; }
+.status-bar-pill.clickable:hover {
+  background: var(--cream);
+  color: var(--ink);
+}
+.status-bar-sep {
+  width: 1px;
+  height: 12px;
+  background: var(--rule);
+  flex-shrink: 0;
+  margin: 0 2px;
 }
 
 /* Scrollbar — rounded, translucent */
@@ -1267,3 +1340,31 @@ body {
 .theme-transitioning *::after {
   transition: background-color 0.26s ease, color 0.26s ease, border-color 0.26s ease, box-shadow 0.26s ease !important;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   SPLIT HANDLE (editor split view divider)
+   ───────────────────────────────────────────────────────────── */
+.split-handle {
+  position: absolute;
+  top: 0;
+  width: 4px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 10;
+  transform: translateX(-50%);
+  background: transparent;
+  transition: background 0.15s;
+}
+.split-handle:hover,
+.split-handle.active {
+  background: var(--accent);
+  opacity: 0.4;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   ZEN MODE
+   ───────────────────────────────────────────────────────────── */
+.zen-mode .editor-toolbar,
+.zen-mode .tab-bar,
+.zen-mode .status-bar,
+.zen-mode header { display: none !important; }

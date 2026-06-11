@@ -91,7 +91,7 @@ function TabBar({
   tabs: Tab[], activeTabId: string, onSwitch: (id: string) => void, onClose: (id: string) => void, onNew: () => void 
 }) {
   return (
-    <div className="flex items-center gap-1 border-b border-[var(--border)] bg-[var(--surface-1)] overflow-x-auto no-scrollbar px-2" style={{ height: '40px' }}>
+    <div className="tab-bar">
       {tabs.map((tab) => {
         const isActive = tab.id === activeTabId;
         const Icon = tab.type === 'blogs' ? BookOpen : tab.type === 'survivor_stories' ? Heart : FileText;
@@ -100,38 +100,34 @@ function TabBar({
           <div 
             key={tab.id}
             onClick={() => onSwitch(tab.id)}
-            className={`group flex items-center gap-2 px-3 py-1.5 min-w-[100px] sm:min-w-[120px] max-w-[180px] sm:max-w-[200px] transition-colors cursor-pointer select-none flex-shrink-0 relative`}
-            style={{
-              borderRadius: 'var(--r-md)',
-              background: isActive ? 'var(--surface-2)' : 'transparent',
-              color: isActive ? 'var(--text)' : 'var(--text-3)',
-            }}
+            className={`tab-item group select-none min-w-[90px] max-w-[180px] ${isActive ? 'active' : ''}`}
           >
             {tab.isLoading ? (
-              <Loader2 size={12} className="animate-spin text-[var(--accent)] flex-shrink-0" />
+              <Loader2 size={11} className="animate-spin text-[var(--accent)] flex-shrink-0" />
             ) : (
-              <Icon size={12} className={`flex-shrink-0 ${isActive ? 'text-[var(--accent)]' : ''}`} />
+              <Icon size={11} className={`flex-shrink-0 transition-colors ${isActive ? 'text-[var(--accent)]' : 'opacity-50'}`} />
             )}
-            <span className={`truncate flex-1`} style={{ fontSize: '12px', fontWeight: isActive ? '600' : '500', fontFamily: 'var(--ff-ui)' }}>
-              {unsaved && <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--accent)] mr-1.5" style={{ verticalAlign: 'middle' }} />}
+            <span className="truncate flex-1 leading-none">
+              {unsaved && (
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--accent)] mr-1.5 mb-px" style={{ verticalAlign: 'middle' }} />
+              )}
               {tab.title}
             </span>
             <button 
               onClick={(e) => { e.stopPropagation(); onClose(tab.id); }}
-              className={`flex items-center justify-center w-5 h-5 rounded-md opacity-0 group-hover:opacity-100 hover:bg-[var(--accent-dim)] hover:text-[var(--accent)] transition-all flex-shrink-0 ${isActive ? '!opacity-100' : ''}`}
+              className="tab-close"
             >
-              <X size={12} />
+              <X size={10} />
             </button>
           </div>
         );
       })}
       <button 
         onClick={onNew}
-        className="h-7 px-3 ml-1 flex items-center justify-center text-[var(--text-3)] hover:bg-[var(--accent-dim)] hover:text-[var(--accent)] transition-all flex-shrink-0"
+        className="flex items-center justify-center w-[26px] h-[26px] ml-1 rounded text-[var(--mid)] hover:bg-[var(--cream)] hover:text-[var(--ink)] border border-transparent hover:border-[var(--rule)] transition-all flex-shrink-0"
         title="New document (Ctrl+T)"
-        style={{ borderRadius: 'var(--r-md)' }}
       >
-        <Plus size={16} />
+        <Plus size={12} />
       </button>
     </div>
   );
@@ -1129,22 +1125,22 @@ function EditorContent() {
         />
       </div>
 
-      {/* Mobile Tab Bar - Simplified */}
-      <div className="md:hidden border-b border-[var(--rule)] bg-[var(--cream)] overflow-x-auto flex">
+      {/* Mobile Tab Bar */}
+      <div className="md:hidden border-b border-[var(--rule)] bg-[var(--paper)] overflow-x-auto flex items-center gap-1 px-2 no-scrollbar" style={{ height: '36px' }}>
         {tabs.map((tab) => {
           const isActive = tab.id === activeTabId;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTabId(tab.id)}
-              className={`px-3 py-2 text-xs whitespace-nowrap border-r border-[var(--rule)] ${isActive ? 'bg-[var(--paper)] text-[var(--ink)] border-t-2 border-t-[var(--accent)]' : 'text-[var(--mid)]'}`}
+              className={`px-2.5 h-[26px] text-xs whitespace-nowrap rounded flex-shrink-0 border transition-all ${isActive ? 'bg-[var(--cream)] text-[var(--ink)] border-[var(--rule)]' : 'text-[var(--mid)] border-transparent'}`}
             >
               {tab.title.length > 12 ? tab.title.slice(0, 12) + '…' : tab.title}
             </button>
           );
         })}
-        <button onClick={() => handleAddNew()} className="px-3 py-2 text-[var(--mid)] border-r border-[var(--rule)]">
-          <Plus size={14} />
+        <button onClick={() => handleAddNew()} className="w-[26px] h-[26px] flex items-center justify-center rounded text-[var(--mid)] hover:bg-[var(--cream)] border border-transparent hover:border-[var(--rule)] flex-shrink-0 ml-1">
+          <Plus size={12} />
         </button>
       </div>
 
@@ -1238,8 +1234,9 @@ function EditorContent() {
             )}
 
             <div 
-              className="bg-[var(--cream)] prose-editor min-w-0"
+              className="prose-editor min-w-0"
               style={{ 
+                background: 'var(--cream)',
                 flex: isMobile 
                   ? (viewMode === 'editor' ? 0 : 1) 
                   : (viewMode === 'preview' ? 1 : (viewMode === 'split' ? 1 : 0)), 
