@@ -39,6 +39,8 @@ import { UpcomingEventsPanel } from '@/components/UpcomingEventsPanel';
 import { getGreeting, getTodayLabel, fmtWords, getWeekWindow, getTodayStr, countWords, excerptFrom } from '@/lib/utils';
 import { Task } from '@/types/task';
 import { CalendarEvent } from '@/types/calendar';
+import { useNotifications } from '@/lib/useNotifications';
+import NotifPanel from '@/components/NotifPanel';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Doc {
@@ -54,8 +56,7 @@ interface Doc {
   starred: boolean;
   isActive?: boolean;
 }
-import { useNotifications } from '@/lib/useNotifications';
-import NotifPanel from '@/components/NotifPanel';
+
 interface Cmd { id: string; label: string; hint?: string; icon: React.ElementType; shortcut?: string; group: string; }
 type SortKey = 'date' | 'words' | 'status';
 type FilterStatus = 'all' | 'published' | 'review' | 'draft';
@@ -69,7 +70,6 @@ function sortDocs(docs: Doc[], by: SortKey) {
   });
 }
 function filterDocs(docs: Doc[], s: FilterStatus) { return s === 'all' ? docs : docs.filter(d => d.status === s); }
-
 
 function buildCmds(): Cmd[] {
   return [
@@ -85,13 +85,56 @@ function buildCmds(): Cmd[] {
 
 const TAPE_ITEMS = ['WRITERS', 'DESIGN', 'DEV', 'PR', 'LEADERSHIP', 'VANTAGE', '2026', '✦'];
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// CUSTOM HOOKS
+// ─────────────────────────────────────────────────────────────────────────────
+function useOmniScrollDirection() {
+  const [isVisible, setIsVisible] = useState(true);
+  const lastScrollY = useRef(0);
+  const accumulatedDelta = useRef(0);
 
+  useEffect(() => {
+    const handleScroll = (e: Event) => {
+      const target = e.target as HTMLElement | Document;
+      const currentScrollY = target === document
+        ? window.scrollY
+        : (target as HTMLElement).scrollTop;
+
+      if (currentScrollY === undefined) return;
+
+      const delta = currentScrollY - lastScrollY.current;
+
+      if (currentScrollY < 40) {
+        setIsVisible(true);
+        accumulatedDelta.current = 0;
+        lastScrollY.current = currentScrollY;
+        return;
+      }
+
+      if ((delta > 0 && accumulatedDelta.current < 0) || (delta < 0 && accumulatedDelta.current > 0)) {
+        accumulatedDelta.current = 0;
+      }
+      accumulatedDelta.current += delta;
+
+      if (accumulatedDelta.current > 50) {
+        setIsVisible(false);
+      } else if (accumulatedDelta.current < -40) {
+        setIsVisible(true);
+      }
+
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, true);
+    return () => window.removeEventListener('scroll', handleScroll, true);
+  }, []);
+
+  return isVisible;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SUB-COMPONENTS
 // ─────────────────────────────────────────────────────────────────────────────
-
 
 // ── Command palette ────────────────────────────────────────────────────────────
 interface CtxPos { x: number; y: number; docId: string }
@@ -144,7 +187,6 @@ function CommandPalette({ docs, onClose, onCommand }: { docs: Doc[]; onClose: ()
     <>
       <div style={{ position: 'fixed', inset: 0, background: 'rgba(14,12,16,0.6)', zIndex: 9989 }} />
       <div ref={wrapRef} className="db-cmd-wrap db-rise-0">
-        {/* Search input row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 16px', borderBottom: '1px solid var(--rule)', height: 44 }}>
           <Search size={13} strokeWidth={1.8} style={{ color: 'var(--mid)', flexShrink: 0 }} />
           <input
@@ -154,8 +196,6 @@ function CommandPalette({ docs, onClose, onCommand }: { docs: Doc[]; onClose: ()
           />
           <span className="db-kbd" onClick={onClose}>Esc</span>
         </div>
-
-        {/* Results */}
         <div ref={listRef} style={{ maxHeight: 340, overflowY: 'auto' }}>
           {flat.length === 0 ? (
             <div style={{ padding: '22px 16px', textAlign: 'center', fontFamily: 'var(--ff-ui)', fontSize: 9.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--mid)' }}>
@@ -291,6 +331,9 @@ function DashboardContent() {
   const [tasksLoading, setTasksLoading] = useState(true);
   const [activeDeptKey, setActiveDeptKey] = useState<string | null>(null);
 
+  // Advanced scroll detection hook
+  const isNavVisible = useOmniScrollDirection();
+
   const appSettingsRef = useRef<AppSettings>(DEFAULT_SETTINGS);
 
   useEffect(() => { appSettingsRef.current = appSettings; }, [appSettings]);
@@ -392,7 +435,6 @@ function DashboardContent() {
   const isWritersBlock = activeDeptKey === "Writers' Block" || !activeDeptKey;
   const isFullSidebar = isWritersBlock || activeDeptKey === 'Leadership';
 
-  // Navigation items for the local dashboard (shared with mobile panel)
   const LOCAL_NAV_ITEMS = ([
     { id: 'home', label: 'Overview', icon: Home, href: '/' },
     { id: 'queues', label: 'Queues', icon: Layers, href: '/queues' },
@@ -402,7 +444,6 @@ function DashboardContent() {
     { id: 'team', label: 'Team', icon: Users, href: '/team' },
   ] as const).filter(item => isFullSidebar || (item.id !== 'articles' && item.id !== 'blogs'));
 
-  // Determine page title based on active navigation
   const getPageTitle = () => {
     switch (activeNav) {
       case 'articles': return 'Articles';
@@ -415,14 +456,13 @@ function DashboardContent() {
   return (
     <div className={`db-root${isDark ? ' dark' : ''}`}>
 
-      {/* ══ HEADER — using PageHeader component ══════════════════════════════════════ */}
+      {/* ══ HEADER ═════════════════════════════════════════════════════════════ */}
       <PageHeader
         pageTitle={getPageTitle()}
         hideSearch={true}
         mobileMenuOpen={mobileMenuOpen}
         setMobileMenuOpen={setMobileMenuOpen}
       >
-        {/* Custom children - Search trigger button */}
         <button
           className="db-search hidden md:flex"
           onClick={() => setShowCmd(true)}
@@ -449,46 +489,45 @@ function DashboardContent() {
         </button>
       </PageHeader>
 
-      {/* ── Mobile menu panel ────────────────────────────────────────────── */}
+      {/* ── Mobile menu panel (Top Dropdown) ─────────────────────────────── */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-x-0 top-[42px] bg-[var(--paper)] border-b border-[var(--rule)] z-40 p-4 space-y-4 max-h-[calc(100dvh-42px)] overflow-y-auto anim-fade-in">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <span className="db-cap block">Workspace Navigation</span>
-              <div className="grid grid-cols-1 gap-1">
+        <div className="md:hidden fixed inset-x-4 top-[64px] bg-[var(--paper)]/80 backdrop-blur-2xl border border-[var(--rule)]/60 rounded-[28px] shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] z-50 p-6 space-y-6 max-h-[calc(100dvh-100px)] overflow-y-auto transition-all duration-300 ease-out anim-fade-in">
+          <div className="space-y-5">
+            <div className="space-y-3">
+              <span className="block px-2 text-[10px] font-bold text-[var(--mid)] tracking-[0.2em] uppercase">Navigation</span>
+              <div className="grid grid-cols-1 gap-1.5">
                 {LOCAL_NAV_ITEMS.map((item, i) => {
                   const isActive = activeNav === (item.id as string);
                   return (
                     <button
                       key={item.id}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-left hover:bg-[var(--accent-sub)] ${isActive ? "text-[var(--accent)] bg-[var(--accent-sub)]" : "text-[var(--mid)]"}`}
+                      className={`w-full flex items-center gap-3.5 px-4 py-3.5 text-sm font-semibold rounded-[16px] transition-all duration-200 ${isActive ? "text-[var(--paper)] bg-[var(--accent)] shadow-md" : "text-[var(--ink)] hover:bg-[var(--accent-sub)]"}`}
                       onClick={() => {
                         if (item.href) router.push(item.href);
                         setMobileMenuOpen(false);
                       }}
                     >
-                      <span className="db-nav-num" style={{ fontStyle: 'italic', fontFamily: 'var(--ff-display)', width: 14 }}>{String(i + 1).padStart(2, '0')}</span>
-                      <item.icon size={13} className={isActive ? "text-[var(--accent)]" : "text-current"} />
-                      {item.label.toUpperCase()}
+                      <item.icon size={18} strokeWidth={isActive ? 2.5 : 2} className={isActive ? "text-[var(--paper)]" : "text-[var(--mid)]"} />
+                      {item.label}
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 border-t border-[var(--rule)] pt-4">
+            <div className="grid grid-cols-2 gap-3 border-t border-[var(--rule)]/50 pt-5">
               <button
-                className="db-ghost justify-center text-xs py-2"
+                className="flex items-center justify-center text-[13px] font-semibold py-3.5 rounded-[16px] border border-[var(--rule)]/60 bg-transparent hover:bg-[var(--accent-sub)] transition-colors text-[var(--ink)]"
                 onClick={() => { toggleTheme(); }}
               >
-                {isDark ? <Sun size={14} className="mr-2" /> : <Moon size={14} className="mr-2" />}
+                {isDark ? <Sun size={16} className="mr-2" /> : <Moon size={16} className="mr-2" />}
                 {isDark ? 'Light' : 'Dark'}
               </button>
               <button
-                className="db-ghost justify-center text-xs py-2"
+                className="flex items-center justify-center text-[13px] font-semibold py-3.5 rounded-[16px] border border-[var(--rule)]/60 bg-transparent hover:bg-[var(--accent-sub)] transition-colors text-[var(--ink)]"
                 onClick={() => { setShowSettings(true); setMobileMenuOpen(false); }}
               >
-                <Settings size={14} className="mr-2" /> Settings
+                <Settings size={16} className="mr-2" /> Settings
               </button>
             </div>
           </div>
@@ -498,8 +537,7 @@ function DashboardContent() {
       {/* ══ BODY ════════════════════════════════════════════════════════════ */}
       <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
 
-        {/* ── SIDEBAR — dept index ─────────────────────────────────────────── */}
-        {/* ── SIDEBAR from shared component ─────────────────────────────────────────── */}
+        {/* ── SIDEBAR ─────────────────────────────────────────────────────── */}
         <Sidebar
           activeNav={activeNav}
           isFullSidebar={isFullSidebar}
@@ -519,12 +557,9 @@ function DashboardContent() {
         />
 
         {/* ── MAIN ────────────────────────────────────────────────────────── */}
-        <main className="db-main">
-
-          {/* Overview */}
+        <main className="db-main pb-32 md:pb-6">
           {activeNav === 'home' && (
             <>
-              {/* HEADER SECTION */}
               <div className="db-rise-0" style={{ marginBottom: 28 }}>
                 <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, marginBottom: 12 }}>
                   <div>
@@ -534,17 +569,14 @@ function DashboardContent() {
                 </div>
               </div>
 
-
               <hr className="db-triple-rule" />
 
-              {/* UPCOMING EVENTS */}
               {events.length > 0 && (
                 <div style={{ marginBottom: 32 }}>
                   <UpcomingEventsPanel events={events} />
                 </div>
               )}
 
-              {/* MAIN CONTENT */}
               {activeDeptKey === 'Leadership' && (
                 <div style={{ marginBottom: 32 }}>
                   <LeadershipDashboard tasks={tasks} selectedDept={selectedDept} setSelectedDept={setSelectedDept} />
@@ -580,7 +612,6 @@ function DashboardContent() {
             </>
           )}
 
-          {/* Articles */}
           {activeNav === 'articles' && (
             <>
               <div className="db-rise-0" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 6 }}>
@@ -606,7 +637,6 @@ function DashboardContent() {
             </>
           )}
 
-          {/* Blogs */}
           {activeNav === 'blogs' && (
             <>
               <div className="db-rise-0" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 6 }}>
@@ -634,14 +664,23 @@ function DashboardContent() {
         </main>
       </div>
 
-      {/* ══ MOBILE BOTTOM NAV ═══════════════════════════════════════════════ */}
-      <Suspense fallback={null}>
-        <MobileNav
-          activeNav={activeNav}
-          pendingTasksCount={pendingTasks.length}
-          isFullSidebar={isFullSidebar}
-        />
-      </Suspense>
+      {/* ══ FLOATING BOTTOM NAV (PREMIUM PILL) ═══════════════════════════════ */}
+      <div
+        className={`md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isNavVisible
+          ? 'translate-y-0 opacity-100 scale-100'
+          : 'translate-y-24 opacity-0 scale-90 pointer-events-none'
+          }`}
+      >
+        <div className="flex items-center justify-center min-w-[280px]">
+          <Suspense fallback={null}>
+            <MobileNav
+              activeNav={activeNav}
+              pendingTasksCount={pendingTasks.length}
+              isFullSidebar={isFullSidebar}
+            />
+          </Suspense>
+        </div>
+      </div>
 
       {/* ══ OVERLAYS ════════════════════════════════════════════════════════ */}
       {showCmd && <CommandPalette docs={allDocs} onClose={() => setShowCmd(false)} onCommand={handleCommand} />}
