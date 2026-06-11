@@ -91,7 +91,7 @@ function TabBar({
   tabs: Tab[], activeTabId: string, onSwitch: (id: string) => void, onClose: (id: string) => void, onNew: () => void 
 }) {
   return (
-    <div className="flex items-center gap-0 border-b border-[var(--rule)] bg-[var(--cream)] overflow-x-auto no-scrollbar" style={{ height: '34px' }}>
+    <div className="flex items-center gap-1 border-b border-[var(--border)] bg-[var(--surface-1)] overflow-x-auto no-scrollbar px-2" style={{ height: '40px' }}>
       {tabs.map((tab) => {
         const isActive = tab.id === activeTabId;
         const Icon = tab.type === 'blogs' ? BookOpen : tab.type === 'survivor_stories' ? Heart : FileText;
@@ -100,40 +100,38 @@ function TabBar({
           <div 
             key={tab.id}
             onClick={() => onSwitch(tab.id)}
-            className={`group flex items-center gap-1.5 px-3 min-w-[90px] sm:min-w-[110px] max-w-[160px] sm:max-w-[180px] border-r border-[var(--rule)] transition-colors cursor-pointer select-none flex-shrink-0 h-full relative
-              ${isActive 
-                ? 'bg-[var(--paper)]' 
-                : 'bg-transparent text-[var(--mid)] hover:bg-[var(--accent-dim)]'
-              }`}
+            className={`group flex items-center gap-2 px-3 py-1.5 min-w-[100px] sm:min-w-[120px] max-w-[180px] sm:max-w-[200px] transition-colors cursor-pointer select-none flex-shrink-0 relative`}
+            style={{
+              borderRadius: 'var(--r-md)',
+              background: isActive ? 'var(--surface-2)' : 'transparent',
+              color: isActive ? 'var(--text)' : 'var(--text-3)',
+            }}
           >
-            {/* Active accent bar at top */}
-            {isActive && <span className="absolute top-0 left-0 right-0 h-px bg-[var(--accent)]" />}
-            
             {tab.isLoading ? (
-              <Loader2 size={10} className="animate-spin text-[var(--accent)] flex-shrink-0" />
+              <Loader2 size={12} className="animate-spin text-[var(--accent)] flex-shrink-0" />
             ) : (
-              <Icon size={10} className={`flex-shrink-0 ${isActive ? 'text-[var(--accent)]' : ''}`} />
+              <Icon size={12} className={`flex-shrink-0 ${isActive ? 'text-[var(--accent)]' : ''}`} />
             )}
-            <span className={`truncate flex-1 ${isActive ? 'text-[var(--ink)]' : ''}`} style={{ fontSize: '11px', fontWeight: isActive ? '500' : '400', fontFamily: 'var(--ff-ui)' }}>
-              {unsaved && <span className="inline-block w-1 h-1 bg-[var(--accent)] mr-1" style={{ verticalAlign: 'middle' }} />}
+            <span className={`truncate flex-1`} style={{ fontSize: '12px', fontWeight: isActive ? '600' : '500', fontFamily: 'var(--ff-ui)' }}>
+              {unsaved && <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--accent)] mr-1.5" style={{ verticalAlign: 'middle' }} />}
               {tab.title}
             </span>
             <button 
               onClick={(e) => { e.stopPropagation(); onClose(tab.id); }}
-              className={`flex items-center justify-center w-4 h-4 opacity-0 group-hover:opacity-60 hover:opacity-100 hover:bg-[var(--accent-dim)] hover:text-[var(--accent)] transition-all flex-shrink-0 ${isActive ? '!opacity-60' : ''}`}
+              className={`flex items-center justify-center w-5 h-5 rounded-md opacity-0 group-hover:opacity-100 hover:bg-[var(--accent-dim)] hover:text-[var(--accent)] transition-all flex-shrink-0 ${isActive ? '!opacity-100' : ''}`}
             >
-              <X size={9} />
+              <X size={12} />
             </button>
           </div>
         );
       })}
       <button 
         onClick={onNew}
-        className="h-full px-3 flex items-center justify-center text-[var(--mid)] hover:bg-[var(--accent-dim)] hover:text-[var(--accent)] transition-all flex-shrink-0 border-r border-[var(--rule)]"
+        className="h-7 px-3 ml-1 flex items-center justify-center text-[var(--text-3)] hover:bg-[var(--accent-dim)] hover:text-[var(--accent)] transition-all flex-shrink-0"
         title="New document (Ctrl+T)"
-        style={{ fontSize: '10px', fontFamily: 'var(--ff-mono)', letterSpacing: '0.05em' }}
+        style={{ borderRadius: 'var(--r-md)' }}
       >
-        <Plus size={13} />
+        <Plus size={16} />
       </button>
     </div>
   );

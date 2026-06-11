@@ -698,9 +698,6 @@ export default function SettingsModal({
 
       {/* ── Scoped CSS ──────────────────────────────────────────── */}
       <style>{`
-        /* ── Override external border radius ────────────────────── */
-        *, *::before, *::after { border-radius: 0 !important; }
-
         /* ── Overlay ─────────────────────────────── */
         .stm-overlay {
           position: fixed; inset: 0; z-index: 9999;

@@ -56,14 +56,14 @@ interface Doc {
 }
 import { useNotifications } from '@/lib/useNotifications';
 import NotifPanel from '@/components/NotifPanel';
-interface Cmd   { id: string; label: string; hint?: string; icon: React.ElementType; shortcut?: string; group: string; }
-type SortKey      = 'date' | 'words' | 'status';
+interface Cmd { id: string; label: string; hint?: string; icon: React.ElementType; shortcut?: string; group: string; }
+type SortKey = 'date' | 'words' | 'status';
 type FilterStatus = 'all' | 'published' | 'review' | 'draft';
 
 function sortDocs(docs: Doc[], by: SortKey) {
   return [...docs].sort((a, b) => {
-    if (by === 'date')   return new Date(b.date).getTime() - new Date(a.date).getTime();
-    if (by === 'words')  return b.words - a.words;
+    if (by === 'date') return new Date(b.date).getTime() - new Date(a.date).getTime();
+    if (by === 'words') return b.words - a.words;
     if (by === 'status') return a.status.localeCompare(b.status);
     return 0;
   });
@@ -73,13 +73,13 @@ function filterDocs(docs: Doc[], s: FilterStatus) { return s === 'all' ? docs : 
 
 function buildCmds(): Cmd[] {
   return [
-    { id: 'new-doc',     label: 'New Document',    hint: 'Open editor',       icon: Plus,     shortcut: 'Ctrl+N', group: 'Create'      },
-    { id: 'open-editor', label: 'Open Editor',      hint: 'Go to /editor',     icon: Edit3,                        group: 'Navigate'    },
-    { id: 'go-articles', label: 'View Articles',    hint: 'Show articles',     icon: FileText,                     group: 'Navigate'    },
-    { id: 'go-blogs',    label: 'View Blog Posts',  hint: 'Show blogs',        icon: BookOpen,                     group: 'Navigate'    },
-    { id: 'go-overview', label: 'Overview',          hint: 'Dashboard home',    icon: Home,                         group: 'Navigate'    },
-    { id: 'theme',       label: 'Toggle Theme',     hint: 'Dark / Light',      icon: Moon,     shortcut: 'Ctrl+T', group: 'Preferences' },
-    { id: 'settings',    label: 'Account Settings', hint: 'Profile & billing', icon: Settings,                     group: 'Preferences' },
+    { id: 'new-doc', label: 'New Document', hint: 'Open editor', icon: Plus, shortcut: 'Ctrl+N', group: 'Create' },
+    { id: 'open-editor', label: 'Open Editor', hint: 'Go to /editor', icon: Edit3, group: 'Navigate' },
+    { id: 'go-articles', label: 'View Articles', hint: 'Show articles', icon: FileText, group: 'Navigate' },
+    { id: 'go-blogs', label: 'View Blog Posts', hint: 'Show blogs', icon: BookOpen, group: 'Navigate' },
+    { id: 'go-overview', label: 'Overview', hint: 'Dashboard home', icon: Home, group: 'Navigate' },
+    { id: 'theme', label: 'Toggle Theme', hint: 'Dark / Light', icon: Moon, shortcut: 'Ctrl+T', group: 'Preferences' },
+    { id: 'settings', label: 'Account Settings', hint: 'Profile & billing', icon: Settings, group: 'Preferences' },
   ];
 }
 
@@ -97,22 +97,22 @@ const TAPE_ITEMS = ['WRITERS', 'DESIGN', 'DEV', 'PR', 'LEADERSHIP', 'VANTAGE', '
 interface CtxPos { x: number; y: number; docId: string }
 
 function CommandPalette({ docs, onClose, onCommand }: { docs: Doc[]; onClose: () => void; onCommand: (id: string) => void; }) {
-  const [query,    setQuery]    = useState('');
+  const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  const listRef  = useRef<HTMLDivElement>(null);
-  const wrapRef  = useRef<HTMLDivElement>(null);
-  const router   = useRouter();
+  const listRef = useRef<HTMLDivElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   useEffect(() => { document.body.style.overflow = 'hidden'; return () => { document.body.style.overflow = ''; }; }, []);
   useEffect(() => { inputRef.current?.focus(); }, []);
   useEffect(() => { setSelected(0); }, [query]);
 
-  const cmds      = useMemo(() => buildCmds(), []);
-  const q         = query.trim().toLowerCase();
+  const cmds = useMemo(() => buildCmds(), []);
+  const q = query.trim().toLowerCase();
   const matchDocs = useMemo(() => q ? docs.filter(d => d.title.toLowerCase().includes(q)) : [], [docs, q]);
   const matchCmds = useMemo(() => cmds.filter(c => !q || c.label.toLowerCase().includes(q) || (c.hint ?? '').toLowerCase().includes(q)), [cmds, q]);
-  const groups    = useMemo(() => matchCmds.reduce<Record<string, Cmd[]>>((acc, cmd) => { (acc[cmd.group] ??= []).push(cmd); return acc; }, {}), [matchCmds]);
+  const groups = useMemo(() => matchCmds.reduce<Record<string, Cmd[]>>((acc, cmd) => { (acc[cmd.group] ??= []).push(cmd); return acc; }, {}), [matchCmds]);
 
   type FI = { kind: 'doc'; doc: Doc; idx: number } | { kind: 'cmd'; cmd: Cmd; idx: number };
   const flat = useMemo<FI[]>(() => {
@@ -126,7 +126,7 @@ function CommandPalette({ docs, onClose, onCommand }: { docs: Doc[]; onClose: ()
     const kh = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { onClose(); return; }
       if (e.key === 'ArrowDown') { e.preventDefault(); setSelected(s => Math.min(s + 1, flat.length - 1)); }
-      if (e.key === 'ArrowUp')   { e.preventDefault(); setSelected(s => Math.max(s - 1, 0)); }
+      if (e.key === 'ArrowUp') { e.preventDefault(); setSelected(s => Math.max(s - 1, 0)); }
       if (e.key === 'Enter') {
         e.preventDefault();
         const item = flat[selected]; if (!item) return;
@@ -219,13 +219,13 @@ function DocContextMenu({ pos, docs, onStar, onDelete, onOpen, onClose }: { pos:
   }, [onClose]);
   if (!doc) return null;
   const left = Math.min(pos.x, window.innerWidth - 190);
-  const top  = Math.min(pos.y, window.innerHeight - 140);
+  const top = Math.min(pos.y, window.innerHeight - 140);
   return createPortal(
     <div ref={ref} className="db-ctx-menu db-rise-0" style={{ position: 'fixed', left, top, zIndex: 9980 }}>
       {[
         { icon: ExternalLink, label: 'Open in Editor', action: () => { onOpen(); onClose(); }, danger: false, accent: false },
-        { icon: Star,         label: doc.starred ? 'Remove star' : 'Add star', action: () => { onStar(doc.id); onClose(); }, danger: false, accent: doc.starred },
-        { icon: Trash2,       label: 'Delete',          action: () => { onDelete(doc.id); onClose(); }, danger: true, accent: false },
+        { icon: Star, label: doc.starred ? 'Remove star' : 'Add star', action: () => { onStar(doc.id); onClose(); }, danger: false, accent: doc.starred },
+        { icon: Trash2, label: 'Delete', action: () => { onDelete(doc.id); onClose(); }, danger: true, accent: false },
       ].map(item => (
         <button key={item.label} className={`db-ctx-item${item.danger ? ' danger' : ''}`}
           style={item.accent ? { color: 'var(--accent)' } : undefined}
@@ -265,31 +265,31 @@ function DashboardContent() {
   const searchParams = useSearchParams();
   const { user, loading: userLoading, updateMetadata } = useUser();
 
-  const [docs,             setDocs]             = useState<Doc[]>([]);
-  const [lsDoc,            setLsDoc]            = useState<Doc | null>(null);
-  const { isDark, toggleTheme }                 = useTheme();
-  const [showSettings,     setShowSettings]     = useState(false);
-  const [appSettings,      setAppSettings]      = useState<AppSettings>(DEFAULT_SETTINGS);
-  const [activeNav,        setActiveNav]        = useState<'home' | 'articles' | 'blogs'>('home');
-  const [showCmd,          setShowCmd]          = useState(false);
+  const [docs, setDocs] = useState<Doc[]>([]);
+  const [lsDoc, setLsDoc] = useState<Doc | null>(null);
+  const { isDark, toggleTheme } = useTheme();
+  const [showSettings, setShowSettings] = useState(false);
+  const [appSettings, setAppSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [activeNav, setActiveNav] = useState<'home' | 'articles' | 'blogs'>('home');
+  const [showCmd, setShowCmd] = useState(false);
   const {
     notifications: notifs,
     unreadCount,
     markAllRead: handleMarkAllRead,
   } = useNotifications();
-  const [toast,            setToast]            = useState<string | null>(null);
-  const [sortBy,           setSortBy]           = useState<SortKey>('date');
-  const [filter,           setFilter]           = useState<FilterStatus>('all');
-  const [ctxMenu,          setCtxMenu]          = useState<CtxPos | null>(null);
-  const [mobileMenuOpen,   setMobileMenuOpen]   = useState(false);
-  const [wordGoal,         setWordGoal]         = useState(0);
-  const [tasks,            setTasks]            = useState<Task[]>([]);
-  const [events,           setEvents]           = useState<CalendarEvent[]>([]);
-  const [selectedDept,     setSelectedDept]     = useState<string | null>(null);
-  const [submittingTask,   setSubmittingTask]   = useState<{ id: string; title: string } | null>(null);
-  const [docsLoading,      setDocsLoading]      = useState(true);
-  const [tasksLoading,     setTasksLoading]     = useState(true);
-  const [activeDeptKey,    setActiveDeptKey]    = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<SortKey>('date');
+  const [filter, setFilter] = useState<FilterStatus>('all');
+  const [ctxMenu, setCtxMenu] = useState<CtxPos | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [wordGoal, setWordGoal] = useState(0);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [selectedDept, setSelectedDept] = useState<string | null>(null);
+  const [submittingTask, setSubmittingTask] = useState<{ id: string; title: string } | null>(null);
+  const [docsLoading, setDocsLoading] = useState(true);
+  const [tasksLoading, setTasksLoading] = useState(true);
+  const [activeDeptKey, setActiveDeptKey] = useState<string | null>(null);
 
   const appSettingsRef = useRef<AppSettings>(DEFAULT_SETTINGS);
 
@@ -306,16 +306,16 @@ function DashboardContent() {
       const s = resolveSettings(meta.settings);
       setAppSettings(s);
       applySettings(s);
-    } catch {}
+    } catch { }
   }, [user, userLoading]);
 
   useEffect(() => {
     if (user && !activeDeptKey) setActiveDeptKey(user.department || "Writers' Block");
   }, [user, activeDeptKey]);
 
-  useEffect(() => { (async () => { try { const r = await fetch('/api/documents'); if (r.ok) { const d = await r.json(); setDocs(d.documents); } } catch {} finally { setDocsLoading(false); } })(); }, []);
-  useEffect(() => { (async () => { try { const r = await fetch('/api/tasks'); if (r.ok) { const d = await r.json(); setTasks(d.assignments || []); } } catch {} finally { setTasksLoading(false); } })(); }, []);
-  useEffect(() => { (async () => { try { const r = await fetch('/api/calendar/events?upcoming=true'); if (r.ok) { const d = await r.json(); setEvents(Array.isArray(d) ? d : []); } } catch {} })(); }, []);
+  useEffect(() => { (async () => { try { const r = await fetch('/api/documents'); if (r.ok) { const d = await r.json(); setDocs(d.documents); } } catch { } finally { setDocsLoading(false); } })(); }, []);
+  useEffect(() => { (async () => { try { const r = await fetch('/api/tasks'); if (r.ok) { const d = await r.json(); setTasks(d.assignments || []); } } catch { } finally { setTasksLoading(false); } })(); }, []);
+  useEffect(() => { (async () => { try { const r = await fetch('/api/calendar/events?upcoming=true'); if (r.ok) { const d = await r.json(); setEvents(Array.isArray(d) ? d : []); } } catch { } })(); }, []);
 
   useEffect(() => {
     const nav = searchParams.get('nav');
@@ -342,7 +342,7 @@ function DashboardContent() {
 
   const deleteDoc = useCallback(async (id: string) => {
     const doc = docs.find(d => d.id === id); if (!doc) return;
-    setDocs(ds => ds.filter(d => d.id !== id)); try { await fetch(`/api/documents?id=${id}&type=${doc.type}`, { method: 'DELETE' }); } catch {}
+    setDocs(ds => ds.filter(d => d.id !== id)); try { await fetch(`/api/documents?id=${id}&type=${doc.type}`, { method: 'DELETE' }); } catch { }
     setToast(`Deleted "${doc.title.slice(0, 28)}…"`);
   }, [docs]);
 
@@ -369,20 +369,20 @@ function DashboardContent() {
     else if (id === 'settings') setShowSettings(true);
   }, [toggleTheme, router]);
 
-  const allDocs        = docs;
-  const articles       = useMemo(() => allDocs.filter(d => d.type === 'cancer_docs' || d.type === 'survivor_stories'), [allDocs]);
-  const blogs          = useMemo(() => allDocs.filter(d => d.type === 'blogs'), [allDocs]);
-  const totalWords     = useMemo(() => docs.reduce((s, d) => s + d.words, 0), [docs]);
-  const published      = useMemo(() => docs.filter(d => d.status === 'published').length, [docs]);
-  const drafts         = useMemo(() => docs.filter(d => d.status === 'draft').length, [docs]);
-  const starredDocs    = useMemo(() => allDocs.filter(d => d.starred), [allDocs]);
-  const weekWindow     = useMemo(() => getWeekWindow().map((w) => w.date), []);
-  const weekWords      = useMemo(() => docs.filter(d => weekWindow.includes(d.date)).reduce((s, d) => s + d.words, 0), [docs, weekWindow]);
-  const goalProgress   = wordGoal > 0 && docs.length > 0 ? { current: docs[0].words, goal: wordGoal } : null;
+  const allDocs = docs;
+  const articles = useMemo(() => allDocs.filter(d => d.type === 'cancer_docs' || d.type === 'survivor_stories'), [allDocs]);
+  const blogs = useMemo(() => allDocs.filter(d => d.type === 'blogs'), [allDocs]);
+  const totalWords = useMemo(() => docs.reduce((s, d) => s + d.words, 0), [docs]);
+  const published = useMemo(() => docs.filter(d => d.status === 'published').length, [docs]);
+  const drafts = useMemo(() => docs.filter(d => d.status === 'draft').length, [docs]);
+  const starredDocs = useMemo(() => allDocs.filter(d => d.starred), [allDocs]);
+  const weekWindow = useMemo(() => getWeekWindow().map((w) => w.date), []);
+  const weekWords = useMemo(() => docs.filter(d => weekWindow.includes(d.date)).reduce((s, d) => s + d.words, 0), [docs, weekWindow]);
+  const goalProgress = wordGoal > 0 && docs.length > 0 ? { current: docs[0].words, goal: wordGoal } : null;
   const sortedArticles = useMemo(() => filterDocs(sortDocs(articles, sortBy), filter), [articles, sortBy, filter]);
-  const sortedBlogs    = useMemo(() => filterDocs(sortDocs(blogs, sortBy), filter), [blogs, sortBy, filter]);
-  const pendingTasks   = useMemo(() => tasks.filter(t => t.status !== 'done'), [tasks]);
-  const doneTasks      = useMemo(() => tasks.filter(t => t.status === 'done'), [tasks]);
+  const sortedBlogs = useMemo(() => filterDocs(sortDocs(blogs, sortBy), filter), [blogs, sortBy, filter]);
+  const pendingTasks = useMemo(() => tasks.filter(t => t.status !== 'done'), [tasks]);
+  const doneTasks = useMemo(() => tasks.filter(t => t.status === 'done'), [tasks]);
 
   const handleContextMenu = useCallback((e: React.MouseEvent, id: string) => {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -390,16 +390,16 @@ function DashboardContent() {
   }, []);
 
   const isWritersBlock = activeDeptKey === "Writers' Block" || !activeDeptKey;
-  const isFullSidebar  = isWritersBlock || activeDeptKey === 'Leadership';
+  const isFullSidebar = isWritersBlock || activeDeptKey === 'Leadership';
 
   // Navigation items for the local dashboard (shared with mobile panel)
   const LOCAL_NAV_ITEMS = ([
-    { id: 'home',     label: 'Overview',    icon: Home,      href: '/' },
-    { id: 'queues',   label: 'Queues',      icon: Layers,    href: '/queues' },
-    { id: 'articles', label: 'Articles',    icon: FileText,  href: '/?nav=articles' },
-    { id: 'blogs',    label: 'Blog Posts',  icon: BookOpen,  href: '/?nav=blogs' },
-    { id: 'tasks',    label: 'Assignments', icon: Briefcase, href: '/tasks' },
-    { id: 'team',     label: 'Team',        icon: Users,     href: '/team' },
+    { id: 'home', label: 'Overview', icon: Home, href: '/' },
+    { id: 'queues', label: 'Queues', icon: Layers, href: '/queues' },
+    { id: 'articles', label: 'Articles', icon: FileText, href: '/?nav=articles' },
+    { id: 'blogs', label: 'Blog Posts', icon: BookOpen, href: '/?nav=blogs' },
+    { id: 'tasks', label: 'Assignments', icon: Briefcase, href: '/tasks' },
+    { id: 'team', label: 'Team', icon: Users, href: '/team' },
   ] as const).filter(item => isFullSidebar || (item.id !== 'articles' && item.id !== 'blogs'));
 
   // Determine page title based on active navigation
@@ -414,7 +414,7 @@ function DashboardContent() {
 
   return (
     <div className={`db-root${isDark ? ' dark' : ''}`}>
-      
+
       {/* ══ HEADER — using PageHeader component ══════════════════════════════════════ */}
       <PageHeader
         pageTitle={getPageTitle()}
@@ -423,9 +423,9 @@ function DashboardContent() {
         setMobileMenuOpen={setMobileMenuOpen}
       >
         {/* Custom children - Search trigger button */}
-        <button 
-          className="db-search hidden md:flex" 
-          onClick={() => setShowCmd(true)} 
+        <button
+          className="db-search hidden md:flex"
+          onClick={() => setShowCmd(true)}
           title="Search (Ctrl+K)"
           style={{
             display: 'flex',
@@ -448,7 +448,7 @@ function DashboardContent() {
           <span className="db-kbd" style={{ marginLeft: 'auto' }}>⌘K</span>
         </button>
       </PageHeader>
-      
+
       {/* ── Mobile menu panel ────────────────────────────────────────────── */}
       {mobileMenuOpen && (
         <div className="md:hidden fixed inset-x-0 top-[42px] bg-[var(--paper)] border-b border-[var(--rule)] z-40 p-4 space-y-4 max-h-[calc(100dvh-42px)] overflow-y-auto anim-fade-in">
@@ -534,40 +534,6 @@ function DashboardContent() {
                 </div>
               </div>
 
-              {/* STATS GRID */}
-              {!userLoading && user && (
-                <div className="db-rise-0" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 40, animationDelay: '0.02s' }}>
-                  <div style={{ padding: '20px', border: '1px solid var(--rule)', background: 'var(--paper)' }}>
-                    <p style={{ fontSize: '7px', fontFamily: 'var(--ff-mono)', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--mid)', margin: 0, marginBottom: 10 }}>Total Words</p>
-                    <p style={{ fontSize: '28px', fontWeight: 800, color: 'var(--ink)', margin: 0, letterSpacing: '-0.035em' }}>{fmtWords(totalWords)}</p>
-                    <p style={{ fontSize: '8px', color: 'var(--mid)', margin: '8px 0 0', fontFamily: 'var(--ff-mono)' }}>{allDocs.length} document{allDocs.length !== 1 ? 's' : ''}</p>
-                  </div>
-                  <div style={{ padding: '20px', border: '1px solid var(--rule)', background: 'var(--paper)' }}>
-                    <p style={{ fontSize: '7px', fontFamily: 'var(--ff-mono)', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--mid)', margin: 0, marginBottom: 10 }}>This Week</p>
-                    <p style={{ fontSize: '28px', fontWeight: 800, color: 'var(--accent)', margin: 0, letterSpacing: '-0.035em' }}>{fmtWords(weekWords)}</p>
-                    <p style={{ fontSize: '8px', color: 'var(--mid)', margin: '8px 0 0', fontFamily: 'var(--ff-mono)' }}>words written</p>
-                  </div>
-                  <div style={{ padding: '20px', border: '1px solid var(--rule)', background: 'var(--paper)' }}>
-                    <p style={{ fontSize: '7px', fontFamily: 'var(--ff-mono)', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--mid)', margin: 0, marginBottom: 10 }}>Published</p>
-                    <p style={{ fontSize: '28px', fontWeight: 800, color: 'var(--ink)', margin: 0, letterSpacing: '-0.035em' }}>{published}</p>
-                    <p style={{ fontSize: '8px', color: 'var(--mid)', margin: '8px 0 0', fontFamily: 'var(--ff-mono)' }}>{drafts} in draft</p>
-                  </div>
-                  {goalProgress && (
-                    <div style={{ padding: '20px', border: '1px solid var(--rule)', background: 'var(--accent-dim)' }}>
-                      <p style={{ fontSize: '7px', fontFamily: 'var(--ff-mono)', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--mid)', margin: 0, marginBottom: 10 }}>Goal Progress</p>
-                      <p style={{ fontSize: '28px', fontWeight: 800, color: 'var(--accent)', margin: 0, letterSpacing: '-0.035em' }}>{Math.round((goalProgress.current / goalProgress.goal) * 100)}%</p>
-                      <p style={{ fontSize: '8px', color: 'var(--mid)', margin: '8px 0 0', fontFamily: 'var(--ff-mono)' }}>{goalProgress.current.toLocaleString()} / {goalProgress.goal.toLocaleString()}</p>
-                    </div>
-                  )}
-                  <div style={{ padding: '20px', border: '1px solid var(--rule)', background: 'var(--paper)' }}>
-                    <p style={{ fontSize: '7px', fontFamily: 'var(--ff-mono)', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--mid)', margin: 0, marginBottom: 10 }}>Status</p>
-                    <p style={{ fontSize: '13px', fontWeight: 700, color: 'var(--ink)', margin: 0 }}>On Track</p>
-                    <div style={{ fontSize: '8px', color: 'var(--mid)', margin: '8px 0 0', display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <span style={{ width: 6, height: 6, background: '#4ade80', borderRadius: '50%' }}></span> Active
-                    </div>
-                  </div>
-                </div>
-              )}
 
               <hr className="db-triple-rule" />
 
@@ -594,8 +560,8 @@ function DashboardContent() {
               ) : user && (
                 <>
                   {(activeDeptKey === 'Development' || (activeDeptKey === 'Leadership' && selectedDept === 'Development')) && <DevelopmentDashboard />}
-                  {(activeDeptKey === 'Marketing'   || (activeDeptKey === 'Leadership' && selectedDept === 'Marketing'))   && <MarketingDashboard />}
-                  {(activeDeptKey === 'Design Lab'  || (activeDeptKey === 'Leadership' && selectedDept === 'Design Lab'))  && <DesignLabDashboard />}
+                  {(activeDeptKey === 'Marketing' || (activeDeptKey === 'Leadership' && selectedDept === 'Marketing')) && <MarketingDashboard />}
+                  {(activeDeptKey === 'Design Lab' || (activeDeptKey === 'Leadership' && selectedDept === 'Design Lab')) && <DesignLabDashboard />}
                   {(activeDeptKey === "Writers' Block" || !activeDeptKey || (activeDeptKey === 'Leadership' && selectedDept === "Writers' Block")) && (
                     <WritersDashboard
                       user={user as any} allDocs={allDocs} fmtWords={fmtWords}
@@ -670,10 +636,10 @@ function DashboardContent() {
 
       {/* ══ MOBILE BOTTOM NAV ═══════════════════════════════════════════════ */}
       <Suspense fallback={null}>
-        <MobileNav 
-          activeNav={activeNav} 
-          pendingTasksCount={pendingTasks.length} 
-          isFullSidebar={isFullSidebar} 
+        <MobileNav
+          activeNav={activeNav}
+          pendingTasksCount={pendingTasks.length}
+          isFullSidebar={isFullSidebar}
         />
       </Suspense>
 
@@ -683,18 +649,18 @@ function DashboardContent() {
       {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
 
       {showSettings && (
-        <SettingsModal 
-          settings={appSettings} 
-          onClose={() => setShowSettings(false)} 
-          onChange={next => { 
-            setAppSettings(next); 
+        <SettingsModal
+          settings={appSettings}
+          onClose={() => setShowSettings(false)}
+          onChange={next => {
+            setAppSettings(next);
             saveSettings(next);
             applySettings(next);
             if (user) {
               const meta = user.metadata || {};
               updateMetadata({ ...meta, settings: next });
             }
-          }} 
+          }}
         />
       )}
 

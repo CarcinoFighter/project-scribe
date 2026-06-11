@@ -61,7 +61,7 @@ export default function DevelopmentDashboard() {
   return (
     <div className="anim-fade-up">
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 'var(--dash-gap-card)' }}>
-        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(59,130,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 40, height: 40, borderRadius: 'var(--r-lg)', background: 'rgba(59,130,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Code size={20} style={{ color: '#3b82f6' }} />
         </div>
         <div>
@@ -132,7 +132,7 @@ export default function DevelopmentDashboard() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                   <Github size={15} style={{ color: 'var(--text)' }} />
                   <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{repo.name}</span>
-                  <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 99, background: 'var(--bg-deep)', color: 'var(--text-4)' }}>{repo.language || 'Code'}</span>
+                  <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 'var(--r-pill)', background: 'var(--bg-deep)', color: 'var(--text-4)' }}>{repo.language || 'Code'}</span>
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--text-4)' }}>{repo.description}</div>
               </div>

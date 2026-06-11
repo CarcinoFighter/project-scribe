@@ -113,34 +113,34 @@ const baseTheme = EditorView.theme({
   '&': { height: '100%' },
   '.cm-scroller': { overflow: 'auto' },
   '.cm-content': {
-    padding: '24px 16px 80px',
+    padding: '32px 24px 80px',
     maxWidth: '100%',
     caretColor: 'var(--accent)',
-    fontSize: 'var(--editor-font-size, 15px)',
-    lineHeight: 'var(--editor-line-height, 1.75)',
+    fontSize: 'var(--editor-font-size, 16px)',
+    lineHeight: 'var(--editor-line-height, 1.8)',
   },
   '.cm-line': {
     padding: '0 8px',
     letterSpacing: '0.006em',
   },
   '.cm-cursor': { borderLeftWidth: '2px', borderLeftColor: 'var(--accent)' },
-  '.cm-gutters': { borderRight: 'none', paddingRight: '4px', minWidth: '40px' },
+  '.cm-gutters': { borderRight: 'none', paddingRight: '8px', minWidth: '40px' },
   '.cm-activeLineGutter': { background: 'transparent' },
   // Search panel styling
-  '.cm-panels': { background: 'var(--cream)', borderTop: '1px solid var(--rule)', borderBottom: '1px solid var(--rule)' },
-  '.cm-panel': { background: 'var(--cream)', color: 'var(--ink)', fontFamily: 'var(--ff-mono)', fontSize: '11px' },
-  '.cm-panel input': { background: 'var(--paper)', color: 'var(--ink)', border: '1px solid var(--rule)', outline: 'none', fontFamily: 'var(--ff-mono)', fontSize: '12px', padding: '3px 8px' },
-  '.cm-panel button': { background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--rule)', cursor: 'pointer', padding: '2px 8px', fontFamily: 'var(--ff-mono)', fontSize: '10px', letterSpacing: '0.08em' },
+  '.cm-panels': { background: 'var(--surface-1)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' },
+  '.cm-panel': { background: 'var(--surface-1)', color: 'var(--text)', fontFamily: 'var(--ff-mono)', fontSize: '12px' },
+  '.cm-panel input': { background: 'var(--surface-2)', color: 'var(--text)', border: '1px solid var(--border)', outline: 'none', borderRadius: 'var(--r-sm)', fontFamily: 'var(--ff-mono)', fontSize: '12px', padding: '4px 10px' },
+  '.cm-panel button': { background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', cursor: 'pointer', padding: '4px 10px', fontFamily: 'var(--ff-mono)', fontSize: '11px', letterSpacing: '0.04em' },
   // Tooltips
-  '.cm-tooltip': { background: 'var(--ink)', color: 'var(--paper)', border: 'none', fontFamily: 'var(--ff-mono)', fontSize: '11px' },
+  '.cm-tooltip': { background: 'var(--surface-2)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', fontFamily: 'var(--ff-mono)', fontSize: '12px' },
   '@media (min-width: 768px)': {
     '.cm-content': {
-      padding: 'var(--editor-padding, 32px) 24px 80px',
+      padding: 'var(--editor-padding, 40px) 32px 80px',
       maxWidth: 'var(--editor-max-width, 740px)',
       margin: '0 auto',
     },
     '.cm-line': { padding: '0 12px' },
-    '.cm-gutters': { paddingRight: '8px', minWidth: '46px' },
+    '.cm-gutters': { paddingRight: '12px', minWidth: '46px' },
   },
 });
 

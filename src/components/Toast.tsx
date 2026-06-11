@@ -60,7 +60,7 @@ export default function Toast({ message, onDismiss }: ToastProps) {
         aria-label="Dismiss"
         style={{
           background: 'none', border: 'none', cursor: 'pointer',
-          padding: '2px 3px', borderRadius: 4,
+          padding: '2px 3px', borderRadius: 'var(--r-xs)',
           color: 'var(--text-4)', display: 'flex', alignItems: 'center',
           transition: 'color 0.10s',
         }}

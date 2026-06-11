@@ -265,7 +265,7 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin, use
         {/* Header */}
         <div className="p-4 sm:p-6 border-b border-[var(--border-med)] bg-[var(--bg-deep)] flex items-start justify-between">
           <div className="flex gap-4">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: `${cat.color}18` }}>
+            <div className="w-12 h-12 rounded-[var(--r-xl)] flex items-center justify-center flex-shrink-0" style={{ background: `${cat.color}18` }}>
               <cat.icon size={24} style={{ color: cat.color }} />
             </div>
             <div>
@@ -310,7 +310,7 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin, use
                   const t = task.category === 'article' ? 'cancer_docs' : task.category === 'blog' ? 'blogs' : 'survivor_stories';
                   router.push(`/editor?id=${task.document_id}&type=${t}`);
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--accent-subtle2)] text-[var(--accent)] text-[11px] font-bold rounded-lg border border-[var(--accent-subtle)] hover:bg-[var(--accent-subtle)] transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--accent-subtle2)] text-[var(--accent)] text-[11px] font-bold rounded-[var(--r-md)] border border-[var(--accent-subtle)] hover:bg-[var(--accent-subtle)] transition-all"
               >
                 <ChevronRight size={14} />
                 Open Document
@@ -372,7 +372,7 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin, use
                             </span>
                           )}
                           <div 
-                            className={`px-4 py-2.5 rounded-2xl text-[13px] leading-relaxed shadow-sm whitespace-pre-wrap relative group transition-all hover:shadow-md ${
+                            className={`px-4 py-2.5 rounded-[var(--r-xl)] text-[13px] leading-relaxed shadow-sm whitespace-pre-wrap relative group transition-all hover:shadow-md ${
                               isMe 
                                 ? 'bg-[var(--accent)] text-white rounded-tr-none' 
                                 : 'bg-[var(--surface-2)] border border-[var(--border-med)] text-[var(--text)] rounded-tl-none'
@@ -398,7 +398,7 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin, use
             {/* Comment Input */}
             <div className="p-4 sm:p-5 border-t border-[var(--border-med)] bg-[var(--bg-deep)] shadow-[0_-4px_20px_rgba(0,0,0,0.03)]">
               {commentError && (
-                <div className="mb-3 p-2 rounded bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] flex items-center gap-2 anim-shake">
+                <div className="mb-3 p-2 rounded-[var(--r-sm)] bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] flex items-center gap-2 anim-shake">
                   <AlertCircle size={12} />
                   {commentError}
                 </div>
@@ -422,7 +422,7 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, isAdmin, use
                 <button
                   type="submit"
                   disabled={submitting || !commentText.trim()}
-                  className="p-3 bg-[var(--accent)] text-white rounded-xl shadow-lg shadow-[var(--accent-glow)] hover:scale-105 active:scale-95 transition-all disabled:opacity-30 disabled:scale-100 flex-shrink-0 flex items-center justify-center"
+                  className="p-3 bg-[var(--accent)] text-white rounded-[var(--r-lg)] shadow-lg shadow-[var(--accent-glow)] hover:scale-105 active:scale-95 transition-all disabled:opacity-30 disabled:scale-100 flex-shrink-0 flex items-center justify-center"
                 >
                   <Send size={18} />
                 </button>

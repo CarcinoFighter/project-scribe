@@ -312,7 +312,7 @@ export function ApplicationsDashboard() {
                     style={{
                       background: 'transparent',
                       border: '1px solid var(--rule)',
-                      borderRadius: '4px',
+                      borderRadius: 'var(--r-xs)',
                       padding: '6px 12px',
                       cursor: 'pointer',
                       color: 'var(--mid)',

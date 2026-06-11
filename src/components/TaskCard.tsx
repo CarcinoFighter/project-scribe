@@ -63,7 +63,7 @@ export default function TaskCard({ task, onComplete }: { task: Task; onComplete:
       }}
     >
       <div style={{ 
-        width: 36, height: 36, borderRadius: 10, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        width: 36, height: 36, borderRadius: 'var(--r-lg)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
         background: isArticle ? 'rgba(59,130,246,0.10)' : isBlog ? 'var(--accent-subtle)' : isStory ? 'rgba(16,185,129,0.10)' : 'var(--bg-deep)' 
       }}>
         {isArticle ? <FileText size={16} style={{ color: '#3b82f6' }} /> : 
@@ -74,7 +74,7 @@ export default function TaskCard({ task, onComplete }: { task: Task; onComplete:
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</span>
-          <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', padding: '2px 6px', borderRadius: 5, background: p.bg, color: p.color, border: `1px solid ${p.border}`, flexShrink: 0 }}>{task.priority}</span>
+          <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', padding: '2px 6px', borderRadius: 'var(--r-xs)', background: p.bg, color: p.color, border: `1px solid ${p.border}`, flexShrink: 0 }}>{task.priority}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           {task.due_date && <span style={{ fontSize: 11, color: 'var(--text-4)', display: 'flex', alignItems: 'center', gap: 3 }}><Calendar size={10} />{fmtDate(task.due_date)}</span>}
@@ -83,12 +83,12 @@ export default function TaskCard({ task, onComplete }: { task: Task; onComplete:
       </div>
       <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
         {showEditor && (
-          <button onClick={handleEdit} className="tb-btn" style={{ background: 'var(--accent-subtle2)', color: 'var(--accent)', padding: '5px 11px', borderRadius: 7, fontSize: 11.5, fontWeight: 700, border: '1px solid var(--accent-subtle)', whiteSpace: 'nowrap' }}>
+          <button onClick={handleEdit} className="tb-btn" style={{ background: 'var(--accent-subtle2)', color: 'var(--accent)', padding: '5px 11px', borderRadius: 'var(--r-sm)', fontSize: 11.5, fontWeight: 700, border: '1px solid var(--accent-subtle)', whiteSpace: 'nowrap' }}>
             Edit
           </button>
         )}
         <button onClick={handleComplete} disabled={loading} className="tb-btn"
-          style={{ background: 'rgba(16,185,129,0.10)', color: '#10b981', padding: '5px 11px', borderRadius: 7, fontSize: 11.5, fontWeight: 700, border: '1px solid rgba(16,185,129,0.20)', whiteSpace: 'nowrap', opacity: loading ? 0.6 : 1 }}>
+          style={{ background: 'rgba(16,185,129,0.10)', color: '#10b981', padding: '5px 11px', borderRadius: 'var(--r-sm)', fontSize: 11.5, fontWeight: 700, border: '1px solid rgba(16,185,129,0.20)', whiteSpace: 'nowrap', opacity: loading ? 0.6 : 1 }}>
           {loading ? <Loader2 size={12} style={{ animation: 'spin 0.7s linear infinite' }} /> : <><Check size={11} /><span>Done</span></>}
         </button>
       </div>

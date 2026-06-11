@@ -204,7 +204,7 @@ export default function WritersDashboard({
         <div style={{ marginTop: 'var(--dash-gap-section)', marginBottom: 80 }} className="anim-fade-up">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, borderBottom: '1px solid var(--border)', paddingBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--accent-subtle2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 32, height: 32, borderRadius: 'var(--r-md)', background: 'var(--accent-subtle2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Briefcase size={16} style={{ color: 'var(--accent)' }} />
               </div>
               <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', margin: 0, letterSpacing: '-0.02em' }}>

@@ -222,7 +222,7 @@ export default function PageHeader({
               color:          'var(--ink)',
               textDecoration: 'none',
               padding:        '4px 8px 4px 2px',
-              borderRadius:   3,
+              borderRadius:   'var(--r-xs)',
               transition:     'opacity 0.15s',
             }}
             onMouseEnter={e => (e.currentTarget.style.opacity = '0.7')}

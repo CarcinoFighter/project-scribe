@@ -91,7 +91,7 @@ export default function LeadershipDashboard({
                 </div>
               )}
 
-              <div style={{ width: 44, height: 44, borderRadius: 14, background: isActive ? '#fff' : dept.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20, transition: 'all 0.2s', boxShadow: isActive ? '0 4px 12px rgba(0,0,0,0.1)' : 'none' }}>
+              <div style={{ width: 44, height: 44, borderRadius: 'var(--r-xl)', background: isActive ? '#fff' : dept.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20, transition: 'all 0.2s', boxShadow: isActive ? '0 4px 12px rgba(0,0,0,0.1)' : 'none' }}>
                 <Image src={dept.icon} alt={dept.name} width={24} height={24} style={{ filter: isActive ? `drop-shadow(0 0 1px ${dept.color})` : 'none' }} />
               </div>
               <h4 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 800, color: isActive ? dept.color : 'var(--text)' }}>{dept.name}</h4>

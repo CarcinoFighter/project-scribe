@@ -119,7 +119,7 @@ export default function DesignLabDashboard() {
   return (
     <div className="anim-fade-up">
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 'var(--dash-gap-card)' }}>
-        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(242,78,30,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 40, height: 40, borderRadius: 'var(--r-lg)', background: 'rgba(242,78,30,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Figma size={20} style={{ color: '#f24e1e' }} />
         </div>
         <div>
@@ -176,7 +176,7 @@ export default function DesignLabDashboard() {
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', margin: 0 }}>Design Library</h3>
-        <button className="tb-btn" style={{ padding: '6px 12px', background: 'var(--bg-deep)', borderRadius: 8, fontSize: 12, border: '1px solid var(--border)' }}>
+        <button className="tb-btn" style={{ padding: '6px 12px', background: 'var(--bg-deep)', borderRadius: 'var(--r-sm)', fontSize: 12, border: '1px solid var(--border)' }}>
           <RefreshCw size={12} style={{ marginRight: 6 }} /> Sync Figma
         </button>
       </div>
@@ -196,7 +196,7 @@ export default function DesignLabDashboard() {
                   <div style={{ padding: 0 }}>
                     <div style={{ height: 140, position: 'relative', background: 'var(--bg-deep)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <Layout size={40} style={{ color: 'var(--border-strong)', opacity: 0.5 }} />
-                      <div style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', padding: '4px 8px', borderRadius: 99, color: '#fff', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <div style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', padding: '4px 8px', borderRadius: 'var(--r-pill)', color: '#fff', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
                         <LinkIcon size={10} style={{ color: '#1abc9c' }} /> {design.route}
                       </div>
                     </div>
@@ -247,12 +247,12 @@ export default function DesignLabDashboard() {
                                 value={mappingRoute}
                                 onChange={(e) => setMappingRoute(e.target.value)}
                                 placeholder="/route"
-                                style={{ width: 100, fontSize: 11, padding: '4px 8px', borderRadius: 6, border: '1px solid var(--accent)', background: 'var(--bg-deep)', color: 'var(--text)' }}
+                                style={{ width: 100, fontSize: 11, padding: '4px 8px', borderRadius: 'var(--r-md)', border: '1px solid var(--accent)', background: 'var(--bg-deep)', color: 'var(--text)' }}
                                 onKeyDown={(e) => e.key === 'Enter' && handleMap(design.id)}
                               />
                               <button 
                                 onClick={() => handleMap(design.id)}
-                                style={{ padding: '4px 8px', background: 'var(--accent)', color: '#fff', borderRadius: 6, fontSize: 11, fontWeight: 700, border: 'none' }}
+                                style={{ padding: '4px 8px', background: 'var(--accent)', color: '#fff', borderRadius: 'var(--r-md)', fontSize: 11, fontWeight: 700, border: 'none' }}
                               >
                                 Save
                               </button>
@@ -261,7 +261,7 @@ export default function DesignLabDashboard() {
                             <button 
                               onClick={() => { setMappingId(design.id); setMappingRoute(''); }}
                               className="tb-btn" 
-                              style={{ padding: '4px 10px', background: 'var(--accent-subtle)', color: 'var(--accent)', borderRadius: 6, fontSize: 11.5, fontWeight: 600 }}
+                              style={{ padding: '4px 10px', background: 'var(--accent-subtle)', color: 'var(--accent)', borderRadius: 'var(--r-md)', fontSize: 11.5, fontWeight: 600 }}
                             >
                               Map Route
                             </button>

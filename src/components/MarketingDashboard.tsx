@@ -54,7 +54,7 @@ export default function MarketingDashboard() {
   return (
     <div className="anim-fade-up">
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 'var(--dash-gap-card)' }}>
-        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(245,158,11,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 40, height: 40, borderRadius: 'var(--r-lg)', background: 'rgba(245,158,11,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <BarChart size={20} style={{ color: '#f59e0b' }} />
         </div>
         <div>
