@@ -1,34 +1,10 @@
 'use client';
 
-/**
- * PageHeader — self-contained sticky header for all non-editor pages.
- *
- * All shared state is managed internally:
- *   • Theme  (useTheme)
- *   • User   (useUser)
- *   • Notifs (useNotifications)
- *   • SettingsModal
- *   • Toast
- *
- * Pages only need to wire up what's page-specific:
- *   pageTitle, search props, children slot, mobileMenuOpen/setMobileMenuOpen
- */
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { createPortal } from 'react-dom';
-import {
-  Search,
-  Bell,
-  Sun,
-  Moon,
-  Settings,
-  Menu,
-  X,
-  ChevronDown,
-  Command,
-} from 'lucide-react';
+import { Search, Bell, Sun, Moon, Settings, Menu, X, ChevronDown, Command } from 'lucide-react';
 
 import { useTheme }         from '@/lib/useTheme';
 import { useUser }          from '@/lib/useUser';
@@ -37,47 +13,31 @@ import AccountMenu          from '@/components/AccountMenu';
 import NotifPanel           from '@/components/NotifPanel';
 import Toast                from '@/components/Toast';
 import SettingsModal, {
-  loadSettings,
-  saveSettings,
-  applySettings,
-  type AppSettings,
+  loadSettings, saveSettings, applySettings, type AppSettings,
 } from '@/components/SettingsModal';
 
-// ─── Props ───────────────────────────────────────────────────────────────────
-
 export interface PageHeaderProps {
-  /** Breadcrumb label shown after the logo. */
   pageTitle: string;
-
-  /** Search field — pass these to enable an inline search bar. */
   searchValue?:       string;
   onSearchChange?:    (value: string) => void;
   searchPlaceholder?: string;
   hideSearch?:        boolean;
-
-  /** Mobile menu toggle — managed by the parent page (content varies). */
   mobileMenuOpen?:    boolean;
   setMobileMenuOpen?: (open: boolean) => void;
-
-  /** Extra controls injected between the spacer and the right controls. */
   children?: React.ReactNode;
 }
-
-// ─── Logo ────────────────────────────────────────────────────────────────────
 
 function Logo({ size = 16 }: { size?: number }) {
   return (
     <Image
       src="/logo.svg"
-      alt="Carcino Vantage"
+      alt="Vantage"
       width={size}
       height={Math.round(size * 1.2)}
       style={{ width: size, height: 'auto' }}
     />
   );
 }
-
-// ─── Component ───────────────────────────────────────────────────────────────
 
 export default function PageHeader({
   pageTitle,
@@ -89,89 +49,65 @@ export default function PageHeader({
   setMobileMenuOpen,
   children,
 }: PageHeaderProps) {
+  const { isDark, toggleTheme }                     = useTheme();
+  const { user }                                    = useUser();
+  const { notifications, unreadCount, markAllRead } = useNotifications();
 
-  // ── Shared hooks ────────────────────────────────────────────────────────────
-  const { isDark, toggleTheme }                       = useTheme();
-  const { user }                                      = useUser();
-  const { notifications, unreadCount, markAllRead }   = useNotifications();
-
-  // ── Settings ────────────────────────────────────────────────────────────────
   const [showSettings, setShowSettings] = useState(false);
   const [settings, setSettings]         = useState<AppSettings>(() => loadSettings());
-
-  // ── Toast ───────────────────────────────────────────────────────────────────
-  const [toast, setToast] = useState<string | null>(null);
-
-  // ── Notification panel ──────────────────────────────────────────────────────
+  const [toast, setToast]               = useState<string | null>(null);
   const [showNotifPanel, setShowNotifPanel] = useState(false);
   const [notifPanelPos,  setNotifPanelPos]  = useState<{ top: number; right: number } | null>(null);
-  const notifBtnRef  = useRef<HTMLButtonElement>(null);
+  const notifBtnRef   = useRef<HTMLButtonElement>(null);
   const notifPanelRef = useRef<HTMLDivElement>(null);
-
-  // ── Account menu ────────────────────────────────────────────────────────────
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [accountMenuPos,  setAccountMenuPos]  = useState<{ top: number; right: number } | null>(null);
   const accountBtnRef  = useRef<HTMLButtonElement>(null);
   const accountMenuRef = useRef<HTMLDivElement>(null);
-
-  // ── Search focus state (for visual feedback) ────────────────────────────────
   const [searchFocused, setSearchFocused] = useState(false);
-
-  // ── Scroll shadow ───────────────────────────────────────────────────────────
   const [scrolled, setScrolled] = useState(false);
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 4);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // ── Outside-click: close both menus ────────────────────────────────────────
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      const target = e.target as Node;
-      const insideNotif =
-        notifBtnRef.current?.contains(target) ||
-        notifPanelRef.current?.contains(target);
-      if (!insideNotif) setShowNotifPanel(false);
-
-      const insideAccount =
-        accountBtnRef.current?.contains(target) ||
-        accountMenuRef.current?.contains(target);
-      if (!insideAccount) setShowAccountMenu(false);
+      const t = e.target as Node;
+      if (!notifBtnRef.current?.contains(t) && !notifPanelRef.current?.contains(t))
+        setShowNotifPanel(false);
+      if (!accountBtnRef.current?.contains(t) && !accountMenuRef.current?.contains(t))
+        setShowAccountMenu(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // ── Keyboard: close menus on Escape ────────────────────────────────────────
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setShowNotifPanel(false);
-        setShowAccountMenu(false);
-      }
+      if (e.key === 'Escape') { setShowNotifPanel(false); setShowAccountMenu(false); }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
-  // ── Handlers ────────────────────────────────────────────────────────────────
   const handleNotifClick = useCallback(() => {
     if (!showNotifPanel && notifBtnRef.current) {
-      const rect = notifBtnRef.current.getBoundingClientRect();
-      const right = Math.max(8, window.innerWidth - rect.right);
-      setNotifPanelPos({ top: rect.bottom + 7, right });
+      const r = notifBtnRef.current.getBoundingClientRect();
+      setNotifPanelPos({ top: r.bottom + 7, right: Math.max(8, window.innerWidth - r.right) });
     }
-    setShowNotifPanel(prev => !prev);
+    setShowNotifPanel(p => !p);
     setShowAccountMenu(false);
   }, [showNotifPanel]);
 
   const handleAccountClick = useCallback(() => {
     if (!showAccountMenu && accountBtnRef.current) {
-      const rect = accountBtnRef.current.getBoundingClientRect();
-      setAccountMenuPos({ top: rect.bottom + 5, right: window.innerWidth - rect.right });
+      const r = accountBtnRef.current.getBoundingClientRect();
+      setAccountMenuPos({ top: r.bottom + 5, right: window.innerWidth - r.right });
     }
-    setShowAccountMenu(prev => !prev);
+    setShowAccountMenu(p => !p);
     setShowNotifPanel(false);
   }, [showAccountMenu]);
 
@@ -180,113 +116,267 @@ export default function PageHeader({
     setToast('All notifications marked as read');
   }, [markAllRead]);
 
-  // ── User initials ───────────────────────────────────────────────────────────
-  const initials = user?.name
-    ?.split(' ')
-    .map((n: string) => n[0])
-    .join('')
-    .slice(0, 2) || '?';
+  const initials = user?.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || '?';
 
-  // ─── Render ─────────────────────────────────────────────────────────────────
   return (
     <>
-      {/* ── Header ────────────────────────────────────────────────────────── */}
-      <header
-        style={{
-          position:        'sticky',
-          top:             0,
-          left:            0,
-          right:           0,
-          width:           '100%',
-          background:      'var(--paper)',
-          borderBottom:    '1px solid var(--rule)',
-          padding:         '0 14px',
-          display:         'flex',
-          alignItems:      'center',
-          gap:             8,
-          height:          44,
-          zIndex:          40,
-          // Subtle elevation on scroll
-          boxShadow:       scrolled ? '0 1px 12px rgba(0,0,0,0.07)' : 'none',
-          transition:      'box-shadow 0.2s ease',
-        }}
-      >
-        {/* ── Logo + Breadcrumb ──────────────────────────────────────────── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 0, flexShrink: 0, userSelect: 'none' }}>
-          <Link
-            href="/"
-            style={{
-              display:        'flex',
-              alignItems:     'center',
-              gap:            7,
-              color:          'var(--ink)',
-              textDecoration: 'none',
-              padding:        '4px 8px 4px 2px',
-              borderRadius:   'var(--r-xs)',
-              transition:     'opacity 0.15s',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.opacity = '0.7')}
-            onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
-          >
-            <Logo size={14} />
-            <span className="hidden sm:inline" style={{
-              fontFamily:    'var(--ff-display)',
-              fontSize:      14,
-              fontWeight:    700,
-              letterSpacing: '-0.02em',
-              lineHeight:    1,
-            }}>
-              <span className="hidden sm:inline">Carcino</span> Vantage
-            </span>
-          </Link>
+      <style>{`
+        .ph-root {
+          position: sticky;
+          top: 0;
+          left: 0;
+          right: 0;
+          width: 100%;
+          height: 44px;
+          background: var(--paper);
+          border-bottom: 1px solid var(--rule);
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 0 12px;
+          z-index: 40;
+          transition: box-shadow 0.2s ease;
+        }
 
-          {/* Slash separator */}
-          <span style={{
-            fontFamily: 'var(--ff-mono)',
-            fontSize:   13,
-            color:      'var(--rule)',
-            margin:     '0 2px',
-            userSelect: 'none',
-          }}>
-            /
-          </span>
+        /* Logo + breadcrumb */
+        .ph-brand {
+          display: flex;
+          align-items: center;
+          gap: 0;
+          flex-shrink: 0;
+          user-select: none;
+          text-decoration: none;
+          color: var(--ink);
+          padding: 4px 6px 4px 2px;
+          border-radius: var(--r-xs);
+          transition: opacity 0.15s;
+        }
+        .ph-brand:hover { opacity: 0.7; }
 
-          {/* Page title */}
-          <span style={{
-            fontFamily:    'var(--ff-mono)',
-            fontSize:      9,
-            letterSpacing: '0.14em',
-            textTransform: 'uppercase',
-            color:         'var(--mid)',
-            padding:       '0 6px',
-          }}>
-            {pageTitle}
-          </span>
-        </div>
+        .ph-brand-name {
+          font-family: var(--ff-display);
+          font-size: 13px;
+          font-weight: 700;
+          letter-spacing: -0.02em;
+          margin-left: 7px;
+        }
 
-        <div className="db-vr" style={{ marginTop: 0 }} />
+        .ph-slash {
+          font-family: var(--ff-mono);
+          font-size: 13px;
+          color: var(--rule);
+          margin: 0 2px;
+          user-select: none;
+        }
 
-        {/* ── Search bar (desktop) ───────────────────────────────────────── */}
+        .ph-page-title {
+          font-family: var(--ff-mono);
+          font-size: 9px;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+          color: var(--mid);
+          padding: 0 6px;
+          flex-shrink: 0;
+        }
+
+        .ph-divider {
+          width: 1px;
+          height: 16px;
+          background: var(--rule);
+          flex-shrink: 0;
+          margin: 0 2px;
+        }
+
+        /* Search — desktop only */
+        .ph-search-wrap {
+          position: relative;
+          flex: 1;
+          max-width: 280px;
+          display: flex;
+          align-items: center;
+        }
+
+        .ph-search-icon {
+          position: absolute;
+          left: 9px;
+          color: var(--mid);
+          pointer-events: none;
+          transition: color 0.15s;
+          display: flex;
+        }
+
+        .ph-search-input {
+          width: 100%;
+          background: transparent;
+          border: 1px solid var(--rule);
+          border-radius: var(--r-md);
+          padding: 5px 60px 5px 28px;
+          font-family: var(--ff-mono);
+          font-size: 10px;
+          letter-spacing: 0.04em;
+          color: var(--ink);
+          outline: none;
+          transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+        }
+        .ph-search-input:focus {
+          border-color: var(--accent);
+          background: var(--accent-sub);
+          box-shadow: 0 0 0 2px var(--accent-dim);
+        }
+        .ph-search-input::placeholder { color: var(--mid); opacity: 0.6; }
+
+        .ph-search-hint {
+          position: absolute;
+          right: 8px;
+          display: flex;
+          align-items: center;
+          gap: 2px;
+          font-family: var(--ff-mono);
+          font-size: 8px;
+          color: var(--mid);
+          opacity: 0.55;
+          pointer-events: none;
+          transition: opacity 0.15s;
+        }
+
+        /* Right cluster */
+        .ph-right {
+          display: flex;
+          align-items: center;
+          gap: 2px;
+          margin-left: auto;
+          flex-shrink: 0;
+        }
+
+        .ph-icon-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 30px;
+          height: 30px;
+          background: none;
+          border: 1px solid transparent;
+          border-radius: var(--r-sm);
+          cursor: pointer;
+          color: var(--mid);
+          transition: background 0.12s, color 0.12s, border-color 0.12s;
+          position: relative;
+          flex-shrink: 0;
+        }
+        .ph-icon-btn:hover {
+          background: var(--cream);
+          border-color: var(--rule);
+          color: var(--ink);
+        }
+        .ph-icon-btn.active {
+          background: var(--accent-dim);
+          border-color: var(--accent-sub);
+          color: var(--accent);
+        }
+
+        /* Account button */
+        .ph-account {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          padding: 3px 8px 3px 4px;
+          background: none;
+          border: 1px solid var(--rule);
+          border-radius: var(--r-sm);
+          cursor: pointer;
+          color: var(--ink);
+          transition: border-color 0.15s, background 0.15s;
+          flex-shrink: 0;
+        }
+        .ph-account:hover {
+          background: var(--cream);
+          border-color: var(--border-med);
+        }
+
+        .ph-avatar {
+          width: 20px;
+          height: 20px;
+          background: var(--accent);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-family: var(--ff-display);
+          font-weight: 700;
+          font-size: 8px;
+          flex-shrink: 0;
+          border-radius: 3px;
+          letter-spacing: 0.04em;
+        }
+
+        .ph-account-name {
+          font-family: var(--ff-mono);
+          font-size: 9.5px;
+          font-weight: 500;
+          letter-spacing: 0.04em;
+          color: var(--ink);
+          max-width: 90px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        /* Badge */
+        .ph-badge {
+          position: absolute;
+          top: 5px;
+          right: 5px;
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          background: var(--accent);
+          border: 1.5px solid var(--paper);
+        }
+
+        /* Responsive: hide/show */
+        @media (max-width: 767px) {
+          .ph-search-wrap  { display: none !important; }
+          .ph-desktop-only { display: none !important; }
+        }
+        @media (min-width: 768px) {
+          .ph-mobile-only  { display: none !important; }
+          .ph-brand-name   { display: block; }
+        }
+        @media (max-width: 479px) {
+          .ph-brand-name { display: none; }
+        }
+
+        /* Accent rule */
+        .ph-accent-rule {
+          position: sticky;
+          top: 44px;
+          left: 0; right: 0;
+          height: 1px;
+          z-index: 39;
+          background: linear-gradient(90deg, transparent 0%, var(--accent) 40%, var(--accent) 60%, transparent 100%);
+          opacity: 0.15;
+          pointer-events: none;
+        }
+      `}</style>
+
+      <header className="ph-root" style={{ boxShadow: scrolled ? '0 1px 12px rgba(0,0,0,0.1)' : 'none' }}>
+
+        {/* Logo + breadcrumb */}
+        <Link href="/" className="ph-brand">
+          <Logo size={14} />
+          <span className="ph-brand-name">Vantage</span>
+        </Link>
+        <span className="ph-slash">/</span>
+        <span className="ph-page-title">{pageTitle}</span>
+
+        <div className="ph-divider" />
+
+        {/* Search — hides on mobile via CSS */}
         {!hideSearch && (
-          <div
-            className="hidden md:flex"
-            style={{
-              position:  'relative',
-              flex:      1,
-              maxWidth:  300,
-              alignItems:'center',
-            }}
-          >
-            <Search
-              size={11}
-              style={{
-                position:      'absolute',
-                left:          10,
-                color:         searchFocused ? 'var(--accent)' : 'var(--mid)',
-                pointerEvents: 'none',
-                transition:    'color 0.15s',
-              }}
-            />
+          <div className="ph-search-wrap">
+            <span className="ph-search-icon">
+              <Search size={11} strokeWidth={1.8} style={{ color: searchFocused ? 'var(--accent)' : 'var(--mid)' }} />
+            </span>
             <input
               type="text"
               placeholder={searchPlaceholder}
@@ -294,262 +384,123 @@ export default function PageHeader({
               onChange={e => onSearchChange?.(e.target.value)}
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setSearchFocused(false)}
-              style={{
-                width:         '100%',
-                background:    searchFocused ? 'var(--accent-sub)' : 'transparent',
-                border:        `1px solid ${searchFocused ? 'var(--accent)' : 'var(--rule)'}`,
-                padding:       '5px 32px 5px 28px',
-                fontFamily:    'var(--ff-mono)',
-                fontSize:      10,
-                letterSpacing: '0.04em',
-                color:         'var(--ink)',
-                outline:       'none',
-                transition:    'border-color 0.15s, background 0.15s',
-              }}
+              className="ph-search-input"
             />
-            {/* ⌘K hint */}
-            <span
-              className="hidden lg:flex"
-              style={{
-                position:      'absolute',
-                right:         8,
-                fontFamily:    'var(--ff-mono)',
-                fontSize:      8,
-                letterSpacing: '0.06em',
-                color:         'var(--mid)',
-                opacity:       searchFocused ? 0 : 0.7,
-                display:       'flex',
-                alignItems:    'center',
-                gap:           2,
-                pointerEvents: 'none',
-                transition:    'opacity 0.15s',
-              }}
-            >
-              <Command size={8} strokeWidth={1.8} />K
-            </span>
+            {!searchFocused && (
+              <span className="ph-search-hint">
+                <Command size={8} strokeWidth={1.8} />K
+              </span>
+            )}
           </div>
         )}
 
-        {/* ── Flex spacer ───────────────────────────────────────────────── */}
+        {/* Children slot (e.g. page-specific command bar) — also hides on mobile */}
+        {children && (
+          <div className="ph-search-wrap" style={{ maxWidth: 320 }}>
+            {children}
+          </div>
+        )}
+
+        {/* Spacer */}
         <div style={{ flex: 1 }} />
 
-        {/* ── Page-specific controls (children slot) ────────────────────── */}
-        {children}
+        {/* Right controls */}
+        <div className="ph-right">
 
-        {/* ── Right controls ────────────────────────────────────────────── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-
-          {/* Theme toggle */}
+          {/* Theme — desktop only */}
           <button
-            className="db-icon-btn"
+            className="ph-icon-btn ph-desktop-only"
             onClick={toggleTheme}
-            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={isDark ? 'Light mode' : 'Dark mode'}
           >
             {isDark
-              ? <Sun  size={13} strokeWidth={1.8} style={{ color: 'var(--mid)' }} />
-              : <Moon size={13} strokeWidth={1.8} style={{ color: 'var(--mid)' }} />}
+              ? <Sun  size={13} strokeWidth={1.8} />
+              : <Moon size={13} strokeWidth={1.8} />}
           </button>
 
-          {/* Settings */}
+          {/* Settings — desktop only */}
           <button
-            className="db-icon-btn"
+            className="ph-icon-btn ph-desktop-only"
             onClick={() => setShowSettings(true)}
             title="Settings"
           >
-            <Settings size={13} strokeWidth={1.8} style={{ color: 'var(--mid)' }} />
+            <Settings size={13} strokeWidth={1.8} />
           </button>
 
           {/* Notifications */}
           <button
             ref={notifBtnRef}
-            className={`db-icon-btn${showNotifPanel ? ' active' : ''}`}
+            className={`ph-icon-btn${showNotifPanel ? ' active' : ''}`}
             onClick={handleNotifClick}
             title="Notifications"
             style={{ position: 'relative' }}
           >
-            <Bell size={13} strokeWidth={1.8} style={{ color: 'var(--mid)' }} />
-            {unreadCount > 0 && (
-              <span
-                className="db-badge"
-                style={{ animation: 'db-blink 2.4s step-start infinite' }}
-              />
-            )}
+            <Bell size={13} strokeWidth={1.8} />
+            {unreadCount > 0 && <span className="ph-badge" />}
           </button>
 
-          <div className="db-vr" style={{ marginTop: 0, margin: '0 4px' }} />
+          <div className="ph-divider" style={{ margin: '0 3px' }} />
 
           {/* Mobile menu toggle */}
           {setMobileMenuOpen && (
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="db-icon-btn md:hidden"
+              className="ph-icon-btn ph-mobile-only"
               title="Menu"
             >
-              {mobileMenuOpen
-                ? <X    size={15} strokeWidth={1.8} />
-                : <Menu size={15} strokeWidth={1.8} />}
+              {mobileMenuOpen ? <X size={15} strokeWidth={1.8} /> : <Menu size={15} strokeWidth={1.8} />}
             </button>
           )}
 
-          {/* Account button */}
+          {/* Account */}
           <button
             ref={accountBtnRef}
-            className="db-ghost"
+            className="ph-account"
             style={{
-              gap:     5,
-              padding: '3px 8px 3px 4px',
-              border:  `1px solid ${showAccountMenu ? 'var(--accent)' : 'var(--rule)'}`,
-              background: showAccountMenu ? 'var(--accent-sub)' : 'transparent',
-              transition: 'border-color 0.15s, background 0.15s',
+              borderColor: showAccountMenu ? 'var(--accent)' : 'var(--rule)',
+              background:  showAccountMenu ? 'var(--accent-sub)' : 'transparent',
             }}
             onClick={handleAccountClick}
             aria-label="Account menu"
           >
-            {/* Avatar */}
             {user?.avatar_url ? (
-              <div style={{
-                width:    20,
-                height:   20,
-                overflow: 'hidden',
-                border:   '1px solid var(--rule)',
-                flexShrink: 0,
-              }}>
-                <Image
-                  src={user.avatar_url}
-                  alt={user.name || 'User'}
-                  width={20}
-                  height={20}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
+              <div style={{ width: 20, height: 20, overflow: 'hidden', flexShrink: 0, borderRadius: 3 }}>
+                <Image src={user.avatar_url} alt={user.name || ''} width={20} height={20} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
             ) : (
-              <div style={{
-                width:          20,
-                height:         20,
-                background:     'var(--accent)',
-                display:        'flex',
-                alignItems:     'center',
-                justifyContent: 'center',
-                color:          'var(--paper)',
-                fontFamily:     'var(--ff-display)',
-                fontWeight:     700,
-                fontSize:       9,
-                flexShrink:     0,
-                letterSpacing:  '0.04em',
-              }}>
-                {initials}
-              </div>
+              <div className="ph-avatar">{initials}</div>
             )}
-
-            {/* Name — desktop only */}
-            <span
-              className="hidden md:block"
-              style={{
-                fontFamily:    'var(--ff-mono)',
-                fontSize:      9.5,
-                fontWeight:    500,
-                letterSpacing: '0.05em',
-                color:         'var(--ink)',
-                maxWidth:      100,
-                overflow:      'hidden',
-                textOverflow:  'ellipsis',
-                whiteSpace:    'nowrap',
-              }}
-            >
-              {user?.name || ''}
-            </span>
-
+            <span className="ph-account-name ph-desktop-only">{user?.name || ''}</span>
             <ChevronDown
-              size={9}
-              strokeWidth={2}
-              style={{
-                color:     'var(--mid)',
-                transform: showAccountMenu ? 'rotate(180deg)' : 'rotate(0deg)',
-                transition:'transform 0.2s ease',
-              }}
-              className="hidden sm:block"
+              size={9} strokeWidth={2}
+              className="ph-desktop-only"
+              style={{ color: 'var(--mid)', transform: showAccountMenu ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
             />
           </button>
         </div>
       </header>
 
-      {/* ── Accent rule at bottom of header (decorative) ──────────────────── */}
-      <div
-        aria-hidden
-        style={{
-          position:   'sticky',
-          top:        44,
-          left:       0,
-          right:      0,
-          height:     1,
-          zIndex:     39,
-          background: 'linear-gradient(90deg, transparent 0%, var(--accent) 40%, var(--accent) 60%, transparent 100%)',
-          opacity:    0.18,
-          pointerEvents: 'none',
-        }}
-      />
+      <div className="ph-accent-rule" aria-hidden />
 
-      {/* ── Notification panel portal ──────────────────────────────────────── */}
+      {/* Portals */}
       {showNotifPanel && notifPanelPos && createPortal(
-        <div
-          ref={notifPanelRef}
-          style={{
-            position: 'fixed',
-            top:      notifPanelPos.top,
-            right:    notifPanelPos.right,
-            zIndex:   9960,
-            maxWidth: 'calc(100vw - 16px)',
-          }}
-        >
-          <NotifPanel
-            notifs={notifications}
-            onMarkAllRead={handleMarkAllRead}
-            onClose={() => setShowNotifPanel(false)}
-          />
+        <div ref={notifPanelRef} style={{ position: 'fixed', top: notifPanelPos.top, right: notifPanelPos.right, zIndex: 9960, maxWidth: 'calc(100vw - 16px)' }}>
+          <NotifPanel notifs={notifications} onMarkAllRead={handleMarkAllRead} onClose={() => setShowNotifPanel(false)} />
         </div>,
         document.body
       )}
 
-      {/* ── Account menu portal ────────────────────────────────────────────── */}
       {showAccountMenu && accountMenuPos && createPortal(
-        <div
-          ref={accountMenuRef}
-          style={{
-            position: 'fixed',
-            top:      accountMenuPos.top,
-            right:    accountMenuPos.right,
-            zIndex:   9960,
-          }}
-        >
-          <AccountMenu
-            user={user}
-            onClose={() => setShowAccountMenu(false)}
-            onToast={setToast}
-            onOpenSettings={() => {
-              setShowAccountMenu(false);
-              setShowSettings(true);
-            }}
-            isDark={isDark}
-            onToggleTheme={toggleTheme}
-          />
+        <div ref={accountMenuRef} style={{ position: 'fixed', top: accountMenuPos.top, right: accountMenuPos.right, zIndex: 9960 }}>
+          <AccountMenu user={user} onClose={() => setShowAccountMenu(false)} onToast={setToast} onOpenSettings={() => { setShowAccountMenu(false); setShowSettings(true); }} isDark={isDark} onToggleTheme={toggleTheme} />
         </div>,
         document.body
       )}
 
-      {/* ── Settings modal ─────────────────────────────────────────────────── */}
       {showSettings && (
-        <SettingsModal
-          settings={settings}
-          onClose={() => setShowSettings(false)}
-          onChange={next => {
-            setSettings(next);
-            saveSettings(next);
-            applySettings(next);
-          }}
-        />
+        <SettingsModal settings={settings} onClose={() => setShowSettings(false)} onChange={next => { setSettings(next); saveSettings(next); applySettings(next); }} />
       )}
 
-      {/* ── Toast ─────────────────────────────────────────────────────────── */}
       {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
     </>
   );

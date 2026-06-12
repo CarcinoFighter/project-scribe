@@ -18,7 +18,7 @@ export default function MobileNav({ activeNav, pendingTasksCount = 0 }: MobileNa
   ];
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 flex justify-center z-50 pointer-events-none">
+    <div className="md:hidden fixed bottom-4 left-4 right-4 flex justify-center z-50 pointer-events-none">
       <nav className="flex items-center gap-0.5 p-1 bg-[#1a1a1f] border border-white/10 rounded-full shadow-2xl pointer-events-auto h-[48px]">
         {navItems.map((item) => {
           const isActive = activeNav === item.id;

@@ -464,28 +464,30 @@ function DashboardContent() {
         setMobileMenuOpen={setMobileMenuOpen}
       >
         <button
-          className="db-search hidden md:flex"
           onClick={() => setShowCmd(true)}
           title="Search (Ctrl+K)"
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: 8,
+            width: '100%',
             padding: '5px 10px',
             background: 'transparent',
             border: '1px solid var(--rule)',
-            borderRadius: '4px',
+            borderRadius: 'var(--r-md)',
             fontFamily: 'var(--ff-mono)',
             fontSize: 10,
             letterSpacing: '0.04em',
             color: 'var(--mid)',
             cursor: 'pointer',
-            transition: 'all 0.15s',
+            transition: 'border-color 0.15s',
           }}
+          onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--border-med)')}
+          onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--rule)')}
         >
           <Search size={11} strokeWidth={1.8} />
-          <span>Search or command…</span>
-          <span className="db-kbd" style={{ marginLeft: 'auto' }}>⌘K</span>
+          <span style={{ flex: 1, textAlign: 'left' }}>Search or command…</span>
+          <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 8, opacity: 0.5, display: 'flex', alignItems: 'center', gap: 2 }}>⌘K</span>
         </button>
       </PageHeader>
 

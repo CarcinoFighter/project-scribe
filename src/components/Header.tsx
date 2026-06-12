@@ -211,7 +211,7 @@ export default function Header({
         {children}
 
         {/* Search */}
-        <button className="db-search hidden sm:flex" onClick={onOpenCmd} title="Command palette (Ctrl+K)">
+        <button className="db-search hidden md:flex" onClick={onOpenCmd} title="Command palette (Ctrl+K)">
           <Search size={10} strokeWidth={1.8} />
           <span>Search or command…</span>
           <span className="db-kbd hidden lg:inline-block">⌘K</span>

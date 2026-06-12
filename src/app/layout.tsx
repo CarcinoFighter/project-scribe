@@ -49,12 +49,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 </head>
       <body>
         <div id="pwa-splash">
-          <div className="splash-content">
-            <img src="/logo.png" className="splash-logo" alt="logo" />
-            <div className="splash-text">Vantage</div>
+          <div className="splash-icon-card">
+            <img src="/logo.png" className="splash-logo" alt="" />
           </div>
-          <div className="splash-loader-container">
-            <div className="splash-loader-bar"></div>
+          <div className="splash-wordmark">
+            <div className="splash-name">Vantage</div>
+            <div className="splash-sub">Editorial Suite</div>
+          </div>
+          <div className="splash-line-track">
+            <div className="splash-line-fill" />
           </div>
         </div>
         <ThemeInitializer />
