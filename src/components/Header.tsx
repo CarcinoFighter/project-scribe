@@ -210,11 +210,14 @@ export default function Header({
 
         {children}
 
-        {/* Search */}
+        {/* Search — full bar on desktop, icon-only on mobile */}
         <button className="db-search hidden md:flex" onClick={onOpenCmd} title="Command palette (Ctrl+K)">
           <Search size={10} strokeWidth={1.8} />
           <span>Search or command…</span>
           <span className="db-kbd hidden lg:inline-block">⌘K</span>
+        </button>
+        <button className="db-icon-btn md:hidden" onClick={onOpenCmd} title="Command palette">
+          <Search size={13} />
         </button>
 
         <div className="flex-1" />
@@ -227,8 +230,8 @@ export default function Header({
             <div className="hidden lg:flex items-center rounded overflow-hidden border border-[var(--rule)]" id="tour-view-modes">
               {([
                 { m: 'editor' as ViewMode, icon: LayoutTemplate, title: 'Editor only' },
-                { m: 'split'  as ViewMode, icon: Columns,         title: 'Split view' },
-                { m: 'preview'as ViewMode, icon: Eye,             title: 'Preview only' },
+                { m: 'split' as ViewMode, icon: Columns, title: 'Split view' },
+                { m: 'preview' as ViewMode, icon: Eye, title: 'Preview only' },
               ]).map(({ m, icon: Icon, title }, i, arr) => (
                 <button
                   key={m}
@@ -301,6 +304,18 @@ export default function Header({
                 </div>
               )}
             </div>
+          )}
+
+          {/* Mobile document status + setup button */}
+          {hasEditorCtx && status && onOpenMetadata && (
+            <button
+              className="sm:hidden db-status cursor-pointer flex-shrink-0"
+              style={{ fontSize: '7px', color: 'var(--accent)', borderColor: 'var(--accent)', background: 'var(--accent-dim)' }}
+              onClick={onOpenMetadata}
+              title="Document Setup"
+            >
+              {status.replace(/_/g, ' ')}
+            </button>
           )}
 
           {/* Mobile save */}
@@ -456,7 +471,7 @@ export default function Header({
           )}
 
           <div className="border-t border-[var(--rule)] pt-4 space-y-2">
-            <button onClick={() => { onOpenCmd(); setMobileMenuOpen(false); }} className="w-full db-ghost justify-center text-xs"><Search size={13} className="mr-1.5" />Command Palette</button>
+
             {onOpenMetadata && <button onClick={() => { onOpenMetadata(); setMobileMenuOpen(false); }} className="w-full db-ghost justify-center text-xs">Document Settings</button>}
             <button onClick={() => { onOpenSettings(); setMobileMenuOpen(false); }} className="w-full db-ghost justify-center text-xs"><Settings size={13} className="mr-1.5" />App Settings</button>
           </div>
